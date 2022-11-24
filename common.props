@@ -1,10 +1,10 @@
 <Project>
   <PropertyGroup>
     <Authors>Ian Arbouw,Autabee</Authors>
-    <RepositoryUrl>https://github.com/Autabee/Autabee.Utility</RepositoryUrl>
+    <RepositoryUrl>https://github.com/Autabee/Autabee.OpcCommunication</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>1.0.0</Version>
+    <Version>0.1.0</Version>
     <PackageIcon>autabee.png</PackageIcon>
     
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
