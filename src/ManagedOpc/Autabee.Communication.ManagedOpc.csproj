@@ -1,13 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+	<Import Project="..\..\common.props" />
 	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<TargetFrameworks>net48;net6.0</TargetFrameworks>
-		<PackageReadmeFile>readme.md</PackageReadmeFile>
+		<Description>Standard logging interface for autabee packages</Description>
+		<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpc</PackageProjectUrl>
+    	<PackageTags>opcua;client;opcua-client</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="Autabee.Utility.Logger" Version="1.0.0" />
 	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.371.41" />
 	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.4.371.41" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\autabee.png">
+		  <Pack>True</Pack>
+		  <PackagePath>\</PackagePath>
+		</None>
+		<None Include="readme.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
 	</ItemGroup>
 </Project>
