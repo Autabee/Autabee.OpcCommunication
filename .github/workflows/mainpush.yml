@@ -1,0 +1,33 @@
+name: Main push
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  buildAndDeploy:
+
+    runs-on: windows-latest
+
+    env:
+      TF_BUILD: true
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+    - name: Restore dependencies
+      run: dotnet restore ./src
+    - name: Build
+      run: dotnet build ./src --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal ./src
+    - name: Publish to NuGet
+      # You may pin to the exact commit or the version.
+      # uses: brandedoutcast/publish-nuget@c12b8546b67672ee38ac87bea491ac94a587f7cc
+      uses: autabee/publish-nuget-neo@v1.0.2.3-beta
+      with:
+          NUGET_KEY: ${{secrets.NUGET_KEY}}
+          VERSION_FILE_PATH: common.props
+          TAG_COMMIT: true
+          INCLUDE_SYMBOLS: true
+          REBUILD_PROJECT: false
