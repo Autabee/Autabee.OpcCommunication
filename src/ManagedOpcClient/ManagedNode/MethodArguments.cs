@@ -2,7 +2,7 @@
 using System;
 using System.Linq;
 
-namespace Autabee.Communication.ManagedOpc.ManagedNode
+namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 {
     public class MethodArguments
     {

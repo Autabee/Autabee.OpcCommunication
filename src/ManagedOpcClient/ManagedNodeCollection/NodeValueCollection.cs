@@ -1,10 +1,10 @@
-﻿using Autabee.Communication.ManagedOpc.ManagedNode;
+﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Autabee.Communication.ManagedOpc.ManagedNodeCollection
+namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 {
     public class NodeValueCollection : NodeEntryCollection
     {

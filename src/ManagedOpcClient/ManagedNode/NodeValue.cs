@@ -1,7 +1,7 @@
 ﻿using System;
 using Autabee.Communication.OpcCommunicator.ManagedNode;
 
-namespace Autabee.Communication.ManagedOpc.ManagedNode
+namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 {
     public class NodeValue
     {

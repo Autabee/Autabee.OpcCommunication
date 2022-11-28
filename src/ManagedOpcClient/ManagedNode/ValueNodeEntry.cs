@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 
-namespace Autabee.Communication.ManagedOpc.ManagedNode
+namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 {
     public class ValueNodeEntry : NodeEntry
     {

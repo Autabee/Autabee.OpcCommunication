@@ -1,7 +1,7 @@
-﻿using Autabee.Communication.ManagedOpc;
-using Autabee.Communication.ManagedOpc.ManagedNode;
-using Autabee.Communication.ManagedOpc.ManagedNodeCollection;
+﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Utility.Logger;
+using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
@@ -12,13 +12,14 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 
-namespace Autabee.Communication.OpcCommunicator
+namespace Autabee.Communication.ManagedOpcClient
 {
     public delegate void MonitoredNodeValueEventHandler(OpcUaClientHelperApi sender, NodeValue e);
 
@@ -131,12 +132,17 @@ namespace Autabee.Communication.OpcCommunicator
         public Session Session { get => session; }
 
         #region Construction
-        public OpcUaClientHelperApi(string product, string directory, IAutabeeLogger logger = null)
+        public OpcUaClientHelperApi(string company, string product, string directory, IAutabeeLogger logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
-            mApplicationConfig = CreateDefaultClientConfiguration(product, directory);
-            logger?.Information("Application Config Created");
+            mApplicationConfig = GetClientConfiguration(company, product,directory,logger);
+        }
+        public OpcUaClientHelperApi(Stream stream, IAutabeeLogger logger = null)
+        {
+            this.logger = logger;
+            // Create's the application configuration (containing the certificate) on construction
+            mApplicationConfig = CreateDefaultClientConfiguration(stream);
         }
 
         public OpcUaClientHelperApi(ApplicationConfiguration opcAppConfig, IAutabeeLogger logger = null)
@@ -496,22 +502,46 @@ namespace Autabee.Communication.OpcCommunicator
         #endregion Connect/Disconnect
 
         #region Defaults
-        public static ApplicationConfiguration CreateDefaultClientConfiguration(string product, string directory)
+        public static ApplicationConfiguration GetClientConfiguration(string company, string product, string directory, IAutabeeLogger logger = null)
         {
-            var error = string.Empty;
-            if (string.IsNullOrWhiteSpace(product)) { error += $"'{nameof(product)}' cannot be null or whitespace.\n"; }
-
-            if (error.Length != 0) { throw new ArgumentException(error); }
+            var error = new System.Collections.Generic.List<Exception>();
+            if (string.IsNullOrWhiteSpace(company)) error.Add(new ArgumentNullException(nameof(company)));
+            if (string.IsNullOrWhiteSpace(product)) error.Add(new ArgumentNullException(nameof(product)));
+            if (string.IsNullOrWhiteSpace(directory)) error.Add(new ArgumentNullException(nameof(directory)));
+            if (error.Count() != 0) { throw new AggregateException(error); }
 
             ApplicationInstance configuration = new ApplicationInstance();
             configuration.ApplicationType = ApplicationType.Client;
             configuration.ConfigSectionName = product;
 
-            var combined = Path.Combine(directory.ToString(), product + ".Config.xml");
+            var combined = Path.Combine(directory, product + ".Config.xml");
+            
+            if (!File.Exists(combined))
+            {
+                CreateDefaultConfiguration(company, product, directory, logger, combined);
+            }
+
             configuration.LoadApplicationConfiguration(combined, false).Wait();
             configuration.CheckApplicationInstanceCertificate(false, 0).Wait();
 
             return configuration.ApplicationConfiguration;
+        }
+
+        private static void CreateDefaultConfiguration(string company, string product, string directory, IAutabeeLogger logger, string combined)
+        {
+            logger?.Warning("File {0} not found. recreating it using embedded default.", null, combined);
+            using (Stream resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("Autabee.Communication.ManagedOpcClient.DefaultOpcClient.Config.xml"))
+            {
+                using (StreamReader reader = new StreamReader(resource))
+                {
+                    string result = reader.ReadToEnd();
+                    result = result.Replace("productref", product);
+                    result = result.Replace("companyref", company);
+                    Directory.CreateDirectory(directory);
+                    File.WriteAllText(combined, result);
+                    logger?.Warning("File {0} Created and updated with ({1}, {2}).", null, combined, product, company);
+                }
+            }
         }
 
         public static ApplicationConfiguration CreateDefaultClientConfiguration(Stream configStream)
@@ -1622,7 +1652,7 @@ namespace Autabee.Communication.OpcCommunicator
                     }
                     for (int i = 0; i < arguments.Count; i++)
                     {
-                        argumentTypes[i] = TypeInfo.GetSystemType(
+                        argumentTypes[i] = Opc.Ua.TypeInfo.GetSystemType(
                                                                    arguments[i].DataType,
                                                                    session.Factory);
                     }

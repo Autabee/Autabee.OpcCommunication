@@ -1,4 +1,4 @@
-﻿using Autabee.Communication.ManagedOpc.ManagedNode;
+﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Opc.Ua;
 using System;
 using System.Linq;

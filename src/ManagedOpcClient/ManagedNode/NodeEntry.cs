@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Autabee.Communication.OpcCommunicator;
 
-namespace Autabee.Communication.ManagedOpc.ManagedNode
+namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 {
     public class NodeEntry
     {

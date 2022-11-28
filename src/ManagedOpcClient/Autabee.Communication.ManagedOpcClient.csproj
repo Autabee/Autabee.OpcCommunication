@@ -5,9 +5,15 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<TargetFrameworks>net48;net6.0</TargetFrameworks>
 		<Description>Standard logging interface for autabee packages</Description>
-		<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpc</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
     	<PackageTags>opcua;client;opcua-client</PackageTags>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="DefaultOpcClient.Config.xml" />
+	</ItemGroup>
+	<ItemGroup>
+	  <EmbeddedResource Include="DefaultOpcClient.Config.xml" />
+	</ItemGroup>
 
 	<ItemGroup>
 	  <PackageReference Include="Autabee.Utility.Logger" Version="1.0.0" />

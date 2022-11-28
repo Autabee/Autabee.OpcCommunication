@@ -1,7 +1,7 @@
 ﻿using System;
 using Opc.Ua;
 
-namespace Autabee.Communication.ManagedOpc
+namespace Autabee.Communication.ManagedOpcClient
 {
     public class OpcConnectionStatusChangedEventArgs : EventArgs
     {

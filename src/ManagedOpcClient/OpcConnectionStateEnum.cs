@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Autabee.Communication.ManagedOpc
+namespace Autabee.Communication.ManagedOpcClient
 {
     public enum OpcConnectionStatus
     {
