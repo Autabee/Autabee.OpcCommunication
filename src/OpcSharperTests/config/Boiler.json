@@ -1,0 +1,9 @@
+{
+  "GeneratorSettings": {
+    "baseNamespace": "BoilerNodes",
+    "baselocation": ".\\Generated\\BoilerNodes\\"
+  },
+  "username": null,
+  "password": null,
+  "server": "opc.tcp://localhost:62567/Quickstarts/BoilerServer"
+}

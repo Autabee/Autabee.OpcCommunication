@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<Import Project="..\..\common.props" />
+	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<OutputType>Library</OutputType>
+		<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
+		<Description>Functions for generating nodes address space and types </Description>
+		<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/OpcSharper</PackageProjectUrl>
+		<PackageTags>opcua;type generator</PackageTags>
+	</PropertyGroup>
+	
+	<ItemGroup>
+		<ProjectReference Include="..\ManagedOpcClient\Autabee.Communication.ManagedOpcClient.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\..\autabee.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="readme.md" >
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+</Project>
