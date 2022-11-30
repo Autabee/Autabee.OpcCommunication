@@ -54,7 +54,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Skip.If(skipServerNotFound, "Server not Found");
 
             var communicator2 = new OpcUaClientHelperApi("Autabee","scoutclient", "autabeeopcscout", logger);
-            var endpoints = OpcUaClientHelperApi.GetEndpoints("opc.tcp://laptop131:62567/Quickstarts/BoilerServer");
+            var endpoints = OpcUaClientHelperApi.GetEndpoints("opc.tcp://localhost:62567/Quickstarts/BoilerServer");
             await communicator2.Connect(endpoints.First());
         }
     }

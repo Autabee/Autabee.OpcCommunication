@@ -2,7 +2,6 @@
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Communication.OpcCommunicator.ManagedNode;
 using AutabeeTestFixtures;
-using AutabeeTestFixtures.TestModel;
 using System;
 using System.Collections;
 using System.Collections.Generic;
