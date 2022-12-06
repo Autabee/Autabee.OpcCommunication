@@ -11,7 +11,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
         }
 
         public ValueNodeEntry NodeEntry { get; protected set; }
-        public object Value { get; protected set; }
+        public object Value { get; set; }
 
         public Type ValueType { get => NodeEntry.Type; }
 
