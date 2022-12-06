@@ -4,10 +4,9 @@ namespace Autabee.Communication.ManagedOpcClient
 {
     public enum OpcConnectionStatus
     {
-        Unkown = 0,
+        Unknown = 0,
         Disconnected = 1,
         Reconnecting = 2,
         Connected = 3,
-        
     }
 }
