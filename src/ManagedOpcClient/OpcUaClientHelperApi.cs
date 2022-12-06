@@ -197,13 +197,17 @@ namespace Autabee.Communication.ManagedOpcClient
                     newNodesToRegister.Add(nodesToRegister[i]);
                 }
             }
-            var newRegister = new Stack<NodeId>(RegisterUnCashed(newNodesToRegister));
 
-            for (int i = 0; i < registeredNodes.Count; i++)
+            if (newNodesToRegister.Count > 0)
             {
-                if (registeredNodes[i].Identifier.ToString() == "temp")
+                var newRegister = new Stack<NodeId>(RegisterUnCashed(newNodesToRegister));
+
+                for (int i = 0; i < registeredNodes.Count; i++)
                 {
-                    registeredNodes[i] = newRegister.Pop();
+                    if (registeredNodes[i].Identifier.ToString() == "temp")
+                    {
+                        registeredNodes[i] = newRegister.Pop();
+                    }
                 }
             }
 
