@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
-    public delegate void MonitoredNodeValueEventHandler(OpcUaClientHelperApi sender, NodeValue e);
+    public delegate void MonitoredNodeValueEventHandler(OpcUaClientHelperApi sender, NodeValueRecord e);
 
     public class OpcUaClientHelperApi
     {
@@ -32,7 +32,9 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private Session session;
         private string sessionName;
-        private List<Subscription> Subscriptions = new List<Subscription>();
+        private List<Subscription> subscriptions = new List<Subscription>();
+
+        private Dictionary<string, NodeId> nodeIdCache = new Dictionary<string, NodeId>();
 
         /// <summary>
         /// Provides the event handling for server certificates.
@@ -136,7 +138,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
-            mApplicationConfig = GetClientConfiguration(company, product,directory,logger);
+            mApplicationConfig = GetClientConfiguration(company, product, directory, logger);
         }
         public OpcUaClientHelperApi(Stream stream, IAutabeeLogger logger = null)
         {
@@ -178,6 +180,42 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
         public NodeIdCollection RegisterNodeIds(NodeIdCollection nodesToRegister)
         {
+            NodeIdCollection registeredNodes = new NodeIdCollection();
+            NodeIdCollection newNodesToRegister = new NodeIdCollection();
+            try
+            {
+                for (int i = 0; i < nodesToRegister.Count; i++)
+                {
+                    if (nodeIdCache.TryGetValue(nodesToRegister[i].ToString(), out NodeId nodeId))
+
+                    {
+                        registeredNodes.Add(nodeId);
+                    }
+                    else
+                    {
+                        registeredNodes.Add(new NodeId("temp"));
+                        newNodesToRegister.Add(nodesToRegister[i]);
+                    }
+                }
+                var newRegister =new Stack<NodeId>( RegisterUnCashed(newNodesToRegister));
+                
+                for (int i = 0; i < registeredNodes.Count; i++)
+                {
+                    if (registeredNodes[i].Identifier.ToString() == "temp")
+                    {
+                        registeredNodes[i] = newRegister.Pop();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error registering nodes: " + ex.Message);
+            }
+            return registeredNodes;
+        }
+
+        private NodeIdCollection RegisterUnCashed(NodeIdCollection nodesToRegister)
+        {
             NodeIdCollection registeredNodes;
             try
             {
@@ -185,16 +223,26 @@ namespace Autabee.Communication.ManagedOpcClient
                 //Register nodes
                 var responce = session.RegisterNodes(null, nodesToRegister, out registeredNodes);
                 bool failRegister = false;
-                string failRegisterMessage = "";
-                foreach (var item in registeredNodes.Where(o => o.IdType == IdType.String))
+                List<Exception> exceptions = new List<Exception>();
+
+
+                for (int i = 0; i < registeredNodes.Count; i++)
                 {
-                    failRegister = true;
-                    logger?.Error("Failed to register node: " + item.ToString());
-                    failRegisterMessage += item.ToString() + Environment.NewLine;
+                    if (registeredNodes[i].IdType == IdType.String)
+                    {
+                        failRegister = true;
+                        logger?.Error("Failed to register node: " + registeredNodes[i].ToString());
+                        exceptions.Add(new Exception("Failed to register node: " + registeredNodes[i].ToString()));
+                    }
+                    else
+                    {
+                        nodeIdCache.Add(nodesToRegister[i].ToString(), registeredNodes[i]);
+                    }
                 }
+
                 if (failRegister)
                 {
-                    throw new Exception("Failed to register nodes" + Environment.NewLine + failRegisterMessage);
+                    throw new AggregateException("Failed to register the following nodes", exceptions);
                 }
                 //responce.ServiceResult;
                 return registeredNodes;
@@ -205,6 +253,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
+
 
         private bool NoSession() => session == null || !session.Connected || session.Disposed;
 
@@ -348,7 +397,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 session.SessionClosing += Session_SessionClosing;
                 ReInstateNodeEntries?.Invoke(this, null);
                 wasConnected = true;
-                Subscriptions.Clear();
+                subscriptions.Clear();
             }
             catch (Exception e)
             {
@@ -484,6 +533,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     {
                         session.KeepAlive -= Notification_KeepAlive;
                     }
+                    nodeIdCache.Clear();
                     connectionState = OpcConnectionStatus.Disconnected;
                     //ClearNodeEntries?.Invoke(this, null);
                     ConnectionUpdated?.Invoke(this, null);
@@ -498,7 +548,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        
+
         #endregion Connect/Disconnect
 
         #region Defaults
@@ -515,7 +565,7 @@ namespace Autabee.Communication.ManagedOpcClient
             configuration.ConfigSectionName = product;
 
             var combined = Path.Combine(directory, product + ".Config.xml");
-            
+
             if (!File.Exists(combined))
             {
                 CreateDefaultConfiguration(company, product, directory, logger, combined);
@@ -1237,25 +1287,25 @@ namespace Autabee.Communication.ManagedOpcClient
         #region Entry Read
 
 
-        public NodeValue ReadNodeValue(ValueNodeEntry nodeEntry)
+        public NodeValueRecord ReadNodeValue(ValueNodeEntry nodeEntry)
         {
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
             var body = ReadNodeValue(nodeEntry.GetNodeId());
             return CreateNodeValue(nodeEntry, body);
         }
 
-        public NodeValue[] ReadValues(NodeEntryCollection list)
+        public NodeValueRecord[] ReadValues(NodeEntryCollection list)
         {
             if (list == null) throw new ArgumentNullException(nameof(list));
-            if (list.Count == 0) return new NodeValue[0];
+            if (list.Count == 0) return new NodeValueRecord[0];
             var tempResult = ReadValues(list.GetNodeIds(), list.Types);
             return CreateNodeValueArray(list, tempResult);
         }
 
-        public async Task<NodeValue[]> ReadValuesAsync(NodeEntryCollection list)
+        public async Task<NodeValueRecord[]> ReadValuesAsync(NodeEntryCollection list)
         {
             if (list == null) throw new ArgumentNullException(nameof(list));
-            if (list.Count == 0) return new NodeValue[0];
+            if (list.Count == 0) return new NodeValueRecord[0];
             var tempResult = await AsyncReadValues(list.GetNodeIds(), list.Types);
 
             return CreateNodeValueArray(list, tempResult);
@@ -1269,23 +1319,23 @@ namespace Autabee.Communication.ManagedOpcClient
             return await AsyncReadValues(list, types);
         }
 
-        private NodeValue[] CreateNodeValueArray(NodeEntryCollection list, List<object> tempResult)
+        private NodeValueRecord[] CreateNodeValueArray(NodeEntryCollection list, List<object> tempResult)
         {
-            var nodeValues = new NodeValue[tempResult.Count];
+            var nodeValues = new NodeValueRecord[tempResult.Count];
             for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
 
             return nodeValues;
         }
 
-        private NodeValue[] CreateNodeValueArray(NodeEntryCollection list, DataValueCollection tempResult)
+        private NodeValueRecord[] CreateNodeValueArray(NodeEntryCollection list, DataValueCollection tempResult)
         {
-            var nodeValues = new NodeValue[tempResult.Count];
+            var nodeValues = new NodeValueRecord[tempResult.Count];
             for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
 
             return nodeValues;
         }
 
-        private NodeValue CreateNodeValue(ValueNodeEntry entry, object tempResult)
+        private NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult)
         {
             if (entry.IsUDT)
             {
@@ -1338,7 +1388,7 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion Entry Read
 
         #region Entry Write
-        public void WriteValue(NodeValue nodeEntry)
+        public void WriteValue(NodeValueRecord nodeEntry)
         {
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
             WriteValue(nodeEntry.NodeEntry.GetNodeId(), nodeEntry.Value);
@@ -1388,7 +1438,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Read
         public object ReadNodeValue(string nodeIdString) => ReadNodeValue(new NodeId(nodeIdString));
-        public object ReadNodeValue(ExpandedNodeId nodeId, Type type = null) => ReadNodeValue((NodeId)nodeId,null);
+        public object ReadNodeValue(ExpandedNodeId nodeId, Type type = null) => ReadNodeValue((NodeId)nodeId, null);
         public object ReadNodeValue(NodeId nodeId, Type type = null) => type == null
             ? session.ReadValue(nodeId) : session.ReadValue(nodeId, type);
 
@@ -1758,7 +1808,7 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 Session.AddSubscription(subscription);
                 subscription.Create();
-                Subscriptions.Add(subscription);
+                subscriptions.Add(subscription);
                 return subscription;
             }
             catch (Exception e)
@@ -1804,7 +1854,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private Subscription GetSubscription(int publishingInterval)
         {
-            var subscription = Subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingInterval);
+            var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingInterval);
             return subscription != null ? subscription : CreateSubscription(publishingInterval);
         }
 
@@ -1913,7 +1963,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public void RemoveMonitoredItem(ValueNodeEntry entry)
         {
-            foreach (var subscription in this.Subscriptions)
+            foreach (var subscription in this.subscriptions)
             {
                 var monitoredItem = subscription.MonitoredItems.FirstOrDefault(o => o.StartNodeId == entry.NodeString);
 
