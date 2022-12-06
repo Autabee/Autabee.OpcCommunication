@@ -1,6 +1,5 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
-using Autabee.Communication.OpcCommunicator.ManagedNode;
 using AutabeeTestFixtures;
 using System;
 using System.Collections;
