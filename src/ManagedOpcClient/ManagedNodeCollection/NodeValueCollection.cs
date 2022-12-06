@@ -8,12 +8,12 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 {
     public class NodeValueCollection : NodeEntryCollection
     {
-        private List<NodeValue> nodeValues = new List<NodeValue>();
+        private List<NodeValueRecord> nodeValues = new List<NodeValueRecord>();
         private List<object> values = new List<object>();
 
         public List<object> Values { get => values; set => values = value; }
 
-        public new NodeValue this[int index]
+        public new NodeValueRecord this[int index]
         {
             get
             {
@@ -23,7 +23,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
             }
         }
 
-        public void Add(NodeValue nodeValue)
+        public void Add(NodeValueRecord nodeValue)
         {
             Add(nodeValue.NodeEntry);
             nodeValues.Add(nodeValue);
@@ -63,7 +63,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
         //                        || node.Type == typeof(TimeSpan);
         //}
 
-        public void AddRange(NodeValue[] nodes)
+        public void AddRange(NodeValueRecord[] nodes)
         {
             foreach (var node in nodes)
             {

@@ -3,7 +3,6 @@ using Opc.Ua.Client;
 using System;
 using System.Linq;
 using System.Reflection;
-using Autabee.Communication.OpcCommunicator;
 
 namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 {
@@ -11,8 +10,10 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
     {
         public NodeEntry(string nodeId) : this(new NodeId(nodeId)) { }
         public NodeEntry(NodeId nodeId)
-        { UnregisteredNodeId = nodeId ?? throw new ArgumentNullException(nameof(nodeId)); }
-        
+        {
+            UnregisteredNodeId = nodeId ?? throw new ArgumentNullException(nameof(nodeId));
+        }
+
         public string NodeString { get => UnregisteredNodeId.ToString(); }
 
         public NodeId UnregisteredNodeId { get; }
@@ -23,7 +24,8 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
         public NodeId GetNodeId() => Registered ? RegisteredNodeId : UnregisteredNodeId;
 
         internal NodeId ConnectedSessionId { get; set; }
-        internal void SessionDisconnected(object sender, EventArgs args) {
+        internal void SessionDisconnected(object sender, EventArgs args)
+        {
             if (sender is Session session && session.SessionId == ConnectedSessionId)
             {
                 ConnectedSessionId = null;

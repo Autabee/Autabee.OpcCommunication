@@ -5,7 +5,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Autabee.Communication.OpcCommunicator;
 
 namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 {

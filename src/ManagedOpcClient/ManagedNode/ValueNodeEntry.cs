@@ -31,6 +31,6 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 
         public ConstructorInfo Constructor { get; private set; }
 
-        public NodeValue CreateRecord(object value) { return new NodeValue(this, value); }
+        public NodeValueRecord CreateRecord(object value) { return new NodeValueRecord(this, value); }
     }
 }
