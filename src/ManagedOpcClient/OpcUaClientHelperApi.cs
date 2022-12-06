@@ -8,6 +8,7 @@ using Opc.Ua.Configuration;
 using Opc.Ua.Security.Certificates;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -182,35 +183,30 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             NodeIdCollection registeredNodes = new NodeIdCollection();
             NodeIdCollection newNodesToRegister = new NodeIdCollection();
-            try
-            {
-                for (int i = 0; i < nodesToRegister.Count; i++)
-                {
-                    if (nodeIdCache.TryGetValue(nodesToRegister[i].ToString(), out NodeId nodeId))
 
-                    {
-                        registeredNodes.Add(nodeId);
-                    }
-                    else
-                    {
-                        registeredNodes.Add(new NodeId("temp"));
-                        newNodesToRegister.Add(nodesToRegister[i]);
-                    }
-                }
-                var newRegister =new Stack<NodeId>( RegisterUnCashed(newNodesToRegister));
-                
-                for (int i = 0; i < registeredNodes.Count; i++)
-                {
-                    if (registeredNodes[i].Identifier.ToString() == "temp")
-                    {
-                        registeredNodes[i] = newRegister.Pop();
-                    }
-                }
-            }
-            catch (Exception ex)
+            for (int i = 0; i < nodesToRegister.Count; i++)
             {
-                throw new Exception("Error registering nodes: " + ex.Message);
+                if (nodeIdCache.TryGetValue(nodesToRegister[i].ToString(), out NodeId nodeId))
+
+                {
+                    registeredNodes.Add(nodeId);
+                }
+                else
+                {
+                    registeredNodes.Add(new NodeId("temp"));
+                    newNodesToRegister.Add(nodesToRegister[i]);
+                }
             }
+            var newRegister = new Stack<NodeId>(RegisterUnCashed(newNodesToRegister));
+
+            for (int i = 0; i < registeredNodes.Count; i++)
+            {
+                if (registeredNodes[i].Identifier.ToString() == "temp")
+                {
+                    registeredNodes[i] = newRegister.Pop();
+                }
+            }
+
             return registeredNodes;
         }
 
@@ -247,10 +243,14 @@ namespace Autabee.Communication.ManagedOpcClient
                 //responce.ServiceResult;
                 return registeredNodes;
             }
-            catch (Exception e)
+            catch (AggregateException ex)
+            {
+                throw;
+            }
+            catch (Exception ex)
             {
                 //handle Exception here
-                throw;
+                throw new Exception("Error registering nodes: " + ex.Message);
             }
         }
 
@@ -274,34 +274,18 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 
         public NodeId RegisterNodeId(NodeId nodeToRegister)
-        {
-            var unregistered = new NodeIdCollection() { nodeToRegister };
-            return RegisterNodeIds(unregistered)[0];
-        }
+         => RegisterNodeIds(new NodeIdCollection() { nodeToRegister })[0];
+
 
         public void UnregisterNodeIds(NodeIdCollection nodesToUnregister)
-        {
-            try
-            {
-                //Register nodes
-                session.UnregisterNodes(null, nodesToUnregister);
-            }
-            catch (Exception e)
-            {
-                //handle Exception here
-                throw e;
-            }
-        }
+         => session.UnregisterNodes(null, nodesToUnregister);
 
         # endregion Registration
 
         #region Discovery
         public ApplicationDescription GetConnectedServer()
-        {
-            if (session == null) return null;
+            => session == null ? null : FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
 
-            return FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
-        }
 
         /// <summary>
         /// Finds Servers based on a discovery url

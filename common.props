@@ -4,7 +4,7 @@
     <RepositoryUrl>https://github.com/Autabee/Autabee.OpcCommunication</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <PackageIcon>autabee.png</PackageIcon>
     
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
