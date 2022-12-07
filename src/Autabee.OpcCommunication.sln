@@ -13,6 +13,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcSharper", "OpcSh
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcSharperTests", "OpcSharperTests\Autabee.OpcSharperTests.csproj", "{B4A1CFB7-A5F8-4FB4-8856-FF486EB3C1BF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{47FB823C-3860-4BD6-9ED0-65E0CB3A9468}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8F0A1097-8EB1-4770-B93D-D3CC8A433DD1} = {47FB823C-3860-4BD6-9ED0-65E0CB3A9468}
+		{C98F6A75-8977-4961-8E7D-087EE9A9EFEB} = {47FB823C-3860-4BD6-9ED0-65E0CB3A9468}
+		{B4A1CFB7-A5F8-4FB4-8856-FF486EB3C1BF} = {47FB823C-3860-4BD6-9ED0-65E0CB3A9468}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {62914C99-63E0-42D9-8ADA-21CE99B730B3}

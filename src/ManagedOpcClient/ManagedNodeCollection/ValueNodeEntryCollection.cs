@@ -8,20 +8,26 @@ using System.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 {
-    public class NodeEntryCollection : ICollection
+    public class ValueNodeEntryCollection : IEnumerable
     {
         protected List<ValueNodeEntry> nodeEntries = new List<ValueNodeEntry>();
         protected NodeIdCollection nodeIds = new NodeIdCollection();
-        protected NodeIdCollection optimizedIds = new NodeIdCollection();
+        protected NodeIdCollection registeredNodeIds = new NodeIdCollection();
         protected List<Type> types = new List<Type>();
 
-        public ValueNodeEntry this[int index] { get => nodeEntries[index]; }
+        public ValueNodeEntry this[int i]
+        {
+            get => nodeEntries[i];
+            set
+            {
+                nodeIds[i] = value.UnregisteredNodeId;
+                registeredNodeIds[i] = value.RegisteredNodeId;
+                nodeEntries[i] = value;
+                types[i] = value.Type;
+            }
+        }
 
         public int Count => nodeEntries.Count;
-
-        public bool IsSynchronized { get; }
-
-        public object SyncRoot { get; }
 
         public void Add(ValueNodeEntry node)
         {
@@ -32,7 +38,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 
             if (node.RegisteredNodeId != null)
             {
-                optimizedIds.Add(node.RegisteredNodeId);
+                registeredNodeIds.Add(node.RegisteredNodeId);
             }
         }
 
@@ -50,12 +56,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 
         private void ValidateType(Type type)
         {
-            if (type.GetInterface("IEncodeable") != null)
-            {
-                types.Add(null);
-            }
-            else if (IsAcceptedType(type)
-                )
+            if (type.GetInterface("IEncodeable") != null || IsAcceptedType(type))
             {
                 types.Add(type);
             }
@@ -72,46 +73,45 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
         private static bool IsAcceptedType(Type type)
         {
             return type.IsPrimitive
-                                || type == typeof(string)
-                                || type == typeof(Guid)
-                                || type == typeof(decimal)
-                                || type == typeof(DateTime)
-                                || type == typeof(TimeSpan)
-                                || type == typeof(object);
+                || type == typeof(string)
+                || type == typeof(Guid)
+                || type == typeof(decimal)
+                || type == typeof(DateTime)
+                || type == typeof(TimeSpan)
+                || type == typeof(object);
         }
 
         public void AddRange(ValueNodeEntry[] nodes)
-        {
-            foreach (var node in nodes)
-            {
-                Add(node);
-            }
-        }
+            =>  nodes.ToList().ForEach(Add);
 
         public List<ValueNodeEntry> NodeEntries => nodeEntries;
 
         public NodeIdCollection NodeIds => nodeIds;
 
         public List<Type> Types => types;
-        public NodeIdCollection PreparedNodes
+        public NodeIdCollection RegisteredNodeIds
         {
-            get { return optimizedIds; }
+            get { return registeredNodeIds; }
             set
             {
-                optimizedIds = value;
-                //for (int i = 0; i < value.Count; i++)
-                //{
-                //    nodeEntries[i].RegisterdNodeId = value[i];
-                //}
+                if (value.Count != nodeIds.Count)
+                {
+                    throw new Exception("NodeIdCollection size mis match");
+                }
+                for (int i = 0; i < value.Count; i++)
+                {
+                    nodeEntries[i].RegisteredNodeId = value[i];
+                }
+                registeredNodeIds = value;
             }
         }
 
 
         public NodeIdCollection GetNodeIds()
         {
-            if (optimizedIds.Count == nodeEntries.Count)
+            if (registeredNodeIds.Count == nodeEntries.Count)
             {
-                return optimizedIds;
+                return registeredNodeIds;
             }
             else
             {
@@ -121,10 +121,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 
         public void CopyTo(Array array, int index)
         {
-            for (int i = 0; i < nodeEntries.Count; i++)
-            {
-                array.SetValue(nodeEntries[i], i);
-            }
+            array.SetValue(nodeEntries[index], index);
         }
 
         public IEnumerator GetEnumerator()
@@ -133,7 +130,8 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
         }
 
         internal NodeId ConnectedSessionId { get; set; }
-        internal void SessionDisconnected(object sender, EventArgs args) {
+        internal void SessionDisconnected(object sender, EventArgs args)
+        {
             if (sender is Session session && session.SessionId == ConnectedSessionId)
             {
                 ConnectedSessionId = null;
@@ -141,9 +139,8 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 {
                     nodeEntries[i].SessionDisconnected(sender, args);
                 }
-                optimizedIds.Clear();
+                registeredNodeIds.Clear();
             }
-            
         }
         internal void NewSessionEstablished(object sender, EventArgs args)
         {

@@ -9,13 +9,13 @@ using Xunit.Abstractions;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 {
-    public class OpcBoilerSampleTest : IClassFixture<OpcBoilerSampleFixture>
+    public class OpcBoilerSampleTest : IClassFixture<OpcUaBoilerSampleFixture>
     {
         private readonly OpcUaClientHelperApi communicator;
         private readonly bool skipServerNotFound;
         private readonly IAutabeeLogger logger;
 
-        public OpcBoilerSampleTest(OpcBoilerSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
+        public OpcBoilerSampleTest(OpcUaBoilerSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
@@ -23,11 +23,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
         }
 
         [SkippableFact]
-        public void ConnectWithTestServer()
+        public void BrowseRoot()
         {
             Skip.If(skipServerNotFound, "Server not Found");
 
-            logger.Information("Connected with Sample Alarm Server");
             var root = communicator.BrowseRoot();
             foreach (var item in root)
             {
@@ -45,17 +44,6 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             {
                 logger.Information(item);
             }
-        }
-
-
-        [SkippableFact]
-        public async void ReconnectRegisteredNodes()
-        {
-            Skip.If(skipServerNotFound, "Server not Found");
-
-            var communicator2 = new OpcUaClientHelperApi("Autabee","scoutclient", "autabeeopcscout", logger);
-            var endpoints = OpcUaClientHelperApi.GetEndpoints("opc.tcp://localhost:62567/Quickstarts/BoilerServer");
-            await communicator2.Connect(endpoints.First());
         }
     }
 }

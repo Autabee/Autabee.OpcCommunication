@@ -27,7 +27,6 @@ jobs:
       uses: autabee/publish-nuget-neo@v1.0.2.3-beta
       with:
           NUGET_KEY: ${{secrets.NUGET_KEY}}
-          VERSION_FILE_PATH: common.props
           TAG_COMMIT: true
           INCLUDE_SYMBOLS: true
           REBUILD_PROJECT: false

@@ -157,9 +157,9 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Registration
 
-        public void RegisterNodeIds(NodeEntryCollection preparedCollection, bool AutoReregister = true)
+        public void RegisterNodeIds(ValueNodeEntryCollection preparedCollection, bool AutoReregister = true)
         {
-            var nodelist = preparedCollection.PreparedNodes;
+            var nodelist = preparedCollection.RegisteredNodeIds;
             if (nodelist.Count != 0) { UnregisterNodeIds(nodelist); }
             nodelist.Clear();
 
@@ -1282,7 +1282,7 @@ namespace Autabee.Communication.ManagedOpcClient
             return CreateNodeValue(nodeEntry, body);
         }
 
-        public NodeValueRecord[] ReadValues(NodeEntryCollection list)
+        public NodeValueRecord[] ReadValues(ValueNodeEntryCollection list)
         {
             if (list == null) throw new ArgumentNullException(nameof(list));
             if (list.Count == 0) return new NodeValueRecord[0];
@@ -1290,7 +1290,7 @@ namespace Autabee.Communication.ManagedOpcClient
             return CreateNodeValueArray(list, tempResult);
         }
 
-        public async Task<NodeValueRecord[]> ReadValuesAsync(NodeEntryCollection list)
+        public async Task<NodeValueRecord[]> ReadValuesAsync(ValueNodeEntryCollection list)
         {
             if (list == null) throw new ArgumentNullException(nameof(list));
             if (list.Count == 0) return new NodeValueRecord[0];
@@ -1307,23 +1307,66 @@ namespace Autabee.Communication.ManagedOpcClient
             return await AsyncReadValues(list, types);
         }
 
-        private NodeValueRecord[] CreateNodeValueArray(NodeEntryCollection list, List<object> tempResult)
+        public NodeValueRecord[] CreateNodeValueArray(ValueNodeEntryCollection list, List<object> tempResult)
         {
-            var nodeValues = new NodeValueRecord[tempResult.Count];
-            for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
-
-            return nodeValues;
+            try
+            {
+                var nodeValues = new NodeValueRecord[tempResult.Count];
+                for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
+                return nodeValues;
+            }
+            catch (Exception _)
+            {
+                throw AggrigateAllRecordCreationErrors(list, tempResult);
+            }
+        }
+        public AggregateException AggrigateAllRecordCreationErrors(ValueNodeEntryCollection list, List<object> tempResult)
+        {
+            List<Exception> exps = new List<Exception>();
+            for (int i = 0; i < tempResult.Count; i++)
+            {
+                try
+                {
+                    CreateNodeValue(list[i], tempResult[i]);
+                }
+                catch (Exception ex)
+                {
+                    exps.Add(ex);
+                }
+            }
+            return new AggregateException(exps);
+        }
+        public AggregateException AggrigateAllRecordCreationErrors(ValueNodeEntryCollection list, DataValueCollection tempResult)
+        {
+            List<Exception> exps = new List<Exception>();
+            for (int i = 0; i < tempResult.Count; i++)
+            {
+                try
+                {
+                    CreateNodeValue(list[i], tempResult[i]);
+                }
+                catch (Exception ex)
+                {
+                    exps.Add(ex);
+                }
+            }
+            return new AggregateException(exps);
+        }
+        public NodeValueRecord[] CreateNodeValueArray(ValueNodeEntryCollection list, DataValueCollection tempResult)
+        {
+            try
+            {
+                var nodeValues = new NodeValueRecord[tempResult.Count];
+                for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
+                return nodeValues;
+            }
+            catch (Exception _)
+            {
+                throw AggrigateAllRecordCreationErrors(list, tempResult);
+            }
         }
 
-        private NodeValueRecord[] CreateNodeValueArray(NodeEntryCollection list, DataValueCollection tempResult)
-        {
-            var nodeValues = new NodeValueRecord[tempResult.Count];
-            for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
-
-            return nodeValues;
-        }
-
-        private NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult)
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, Opc.Ua.DataValue tempResult)
         {
             if (entry.IsUDT)
             {
@@ -1331,13 +1374,29 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     return entry.CreateRecord(ConstructEncodable(entry, (byte[])((ExtensionObject)dvValue.Value).Body));
                 }
-                else if (tempResult is ExtensionObject eoValue)
-                {
-                    return entry.CreateRecord(ConstructEncodable(entry, (byte[])eoValue.Body));
-                }
                 throw new Exception("Unknown type");
             }
+            if (tempResult is Opc.Ua.DataValue dvValue1)
+            {
+                return entry.CreateRecord(dvValue1.Value);
+            }
             else return entry.CreateRecord(tempResult);
+        }
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, ExtensionObject tempResult)
+        {
+            return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body));
+        }
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult)
+        {
+            if (tempResult is Opc.Ua.DataValue dvValue)
+            {
+                return CreateNodeValue(entry, dvValue);
+            }
+            else if (tempResult is ExtensionObject eoValue)
+            {
+                return CreateNodeValue(entry, eoValue);
+            }
+            return entry.CreateRecord(tempResult);
         }
 
         private async Task<List<object>> AsyncReadValues(NodeIdCollection nodeCollection, List<Type> types)
@@ -1381,7 +1440,12 @@ namespace Autabee.Communication.ManagedOpcClient
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
             WriteValue(nodeEntry.NodeEntry.GetNodeId(), nodeEntry.Value);
         }
-
+        public void WriteValue(NodeEntry nodeEntry, object value)
+        {
+            WriteValueCollection writeCollection = new WriteValueCollection();
+            writeCollection.Add(CreateWriteValue(nodeEntry.GetNodeId(), value));
+            WriteValues(writeCollection);
+        }
         public void WriteValue(NodeId nodeId, object value)
         {
             WriteValueCollection writeCollection = new WriteValueCollection();
@@ -1389,14 +1453,14 @@ namespace Autabee.Communication.ManagedOpcClient
             WriteValues(writeCollection);
         }
 
-        public void WriteValues(NodeValueCollection list)
+        public void WriteValues(NodeValueRecordCollection list)
         {
             if (list == null) throw new ArgumentNullException(nameof(list));
             if (list.Count == 0) return;
             WriteValues(CreateWriteCollection(list));
         }
 
-        public async Task WriteValuesAsync(NodeValueCollection list, CancellationToken ct = default)
+        public async Task WriteValuesAsync(NodeValueRecordCollection list, CancellationToken ct = default)
         {
             if (list == null) throw new ArgumentNullException(nameof(list));
             if (list.Count == 0) return;
@@ -1412,16 +1476,19 @@ namespace Autabee.Communication.ManagedOpcClient
                 AttributeId = Attributes.Value
             };
         }
-
-        private static WriteValueCollection CreateWriteCollection(NodeValueCollection list)
+        private static WriteValue CreateWriteValue(NodeValueRecord record)
         {
-            NodeIdCollection nodeCollection = list.GetNodeIds();
-            var collection = new WriteValueCollection();
-
-            for (int i = 0; i < list.Count; i++) { collection.Add(CreateWriteValue(nodeCollection[i], list.Values[i])); }
-
-            return collection;
+            return new WriteValue()
+            {
+                NodeId = record.NodeEntry.GetNodeId(),
+                Value = new DataValue(new Variant(record.Value)),
+                AttributeId = Attributes.Value
+            };
         }
+
+        private static WriteValueCollection CreateWriteCollection(NodeValueRecordCollection list)
+            => new WriteValueCollection(list.nodeValueRecords.Select(o => CreateWriteValue(o)));
+
         #endregion Entry Read
 
         #region Read
@@ -1494,7 +1561,7 @@ namespace Autabee.Communication.ManagedOpcClient
         public T ReadStructUdt<T>(string nodeIdString) where T : IEncodeable => ReadStructUdt<T>(
             new NodeId(nodeIdString));
 
-        public T ReadStructUdt<T>(ValueNodeEntry nodeId) where T : IEncodeable => (T)ReadValues(new NodeEntryCollection() { nodeId })[0].Value;
+        public T ReadStructUdt<T>(ValueNodeEntry nodeId) where T : IEncodeable => (T)ReadValues(new ValueNodeEntryCollection() { nodeId })[0].Value;
 
         public T ReadStructUdt<T>(NodeId nodeId) where T : IEncodeable
         {
@@ -1716,13 +1783,13 @@ namespace Autabee.Communication.ManagedOpcClient
            new NodeId(methodNodeString),
            inputArguments);
 
-        public IList<object> CallMethod(NodeEntry objectEntry, MethodEntry methodEntry, object[] inputArguments)
+        public IList<object> CallMethod(NodeEntry objectEntry, MethodNodeEntry methodEntry, object[] inputArguments)
             => CallMethod(
             objectEntry.GetNodeId(),
             methodEntry.GetNodeId(),
             inputArguments);
 
-        public IList<object> CallMethods(IEnumerable<(NodeEntry, MethodEntry, object[])> data)
+        public IList<object> CallMethods(IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
         {
             var methodRequests = new CallMethodRequestCollection();
             methodRequests.AddRange(
@@ -1835,7 +1902,7 @@ namespace Autabee.Communication.ManagedOpcClient
             nodeEntry,
             handler);
 
-        public void AddMonitoredItems(int publishingInterval, NodeEntryCollection nodeEntrys)
+        public void AddMonitoredItems(int publishingInterval, ValueNodeEntryCollection nodeEntrys)
             => AddMonitoredItems(
                 GetSubscription(publishingInterval),
                 nodeEntrys);
@@ -1846,7 +1913,7 @@ namespace Autabee.Communication.ManagedOpcClient
             return subscription != null ? subscription : CreateSubscription(publishingInterval);
         }
 
-        public void AddMonitoredItems(Subscription subscription, NodeEntryCollection nodeEntrys)
+        public void AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
         {
             IEnumerable<MonitoredItem> items = nodeEntrys.NodeEntries.Select(o => CreateMonitoredItem(o));
             try
@@ -1970,7 +2037,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        public void RemoveMonitoredItems(NodeEntryCollection entrys)
+        public void RemoveMonitoredItems(ValueNodeEntryCollection entrys)
         {
             foreach (var entry in entrys.NodeEntries) RemoveMonitoredItem(entry);
         }
@@ -2006,13 +2073,13 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (ServiceResultException se)
             {
                 HandleServiceResultException(se);
-                logger?.Error("Failed reading values", se, null);
+                logger?.Error("Failed executing task", se, null);
                 throw;
             }
             catch (Exception e)
             {
                 if (e is ServiceResultException se) HandleServiceResultException(se);
-                logger?.Error("Failed reading values", e, null);
+                logger?.Error("Failed executing task", e, null);
                 throw;
             }
         }

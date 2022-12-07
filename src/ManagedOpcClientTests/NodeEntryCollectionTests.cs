@@ -43,14 +43,14 @@ namespace Autabee.Communication.OpcCommunicator.Tests
         [ClassData(typeof(NodeEntryGenerator))]
         public void AddTest(ValueNodeEntry node)
         {
-            NodeEntryCollection collection = new NodeEntryCollection();
+            ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
             collection.Add(node);
         }
 
         [Fact()]
         public void AddFailTest()
         {
-            NodeEntryCollection collection = new NodeEntryCollection();
+            ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
             Assert.Throws<Exception>(delegate { collection.Add(new ValueNodeEntry<TestUser>("i=1")); });
         }
     }

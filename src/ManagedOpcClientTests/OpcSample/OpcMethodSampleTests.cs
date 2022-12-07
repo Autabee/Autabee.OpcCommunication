@@ -12,13 +12,13 @@ using Xunit.Sdk;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 {
-    public class OpcMethodSampleTests : IClassFixture<OpcMethodSampleFixture>
+    public class OpcMethodSampleTests : IClassFixture<OpcUaMethodSampleFixture>
     {
         private readonly OpcUaClientHelperApi communicator;
         private readonly bool skipServerNotFound;
         private readonly IAutabeeLogger logger;
 
-        public OpcMethodSampleTests(OpcMethodSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
+        public OpcMethodSampleTests(OpcUaMethodSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
@@ -86,7 +86,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             var node2 = communicator.TranslateBrowsePathsToNodeId(ObjectIds.ObjectsFolder, "2:My Process/2:Start"
                 //, new string[1]{ "http://opcfoundation.org/Quickstarts/Methods" }
                 );
-            Assert.Equal(node2?.ToString(), "ns=2;i=3");
+            Assert.Equal("ns=2;i=3", node2?.ToString());
 
             //communicator.WellKnownNameSpaces.Append("http://opcfoundation.org/Quickstarts/Methods");
             //node2 = communicator.TranslateBrowsePathsToNodeId(ObjectIds.ObjectsFolder, 
@@ -115,15 +115,15 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                 );
 
 
-            List<(NodeEntry, MethodEntry, object[])> values = new List<(NodeEntry, MethodEntry, object[])>();
+            List<(NodeEntry, MethodNodeEntry, object[])> values = new List<(NodeEntry, MethodNodeEntry, object[])>();
             nodes = communicator.RegisterNodeIds(nodes);
             var argument = communicator.GetMethodArguments(nodes[1]);
 
             
 
-            values.Add(new ValueTuple<NodeEntry, MethodEntry, object[]>(
+            values.Add(new ValueTuple<NodeEntry, MethodNodeEntry, object[]>(
                  new NodeEntry(nodes[0]),
-                 new MethodEntry(nodes[1], argument),
+                 new MethodNodeEntry(nodes[1], argument),
                  new object[2]
                  {
                     (UInt32) 50,
@@ -131,27 +131,27 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                  })
             );
 
-            values.Add(new ValueTuple<NodeEntry, MethodEntry, object[]>(
+            values.Add(new ValueTuple<NodeEntry, MethodNodeEntry, object[]>(
                  new NodeEntry(nodes[0]),
-                 new MethodEntry(nodes[1], argument),
+                 new MethodNodeEntry(nodes[1], argument),
                  new object[1]
                  {
                     (UInt32) 2
                  })
             );
 
-            values.Add(new ValueTuple<NodeEntry, MethodEntry, object[]>(
+            values.Add(new ValueTuple<NodeEntry, MethodNodeEntry, object[]>(
                  new NodeEntry(nodes[0]),
-                 new MethodEntry(nodes[1], argument),
+                 new MethodNodeEntry(nodes[1], argument),
                  new object[2]
                  {
                     (int) 2,
                     (UInt32) 100
                  })
             );
-            values.Add(new ValueTuple<NodeEntry, MethodEntry, object[]>(
+            values.Add(new ValueTuple<NodeEntry, MethodNodeEntry, object[]>(
                  new NodeEntry(nodes[0]),
-                 new MethodEntry(nodes[1], argument),
+                 new MethodNodeEntry(nodes[1], argument),
                  new object[3]
                  {
                     (int) 2,

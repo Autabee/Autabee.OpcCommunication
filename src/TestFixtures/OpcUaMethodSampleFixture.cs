@@ -1,11 +1,10 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
-using Microsoft.Extensions.Configuration;
 using Opc.Ua;
 using System;
 
 namespace AutabeeTestFixtures
 {
-    public class OpcBoilerSampleFixture : IDisposable
+    public class OpcUaMethodSampleFixture : IDisposable
     {
         protected readonly ApplicationDescription server;
         public bool SkipServerNotFound { get; private set; }
@@ -14,11 +13,11 @@ namespace AutabeeTestFixtures
         //private readonly bool UseAnonymous = false;
         protected readonly EndpointDescriptionCollection endpoints;
 
-        protected string endpointString = "opc.tcp://localhost:62567/Quickstarts/BoilerServer";
+        protected string endpointString = "opc.tcp://localhost:62557/Quickstarts/MethodsServer";
         protected TestUser plcUser;
 
-        public OpcBoilerSampleFixture()
-        { 
+        public OpcUaMethodSampleFixture()
+        {
             InitializeDefaultCommunicator();
         }
 
@@ -28,7 +27,7 @@ namespace AutabeeTestFixtures
             {
                 try
                 {
-                    Communicator = new OpcUaClientHelperApi("Autabee", "xUnitApiTester", "Autabee.Tester");
+                    Communicator = new OpcUaClientHelperApi("Autabee", "UnitX.ApiTester", "Autabee.Tester");
                     var task = Communicator.Connect(endpointString, userIdentity: new UserIdentity());
                     task.Wait(10000);
                     SkipServerNotFound = task.IsCompleted && !Communicator.Connected;
