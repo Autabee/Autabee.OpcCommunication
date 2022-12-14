@@ -7,6 +7,7 @@ using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
 using System;
 using System.Linq;
+using System.Xml.XPath;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -30,18 +31,18 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
         {
             Skip.If(skipServerNotFound, "Server not Found");
 
-            if (!(communicator.ReadNodeValue(new ValueNodeEntry<double>("ns=2;s=1:Pipe1001?Online/ValuePrecision")) is NodeValueRecord<double> _))
+            if (!(communicator.ReadValue(new ValueNodeEntry<double>("ns=2;s=1:Pipe1001?Online/ValuePrecision")) is NodeValueRecord<double> _))
             {
                 Assert.Fail("Return type incorrect at ns=2;s=1:Pipe1001?Online/ValuePrecision");
             }
 
             var entry = new ValueNodeEntry<string>("ns=2;s=1:Pipe1001?Online/Definition");
-            if (communicator.ReadNodeValue(entry) is NodeValueRecord<string> result1)
+            if (communicator.ReadValue(entry) is NodeValueRecord<string> result1)
             {
                 Assert.Null(result1.Value);
             }
 
-            if (!(communicator.ReadNodeValue(new ValueNodeEntry<float>("ns=2;s=1:FC1001?SetPoint")) is NodeValueRecord<float> _))
+            if (!(communicator.ReadValue(new ValueNodeEntry<float>("ns=2;s=1:FC1001?SetPoint")) is NodeValueRecord<float> _))
             {
                 Assert.Fail("Return type incorrect at ns=2;s=1:FC1001?Setpoint");
             }
@@ -67,11 +68,11 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Skip.If(skipServerNotFound, "Server not Found");
 
             Assert.Throws<ArgumentException>( 
-                () => communicator.ReadNodeValue(new ValueNodeEntry<string>("ns=2;s=1:Pipe1001?Online/ValuePrecision")));
+                () => communicator.ReadValue(new ValueNodeEntry<string>("ns=2;s=1:Pipe1001?Online/ValuePrecision")));
             Assert.Throws<ArgumentException>(
-                () => communicator.ReadNodeValue(new ValueNodeEntry<double>("ns=2;s=1:Pipe1001?Online/Definition")));
+                () => communicator.ReadValue(new ValueNodeEntry<double>("ns=2;s=1:Pipe1001?Online/Definition")));
             Assert.Throws<ArgumentException>(
-                () => communicator.ReadNodeValue(new ValueNodeEntry<uint>("ns=2;s=1:FC1001?SetPoint")));
+                () => communicator.ReadValue(new ValueNodeEntry<uint>("ns=2;s=1:FC1001?SetPoint")));
         }
 
         [SkippableFact]
@@ -89,5 +90,21 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             Assert.Throws<AggregateException>(() => communicator.ReadValues(collection));
         }
+
+        [SkippableFact]
+        public void ReadNodeValueRange()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var temp = communicator.ReadValues(new ValueNodeEntryCollection(){
+                new ValueNodeEntry<object>("ns=2;s=1:Pipe1001?Measurement/EURange"),
+                new ValueNodeEntry<object>("ns=2;s=1:Pipe1001?Measurement/EngineeringUnits")
+            });
+
+            Assert.True(((Opc.Ua.ExtensionObject)temp[0].Value).Body is Opc.Ua.Range);
+            Assert.True(((Opc.Ua.ExtensionObject)temp[1].Value).Body is Opc.Ua.EUInformation);
+        }
+
+        
     }
 }

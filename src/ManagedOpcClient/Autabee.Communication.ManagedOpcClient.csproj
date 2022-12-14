@@ -6,7 +6,7 @@
 		<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
 		<Description>Standard logging interface for autabee packages</Description>
 		<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
-		<Version>0.1.5</Version>
+		<Version>0.1.6</Version>
     	<PackageTags>opcua;client;opcua-client</PackageTags>
 	</PropertyGroup>
 	<ItemGroup>

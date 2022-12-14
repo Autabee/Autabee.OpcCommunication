@@ -1275,7 +1275,7 @@ namespace Autabee.Communication.ManagedOpcClient
         #region Entry Read
 
 
-        public NodeValueRecord ReadNodeValue(ValueNodeEntry nodeEntry)
+        public NodeValueRecord ReadValue(ValueNodeEntry nodeEntry)
         {
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
             var body = ReadNodeValue(nodeEntry.GetNodeId());
