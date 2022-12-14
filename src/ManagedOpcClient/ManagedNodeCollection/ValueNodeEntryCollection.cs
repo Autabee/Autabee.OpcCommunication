@@ -149,5 +149,38 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 communicator.RegisterNodeIds(this);
             }
         }
+        public NodeValueRecordCollection CreateRecords(IEnumerable<object> values)
+        {
+            if (values.Count() != nodeEntries.Count)
+            {
+                throw new Exception("Values count does not match nodeEntries count");
+            }
+            try
+            {
+                var records = new NodeValueRecordCollection();
+                for (int i = 0; i < Count; i++)
+                {
+                    records.Add(this[i].CreateRecord(values.ElementAt(i)));
+                }
+
+                return records;
+            }
+            catch (Exception)
+            {
+                List<Exception> exps = new List<Exception>();
+                for (int i = 0; i < Count; i++)
+                {
+                    try
+                    {
+                        this[i].CreateRecord(values.ElementAt(i));
+                    }
+                    catch (Exception ex)
+                    {
+                        exps.Add(ex);
+                    }
+                }
+                throw new AggregateException(exps);
+            }
+        }
     }
 }
