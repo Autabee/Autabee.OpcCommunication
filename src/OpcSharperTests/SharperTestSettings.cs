@@ -1,18 +1,26 @@
 ﻿using Autabee.OpcToClass;
 using Opc.Ua;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Tests
 {
     public class SharperTestSettings
     {
-        public GeneratorSettings GeneratorSettings { get; set; }
-        public string server { get; set; }
-        public string username { get; set; }
-        public string password { get; set; }
+        public GeneratorSettings GeneratorSettings;
+        public string server;
+        public string username;
+        public string password;
+        public string[] nodes;
 
-        public string[] nodes { get; set; }
+        public SharperTestSettings()
+        {
+            server = string.Empty;
+            username = string.Empty;
+            password = string.Empty;
+            nodes = new string[0];
+        }
 
         public UserIdentity GetUserIdentity()
         {

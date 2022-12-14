@@ -6,11 +6,12 @@ using Opc.Ua;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Xml;
 
 public static class OpcSharper
 {
-    public static void GenerateProject(OpcUaClientHelperApi service, NodeIdCollection collection, GeneratorSettings settings, IAutabeeLogger logger = null)
+    public static void GenerateProject(OpcUaClientHelperApi service, GeneratorSettings settings, IAutabeeLogger logger = null)
     {
         List<Exception> exceptions = new List<Exception>();
         if (settings == null)
@@ -22,10 +23,11 @@ public static class OpcSharper
         }
         if (service != null && service.Connected == false)
             exceptions.Add(new InvalidOperationException("Client is not connected"));
+        if (settings.nodes == null)
+            exceptions.Add(new ArgumentNullException(nameof(settings.nodes)));
         if (exceptions.Count > 0)
             throw new AggregateException(exceptions);
-        if (collection == null)
-            collection = new NodeIdCollection();
+       
 
         logger?.Information("Generate Project");
         OpcToCSharpGenerator.GenerateCsharpProject(settings);
@@ -48,16 +50,21 @@ public static class OpcSharper
         logger?.Information("Type Schema updated");
         ReferenceDescriptionCollection refdesc = new ReferenceDescriptionCollection();
         ReferenceDescriptionCollection found = new ReferenceDescriptionCollection();
-        foreach (var item in collection)
+        NodeCollection foundTypes = new NodeCollection();
+        foreach (var item in settings.nodes)
             refdesc.AddRange(service.BrowseNode(item));
         found.AddRange(refdesc);
-
+        
 
         while (refdesc.Count > 1)
         {
             var refdisc = new ReferenceDescriptionCollection();
+
             foreach (var item in refdesc)
+            {
                 refdisc.AddRange(service.BrowseNode(item));
+            }
+
             refdesc.Clear();
             refdesc.AddRange(refdisc);
             found.AddRange(refdesc);
@@ -65,8 +72,22 @@ public static class OpcSharper
             logger?.Information(string.Join(Environment.NewLine, refdesc.Select(o => o.NodeId.ToString())));
         }
         found.OrderBy(o => o);
+#if NET6_0_OR_GREATER
+        foreach (var chunk in found.ToList().Chunk(50))
+        {
+            var nodes = service.ReadNodes(new ReferenceDescriptionCollection(chunk));
+            foundTypes.AddRange(nodes);
+        }
+#else
+        foreach (var chunk in found)
+        {
+            var nodes = service.ReadNode(chunk);
+            foundTypes.Add(nodes);
+        }
+#endif
+        
         OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
-        OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(found, xmls, settings);
+        OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(found, foundTypes, xmls, settings);
     }
 }
 

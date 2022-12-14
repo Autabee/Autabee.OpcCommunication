@@ -1,0 +1,12 @@
+{
+  "GeneratorSettings": {
+    "baseNamespace": "DataAccessNodes",
+    "baselocation": ".\\Generated\\DataAccess\\"
+  },
+  "username": null,
+  "password": null,
+  "server": "opc.tcp://localhost:62548/Quickstarts/DataAccessServer",
+  "nodes": [
+    "ns=2;s=0:Factory"
+  ]
+}

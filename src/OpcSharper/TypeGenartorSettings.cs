@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Opc.Ua;
+using System;
 using System.Collections.Generic;
 using System.Xml;
 
@@ -8,10 +9,13 @@ namespace Autabee.OpcToClass
     {
         public string baseNamespace;
         public string baseLocation;
+        public NodeIdCollection nodes = new NodeIdCollection();
+        public Dictionary<object, string> typeOverrides = new Dictionary<object, string>();
         /// <summary>
         /// Namespace Prefix
         /// </summary>
         public string nsPrefix = "ns_";
+
         public GeneratorSettings(string baseLocation, string baseNamespace)
         {
             List<Exception> exceptions = new List<Exception>();

@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -57,6 +59,62 @@ namespace Autabee.OpcToClass
         {
             return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value, nsPrefix);
         }
+        static string GetCorrectedTypeName(object value, string nsPrefix)
+        {
+            switch (value)
+            {
+                case uint numeric:
+                    return GetCorrectedTypeName(numeric, nsPrefix);
+                case string str:
+                    return GetCorrectedTypeName(str, nsPrefix);
+                default:
+                    return $"Unknown<{value}>";
+            }
+        }
+
+        static string GetCorrectedTypeName(uint value, string nsPrefix)
+        {
+
+            return value switch
+            {
+                DataTypes.Boolean => "bool",
+                DataTypes.Byte => "byte",
+                DataTypes.SByte => "sbyte",
+                DataTypes.Int32 => "int",
+                DataTypes.UInt32 => "uint",
+                DataTypes.Float => "float",
+                DataTypes.Double => "double",
+                DataTypes.String => "string",
+                DataTypes.Int16 => "short",
+                DataTypes.UInt16 => "ushort",
+                DataTypes.Int64 => "long",
+                DataTypes.UInt64 => "ulong",
+                DataTypes.ByteString => "byte[]",
+                DataTypes.DateTime => "DateTime",
+                DataTypes.Guid => "Guid",
+                DataTypes.LocalizedText => "LocalizedText",
+                DataTypes.QualifiedName => "QualifiedName",
+                DataTypes.NodeId => "NodeId",
+                DataTypes.ExpandedNodeId => "ExpandedNodeId",
+                DataTypes.StatusCode => "StatusCode",
+                DataTypes.XmlElement => "XmlElement",
+                DataTypes.DataValue => "DataValue",
+                _ => GetCorrectedTypeNameFromDataTypes(value)
+            };
+        }
+
+        static string GetCorrectedTypeNameFromDataTypes(uint value)
+        {
+            var result = typeof(DataTypes).GetFields().Where(f => f.FieldType == typeof(uint)).ToList().Where(f => ((uint)f.GetValue(null) == value));
+
+            if (result.Count() == 1)
+                return "Opc.Ua." + result.First().Name;
+
+
+            return $"Unknown<{value}>";
+
+        }
+
         static string GetCorrectedTypeName(string value, string nsPrefix)
         {
             if (value.Contains("opc:"))
@@ -88,35 +146,6 @@ namespace Autabee.OpcToClass
                     case "opc:DataValue": return "DataValue";
                 }
             }
-            else if (uint.TryParse(value, out var result))
-            {
-                switch (result)
-                {
-                    case 63: return "bool";
-                    case DataTypes.Boolean: return "bool";
-                    case DataTypes.Byte: return "byte";
-                    case DataTypes.Int32: return "int";
-                    case DataTypes.UInt32: return "uint";
-                    case DataTypes.Float: return "float";
-                    case DataTypes.Double: return "double";
-                    case DataTypes.String: return "string";
-                    case DataTypes.Int16: return "short";
-                    case DataTypes.UInt16: return "ushort";
-                    case DataTypes.Int64: return "long";
-                    case DataTypes.UInt64: return "ulong";
-                    case DataTypes.ByteString: return "byte[]";
-                    case DataTypes.DateTime: return "DateTime";
-                    case DataTypes.Guid: return "Guid";
-                    case DataTypes.LocalizedText: return "LocalizedText";
-                    case DataTypes.QualifiedName: return "QualifiedName";
-                    case DataTypes.NodeId: return "NodeId";
-                    case DataTypes.ExpandedNodeId: return "ExpandedNodeId";
-                    case DataTypes.StatusCode: return "StatusCode";
-                    case DataTypes.XmlElement: return "XmlElement";
-                    case DataTypes.DataValue: return "DataValue";
-                }
-            }
-
             else
             {
                 var temp = value
@@ -137,7 +166,7 @@ namespace Autabee.OpcToClass
             }
             Console.WriteLine("Did not find typename: " + value);
 
-            return "unkown";
+            return $"Unknown<{value}>";
         }
 
 
@@ -184,7 +213,7 @@ namespace Autabee.OpcToClass
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include=""Autabee.Communication.ManagedOpcClient"" Version=""0.1.0"" />
+	  <PackageReference Include=""Autabee.Communication.ManagedOpcClient"" Version=""0.*"" />
 	</ItemGroup>
 
 </Project>";
@@ -297,21 +326,23 @@ namespace Autabee.OpcToClass
 
         static public void GenerateAddressSpace(ReferenceDescriptionCollection referenceNodes, GeneratorSettings settings)
         {
-            FileStream stream;
+            //FileStream stream;
             var fileContents = "using Opc.Ua;\n\n"
                 + "namespace " + settings.baseNamespace + "\n{"
                 + "\n\tpublic static class AddressSpace"
                 + "\n\t{";
 
-            foreach (var referenceNode in referenceNodes)
+            var filteredList = referenceNodes.ToList().GroupBy(x => x.NodeId.ToString())
+            .Select(y => y.First())
+            .ToList();
+
+
+
+            foreach (var referenceNode in filteredList)
             {
                 if (referenceNode.NodeId.IdType != IdType.String) continue;
-                var node = ((string)referenceNode.NodeId.Identifier)
-                    .Replace("\"", "")
-                    .Replace(".", "_")
-                    .Replace("[", "")
-                    .Replace("]", "");
-                fileContents += $"\n\t\tpublic static readonly NodeId {node} = NodeId.Parse(\"{referenceNode.NodeId.ToString().Replace("\"", "\\\"")}\");";
+                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString());
+                fileContents += $"\n\t\tpublic static readonly NodeId {funcName} = NodeId.Parse(\"{referenceNode.NodeId.ToString().Replace("\"", "\\\"")}\");";
             }
 
             fileContents += "\n\t}";
@@ -320,7 +351,7 @@ namespace Autabee.OpcToClass
             CreateFile(Path.Combine(settings.baseLocation, "AddressSpace.cs"), fileContents);
         }
 
-        static public void GenerateNodeEntryAddressSpace(ReferenceDescriptionCollection referenceNodes, XmlDocument[] xmls, GeneratorSettings settings)
+        static public void GenerateNodeEntryAddressSpace(ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorSettings settings)
         {
             var fileContents = "using Opc.Ua;\n"
                 + "using Autabee.Communication.ManagedOpcClient.ManagedNode;\n\n"
@@ -328,25 +359,30 @@ namespace Autabee.OpcToClass
                 + "\n\tpublic static class NodeEntryAddressSpace"
                 + "\n\t{";
             Dictionary<string, FunctionDefinitions> functionDefinitions = new Dictionary<string, FunctionDefinitions>();
-            foreach (var referenceNode in referenceNodes)
+            for (int i = 0; i < referenceNodes.Count; i++)
             {
+                var referenceNode = referenceNodes[i];
+                var nodeData = nodes[i];
                 if (referenceNode.NodeId.IdType != IdType.String) continue;
                 if (referenceNode.NodeClass != NodeClass.Variable)
                     continue;
 
                 string identifier = referenceNode.TypeDefinition.Identifier.ToString();
-                var node = referenceNode.NodeId.Identifier.ToString()
-                    .Replace("\"", "")
-                    .Replace(".", "_")
-                    .Replace("[", "")
-                    .Replace("]", "");
+                //var node = referenceNode.NodeId.Identifier.ToString()
+                //    .Replace("\"", "")
+                //    .Replace(".", "_")
+                //    .Replace("[", "")
+                //    .Replace("]", "");
 
                 string nodetype = String.Empty;
 
-                if (referenceNode.TypeDefinition.IdType == IdType.Numeric)
-                    nodetype
-                 = GetCorrectedTypeName(identifier, settings.nsPrefix);
-
+                if (referenceNode.TypeDefinition.IdType == IdType.Numeric && nodeData is VariableNode varNode)
+                {
+                    if (!settings.typeOverrides.TryGetValue(varNode.DataType.Identifier.ToString(), out nodetype))
+                    {
+                        nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nsPrefix);
+                    }
+                }
                 else
                 {
                     bool found = false;
@@ -397,7 +433,7 @@ namespace Autabee.OpcToClass
             foreach (var item in functionDefinitions)
             {
 
-                fileContents += $"\n\t\tpublic static {item.Value.Function()}\n\t\t\t=> new {item.Value.ReturnType}(NodeId.Parse($\"{item.Value.NodeIdString}\"));";
+                fileContents += $"\n\t\tpublic static {item.Value.Function()} => new {item.Value.ReturnType}(NodeId.Parse($\"{item.Value.NodeIdString}\"));";
             }
 
 
@@ -428,13 +464,13 @@ namespace Autabee.OpcToClass
                 index = nodeName.IndexOf('[', index2);
             }
 
-
             return nodeName;
         }
 
         private static string GetFunctionName(string nodeId)
         {
-            var funcName = nodeId.Replace("\"", "").Replace(".", "_");
+            var funcName = nodeId.Replace(".", "_");
+            funcName = Regex.Replace(funcName, "[^0-9a-z_A-Z]|^([^a-z_A-Z]*)", "");
             var index = funcName.IndexOf('[');
             while (index >= 0)
             {
