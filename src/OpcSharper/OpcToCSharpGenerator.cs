@@ -341,7 +341,7 @@ namespace Autabee.OpcToClass
             foreach (var referenceNode in filteredList)
             {
                 if (referenceNode.NodeId.IdType != IdType.String) continue;
-                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString());
+                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(),true);
                 fileContents += $"\n\t\tpublic static readonly NodeId {funcName} = NodeId.Parse(\"{referenceNode.NodeId.ToString().Replace("\"", "\\\"")}\");";
             }
 
@@ -414,7 +414,7 @@ namespace Autabee.OpcToClass
 
                 string[] indexItems = GetIndexItems(nodeId);
 
-                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString());
+                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(),false);
                 string nodeName = NodeIdString(nodeId, indexItems);
 
                 var data = new FunctionDefinitions($"ValueNodeEntry<{nodetype}>", funcName, indexItems, nodeName);
@@ -467,10 +467,18 @@ namespace Autabee.OpcToClass
             return nodeName;
         }
 
-        private static string GetFunctionName(string nodeId)
+        private static string GetFunctionName(string nodeId, bool withIndex)
         {
             var funcName = nodeId.Replace(".", "_");
-            funcName = Regex.Replace(funcName, "[^0-9a-z_A-Z]|^([^a-z_A-Z]*)", "");
+            if (withIndex)
+            {
+                funcName = Regex.Replace(funcName, "[^0-9a-z_A-Z]|^([^a-z_A-Z]*)", "");
+            }
+            else
+            {
+                funcName = Regex.Replace(funcName, "\\[[0-9]*\\]|[^0-9a-z_A-Z]|^([^a-z_A-Z]*)", "");
+            }
+            
             var index = funcName.IndexOf('[');
             while (index >= 0)
             {
