@@ -1274,11 +1274,10 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Entry Read
 
-
         public NodeValueRecord ReadValue(ValueNodeEntry nodeEntry)
         {
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
-            var body = ReadNodeValue(nodeEntry.GetNodeId());
+            var body = ReadValue(nodeEntry.GetNodeId());
             return CreateNodeValue(nodeEntry, body);
         }
 
@@ -1366,21 +1365,19 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, Opc.Ua.DataValue tempResult)
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, DataValue tempResult)
         {
-            if (entry.IsUDT)
+            if (entry.IsUDT && (tempResult is DataValue dvValue2))
             {
-                if (tempResult is Opc.Ua.DataValue dvValue)
-                {
-                    return entry.CreateRecord(ConstructEncodable(entry, (byte[])((ExtensionObject)dvValue.Value).Body));
-                }
-                throw new Exception("Unknown type");
+                return CreateNodeValue(entry, (ExtensionObject)dvValue2.Value);
             }
-            if (tempResult is Opc.Ua.DataValue dvValue1)
+            else if (entry.IsUDT) throw new Exception("Unknown type");
+            else if (tempResult is DataValue dvValue1)
             {
                 return entry.CreateRecord(dvValue1.Value);
             }
             else return entry.CreateRecord(tempResult);
+
         }
         public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, ExtensionObject tempResult)
         {
@@ -1388,15 +1385,12 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult)
         {
-            if (tempResult is Opc.Ua.DataValue dvValue)
+            return tempResult switch
             {
-                return CreateNodeValue(entry, dvValue);
-            }
-            else if (tempResult is ExtensionObject eoValue)
-            {
-                return CreateNodeValue(entry, eoValue);
-            }
-            return entry.CreateRecord(tempResult);
+                DataValue dvValue => CreateNodeValue(entry, dvValue),
+                ExtensionObject eoValue => CreateNodeValue(entry, eoValue),
+                _ => entry.CreateRecord(tempResult),
+            };
         }
 
         private async Task<List<object>> AsyncReadValues(NodeIdCollection nodeCollection, List<Type> types)
@@ -1492,14 +1486,14 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion Entry Read
 
         #region Read
-        public object ReadNodeValue(string nodeIdString) => ReadNodeValue(new NodeId(nodeIdString));
-        public object ReadNodeValue(ExpandedNodeId nodeId, Type type = null) => ReadNodeValue((NodeId)nodeId, null);
-        public object ReadNodeValue(NodeId nodeId, Type type = null) => type == null
-            ? session.ReadValue(nodeId) : session.ReadValue(nodeId, type);
+        public object ReadValue(string nodeIdString) => ReadValue(new NodeId(nodeIdString));
+        public object ReadValue(ExpandedNodeId nodeId, Type type = null) => ReadValue((NodeId)nodeId, null);
+        public object ReadValue(NodeId nodeId, Type type = null) => type == null
+            ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
 
-        public T ReadNodeValue<T>(string nodeIdString) => ReadNodeValue<T>(new NodeId(nodeIdString));
+        public T ReadValue<T>(string nodeIdString) => ReadValue<T>(new NodeId(nodeIdString));
 
-        public T ReadNodeValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
+        public T ReadValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
 
         public Node ReadNode(string nodeIdString) => ReadNode(new NodeId(nodeIdString));
         public Node ReadNode(ExpandedNodeId nodeId) => ReadNode(((NodeId)nodeId));

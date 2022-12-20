@@ -67,7 +67,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
         {
             Skip.If(skipServerNotFound, "Server not Found");
 
-            Assert.Throws<ArgumentException>( 
+            Assert.Throws<ArgumentException>(
                 () => communicator.ReadValue(new ValueNodeEntry<string>("ns=2;s=1:Pipe1001?Online/ValuePrecision")));
             Assert.Throws<ArgumentException>(
                 () => communicator.ReadValue(new ValueNodeEntry<double>("ns=2;s=1:Pipe1001?Online/Definition")));
@@ -105,6 +105,22 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.True(((Opc.Ua.ExtensionObject)temp[1].Value).Body is Opc.Ua.EUInformation);
         }
 
-        
+
+        [SkippableFact]
+        public void ReadNode()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var types = communicator.ReadValue("ns=2;s=1:FC1001?SetPoint/ValuePrecision");
+            Assert.True(types.GetType() == typeof(double));
+        }
+        [SkippableFact]
+        public void ReadNode2()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var types = communicator.ReadValue<double>("ns=2;s=1:FC1001?SetPoint/ValuePrecision");
+            Assert.True(types.GetType() == typeof(double));
+        }
     }
 }
