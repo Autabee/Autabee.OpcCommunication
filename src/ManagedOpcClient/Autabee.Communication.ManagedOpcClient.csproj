@@ -1,35 +1,35 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<Import Project="..\..\common.props" />
-	<PropertyGroup>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
-		<Description>Standard logging interface for autabee packages</Description>
-		<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
-		<Version>0.1.7</Version>
-    	<PackageTags>opcua;client;opcua-client</PackageTags>
-	</PropertyGroup>
-	<ItemGroup>
-	  <None Remove="DefaultOpcClient.Config.xml" />
-	</ItemGroup>
-	<ItemGroup>
-	  <EmbeddedResource Include="DefaultOpcClient.Config.xml" />
-	</ItemGroup>
+		<Import Project="..\..\common.props" />
+		<PropertyGroup>
+				<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+				<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
+				<Description>Standard logging interface for autabee packages</Description>
+				<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
+				<Version>0.1.8</Version>
+				<PackageTags>opcua;client;opcua-client</PackageTags>
+		</PropertyGroup>
+		<ItemGroup>
+				<None Remove="DefaultOpcClient.Config.xml" />
+		</ItemGroup>
+		<ItemGroup>
+				<EmbeddedResource Include="DefaultOpcClient.Config.xml" />
+		</ItemGroup>
 
-	<ItemGroup>
-	  <PackageReference Include="Autabee.Utility.Logger" Version="1.0.0" />
-	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.371.41" />
-	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.4.371.41" />
-	</ItemGroup>
+		<ItemGroup>
+				<PackageReference Include="Autabee.Utility.Logger" Version="1.0.0" />
+				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.371.41" />
+				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.4.371.41" />
+		</ItemGroup>
 
-	<ItemGroup>
-		<None Include="..\..\autabee.png">
-		  <Pack>True</Pack>
-		  <PackagePath>\</PackagePath>
-		</None>
-		<None Include="readme.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
+		<ItemGroup>
+				<None Include="..\..\autabee.png">
+						<Pack>True</Pack>
+						<PackagePath>\</PackagePath>
+				</None>
+				<None Include="readme.md">
+						<Pack>True</Pack>
+						<PackagePath>\</PackagePath>
+				</None>
+		</ItemGroup>
 </Project>
