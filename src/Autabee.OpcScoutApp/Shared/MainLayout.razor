@@ -1,0 +1,79 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime _jsRuntime;
+@inject UserTheme theme;
+
+<div class="page">
+
+    <main>
+        <nav class="top-row">
+            <!--<button title="Navigation menu" @onclick="ToggleNavMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>-->
+            <img class="HomeItem" src="/images/autabee_dark_transparent.svg" style="height: 30px" />
+            <div class="HomeItem ABnavitem ">
+                <NavLink href="" Match="NavLinkMatch.All" style="color:white">
+                    Opc Scout
+                </NavLink>
+            </div>
+            <!--<nav class="@NavMenuCssClass">-->
+            <!--<div class="ABnavitem">
+                <NavLink href="" Match="NavLinkMatch.All">
+                    <span class="mdi mdi-home" /> Home
+                </NavLink>
+            </div>-->
+            <!--
+               <div class="ABnavitem">
+                <NavLink href="Counter">
+                    <span class="oi oi-plus" aria-hidden="true"></span><span>  Counter</span>
+                </NavLink>
+            </div>-->
+            <div class="ABnavitem">
+                <NavLink href="Opc/Login">
+                    <span class="mdi mdi-lan-connect" />  Connect
+                </NavLink>
+            </div>
+            <div class="ABnavitem">
+                <NavLink href="Opc/Manipulation">
+                    <span class="mdi mdi-state-machine" />  Manipulator
+                </NavLink>
+            </div>
+
+            <button class="Theme" @onclick="()=>ToggleTheme()">
+                <icon class="mdi mdi-@mdiTheme" />
+            </button>
+            <!--</nav>-->
+
+        </nav>
+
+
+        <article>
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    //private bool collapseNavMenu = true;
+
+    private string mdiTheme { get => !theme.Dark ? "weather-sunny" : "weather-night"; }
+
+    protected override void OnInitialized()
+    {
+        
+        _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
+    }
+
+
+    //private string NavMenuCssClass => collapseNavMenu ? "nav-content-hidden" : "nav-content-visable";
+
+    //private void ToggleNavMenu()
+    //{
+    //    collapseNavMenu = !collapseNavMenu;
+    //}
+
+    private void ToggleTheme()
+    {
+        theme.Dark = !theme.Dark;
+        _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
+    }
+}

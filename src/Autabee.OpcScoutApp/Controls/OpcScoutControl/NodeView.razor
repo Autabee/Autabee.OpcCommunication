@@ -1,0 +1,70 @@
+﻿@using Autabee.OpcScoutApp.Controller;
+@using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+@using Opc.Ua;
+
+@using Microsoft.JSInterop;
+@inject IJSRuntime _jsRuntime
+
+<div class="OpcNodeViewer">
+    <div class="OpcNodeController">
+    </div>
+
+
+  @if (values.Count > 0)
+  {
+      <table>
+          <thead>
+              <tr><th>Data</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+        @foreach (var item in values)
+        {
+                <tr><td>@item.Key</td><td><span>@item.Value</span><button @onclick="()=>Copy(item)"><icon class="mdi mdi-content-copy" /></button></td></tr>
+        }
+          </tbody>
+      </table>
+  }
+  else
+  {
+      <p style="text-align:center">None selected</p>
+  }
+</div>
+
+@code {
+  [Parameter]
+  public NodeViewModel Backend { get; set; }
+  //private ScannedNodeModel value { get; set; }
+
+  Dictionary<string, string> values = new Dictionary<string, string>();
+
+  protected override void OnInitialized()
+  {
+    base.OnInitialized();
+    Backend.OnSelectedChanged += NewOpcNodeSelected;
+  }
+
+  public void NewOpcNodeSelected(object sender, ScannedNodeModel value)
+  {
+    //this.value = value;
+    ReferenceDescription refDesc = value.Reference;
+    Node node = value.Node;
+    values.Clear();
+    values.Add("Node Id", refDesc.NodeId.ToString());
+    values.Add("Namespace Index", refDesc.NodeId.NamespaceIndex.ToString());
+    values.Add("Identifier Type", refDesc.NodeId.IdType.ToString());
+    values.Add("Identifier", refDesc.NodeId.Identifier.ToString());
+    values.Add("Browse Name", refDesc.BrowseName.ToString());
+    values.Add("Display Name", refDesc.DisplayName.ToString());
+    values.Add("Node Class", refDesc.NodeClass.ToString());
+    //values.Add( "Description", (node?.Description ?).ToString() });
+
+    values.Add("Type Definition", refDesc.TypeDefinition.ToString());
+    values.Add("Write Mask", node.WriteMask.ToString());
+    values.Add("User Write Mask", node.UserWriteMask.ToString());
+    StateHasChanged();
+  }
+  public void Copy(KeyValuePair<string, string> value)
+  {
+    _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", value.Value);
+  }
+}

@@ -1,0 +1,29 @@
+﻿@switch (Value)
+{
+  case NodeImageId.Object:
+    <icon class="mdi mdi-cube" />
+    break;
+  case NodeImageId.Folder:
+    <icon class="mdi mdi-folder" />
+    break;
+  case NodeImageId.Variable:
+    <icon class="mdi mdi-variable" />
+    break;
+  case NodeImageId.Loading:
+    <icon class="mdi mdi-loading" />
+    break;
+  case NodeImageId.Method:
+    <icon class="mdi mdi-file-cancel" />
+    break;
+  case NodeImageId.VariableType:
+  case NodeImageId.ObjectType:
+    <icon class="mdi mdi-land-plots" />
+    break;
+  default:
+    <icon class="mdi mdi-file-cancel" />
+    break;
+}
+@code {
+  [Parameter]
+  public NodeImageId Value { get; set; }
+}

@@ -1,0 +1,30 @@
+﻿
+.OpcNodeViewer {
+    max-width: 100%;
+    font-size:12px;
+}
+
+    .OpcNodeViewer  table {
+        width: 100%;
+        max-width: 100%;
+        word-wrap: anywhere;
+        word-break: break-word;
+        border-spacing:0px;
+    }
+
+
+    .OpcNodeViewer td {
+        max-width: 100%;
+        padding: 0px;
+        padding-left: 5px;
+    }
+            .OpcNodeViewer  button {
+                float: right;
+                width:30px;
+                background-color:transparent;
+                border:0px;
+                padding: 2px;
+                height: 100%;
+            }
+
+        

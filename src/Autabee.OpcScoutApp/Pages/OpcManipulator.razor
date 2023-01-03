@@ -1,0 +1,100 @@
+﻿@using Autabee.OpcScoutApp.Controls.OpcScoutControl
+@using Opc.Ua;
+@using Autabee.OpcScoutApp.Controller;
+@using Autabee.Utility.Messaging;
+
+@inject OpcScoutBackend controlBackend
+@inject IJSRuntime _jsRuntime
+@inject InMemoryLog logger
+@page "/Opc/Manipulation"
+
+<div class="ManipulatorForm">
+    <!--Node Browser-->
+    <div class="OpcNodeBrowserItem Viewport">
+        <h3>Browser</h3>
+        <div class="InnerItem OpcNodeBrowser">
+            <NodeBrowser clients="@controlBackend.clients" nodeBrowser="nodeBrowser" />
+        </div>
+    </div>
+
+    <div class="OpcNodeViewItem Viewport">
+        <h3>Node View</h3>
+        <div class="InnerItem">
+            <NodeView Backend="nodeViewerModel" />
+        </div>
+    </div>
+
+
+    <div class="ReadWrite Viewport mid-ViewPort">
+
+        <div class="Viewportheader">
+            <button @onclick="()=>OpenLog()">logs</button>
+            <button>structread/write</button>
+        </div>
+
+        <div class="InnerItem">
+      @if (log)
+        @foreach (var item in logger.Messages.Where(o => (((ushort)o.message.Level & (ushort)MessageFilter.Debug) != 0)).Reverse())
+        {
+            <div class="logitem logitem-@item.message.Level.ToString()">
+                <span class="logitemtime">[@item.message.Time.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
+                <span class=@item.MessageClass>@item.message.ToString()</span>
+            @if (item.MultiLine)
+                {
+                  @if (item.ShowFullMessage)
+                  {
+                            <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
+                  }
+                  else
+                  {
+                            <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
+                  }
+
+                }
+
+            </div>
+        }
+        </div>
+    </div>
+
+    <div class="Subscriptions Viewport mid-ViewPort">
+        <h3>Subscriptions</h3>
+        <div class="InnerItem">
+        </div>
+    </div>
+
+    <div class="Macros Viewport">
+        <h3>Macros</h3>
+        <div class="InnerItem">
+        </div>
+    </div>
+
+</div>
+
+@code {
+  public NodeBrowserModel nodeBrowser = new NodeBrowserModel();
+  public NodeViewModel nodeViewerModel = new NodeViewModel();
+
+  bool log = true;
+  bool OpenStruct = false;
+
+  protected override void OnInitialized()
+  {
+    logger.Information("Open Manipulator");
+    base.OnInitialized();
+    nodeBrowser.OnSelectedChanged += nodeViewerModel.UpdateSelected;
+    logger.MessageUpdate += Logger_MessageUpdate;
+  }
+
+  private void OpenLog()
+  {
+    log = true;
+    OpenStruct = false;
+  }
+
+  private void Logger_MessageUpdate(object sender, LogMessage e)
+  {
+    StateHasChanged();
+  }
+}
+

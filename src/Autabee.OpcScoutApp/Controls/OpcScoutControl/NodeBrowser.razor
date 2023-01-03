@@ -1,0 +1,30 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+@using Opc.Ua;
+@using Autabee.OpcScoutApp.Controller;
+<div class="OpcBrowser">
+@if (clients != null) {
+    @foreach (var client in clients)
+    {
+        <RootScannedNodeItem Browser="nodeBrowser" Client="client" />
+    }
+}
+else{
+    <div> No Clients </div>
+}
+</div>
+
+
+
+@code {
+    [Parameter]
+    public List<OpcUaClientHelperApi> clients { get; set; }
+    [Parameter]
+    public NodeBrowserModel nodeBrowser { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        
+    }
+}

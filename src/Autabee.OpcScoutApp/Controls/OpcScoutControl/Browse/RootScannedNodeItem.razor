@@ -1,0 +1,53 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScoutApp.Controller;
+
+
+@if (Client.Connected)
+{
+
+
+    @Client.GetConnectedServer()?.ApplicationName
+    @if (scannedNodes != null && scannedNodes.Count >= 0)
+    {
+        @foreach (var node in scannedNodes)
+        {
+            <ScannedNodeItem ScannedNodeModel="@node" depth="0" Browser="Browser" />
+        }
+    }
+}
+
+else{
+    <icon class="mdi mdi-disconnect"/>@Client.ApplicationDescription.ApplicationName
+}
+@code {
+    [Parameter]
+    public NodeBrowserModel Browser { get; set; }
+    [Parameter]
+    public OpcUaClientHelperApi Client { get; set; }
+
+    List<ScannedNodeModel> scannedNodes = new List<ScannedNodeModel>();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Initialize();
+    }
+
+    public void Initialize()
+    {
+        scannedNodes = new List<ScannedNodeModel>();
+
+        if (Client.Connected)
+        {
+            var scan = Client.BrowseRoot();
+            var nodes = Client.ReadNodes(scan);
+            for (var i = 0; i < scan.Count; i++)
+            {
+                var result = new ScannedNodeModel(scan[i], Client, nodes[i]);
+                scannedNodes.Add(result);
+            }
+        }
+    }
+}
+
+
