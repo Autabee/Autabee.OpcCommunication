@@ -34,7 +34,7 @@ namespace Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
                     //FunctionalGroupType
                     case 1005:
                         return NodeImageId.Folder;
-                    //case 0:
+                        //case 0:
                         //return NodeImageId.DataType;
 
                 }

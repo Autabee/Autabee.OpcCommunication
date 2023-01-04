@@ -1,16 +1,9 @@
-﻿using Autabee.Utility.Logger;
+﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.OpcScoutApp.Data;
-using Microsoft.AspNetCore.Components.WebView.Maui;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
+using Autabee.Utility.Logger;
 using Opc.Ua;
 using System.Reflection;
 using System.Text.Json;
-using System.Xml;
-using System.Xml.Serialization;
-using Windows.Security.Cryptography.Core;
-using Windows.System.UserProfile;
-using Autabee.Communication.ManagedOpcClient;
 
 #if ANDROID
 using Android.App;
@@ -53,19 +46,21 @@ namespace Autabee.OpcScoutApp
             builder.Services.AddScoped(o =>
             {
                 var path = Path.Combine(FileSystem.Current.AppDataDirectory, "endpointrecords.json");
-                
-                if (File.Exists(path)) {
-                    var json = File.ReadAllText(path,System.Text.Encoding.UTF8);
+
+                if (File.Exists(path))
+                {
+                    var json = File.ReadAllText(path, System.Text.Encoding.UTF8);
                     return JsonSerializer.Deserialize<List<EndpointRecord>>(json);
                 }
-                else{
+                else
+                {
                     File.Create(path);
                     File.WriteAllText(path, "[]", System.Text.Encoding.UTF8);
                     return new List<EndpointRecord>();
                 }
             }
             );
-            
+
 
             builder.Services.AddScoped<UserTheme>(o => new UserTheme() { Theme = "app" });
             builder.Services.AddScoped<InMemoryLog>();

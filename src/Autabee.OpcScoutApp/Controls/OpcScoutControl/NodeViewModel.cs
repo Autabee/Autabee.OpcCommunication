@@ -1,9 +1,7 @@
 ﻿using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse;
+using Autabee.Utility.Messaging;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Autabee.OpcScoutApp.Controls.OpcScoutControl
 {
@@ -18,6 +16,5 @@ namespace Autabee.OpcScoutApp.Controls.OpcScoutControl
             Selected = selected;
             OnSelectedChanged?.Invoke(this, selected);
         }
-
     }
 }

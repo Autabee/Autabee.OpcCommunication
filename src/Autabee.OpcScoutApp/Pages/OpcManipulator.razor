@@ -36,23 +36,23 @@
       @if (log)
         @foreach (var item in logger.Messages.Where(o => (((ushort)o.message.Level & (ushort)MessageFilter.Debug) != 0)).Reverse())
         {
-            <div class="logitem logitem-@item.message.Level.ToString()">
-                <span class="logitemtime">[@item.message.Time.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
-                <span class=@item.MessageClass>@item.message.ToString()</span>
+                <div class="logitem logitem-@item.message.Level.ToString()">
+                    <span class="logitemtime">[@item.message.Time.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
+                    <span class=@item.MessageClass>@item.message.ToString()</span>
             @if (item.MultiLine)
-                {
-                  @if (item.ShowFullMessage)
-                  {
-                            <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
-                  }
-                  else
-                  {
-                            <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
-                  }
+            {
+              @if (item.ShowFullMessage)
+              {
+                        <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
+              }
+              else
+              {
+                        <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
+              }
 
-                }
+            }
 
-            </div>
+                </div>
         }
         </div>
     </div>
@@ -83,6 +83,7 @@
     logger.Information("Open Manipulator");
     base.OnInitialized();
     nodeBrowser.OnSelectedChanged += nodeViewerModel.UpdateSelected;
+    nodeBrowser.OnNodeRead += (sender, args) => { logger.Log(args); };
     logger.MessageUpdate += Logger_MessageUpdate;
   }
 
@@ -96,5 +97,6 @@
   {
     StateHasChanged();
   }
+
 }
 
