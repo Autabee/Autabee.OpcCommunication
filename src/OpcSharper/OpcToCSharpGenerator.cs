@@ -72,7 +72,7 @@ namespace Autabee.OpcToClass
       }
     }
 
-        static string GetCorrectedTypeName(uint value, string nsPrefix)
+    static string GetCorrectedTypeName(uint value, string nsPrefix)
     {
 
       return value switch
@@ -162,7 +162,7 @@ namespace Autabee.OpcToClass
           value = temp.Last();
         }
         return value;
-
+        
       }
       Console.WriteLine("Did not find typename: " + value);
 

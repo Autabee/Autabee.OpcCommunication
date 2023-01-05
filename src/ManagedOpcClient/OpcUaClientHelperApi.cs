@@ -2,6 +2,7 @@
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Utility.Logger;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
@@ -36,7 +37,7 @@ namespace Autabee.Communication.ManagedOpcClient
     private string sessionName;
     private List<Subscription> subscriptions = new List<Subscription>();
 
-    public  List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
+    public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
     public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
     public Dictionary<string, NodeTypeData> PreparedTypes { get; private set; } = new Dictionary<string, NodeTypeData>();
 
@@ -391,11 +392,8 @@ namespace Autabee.Communication.ManagedOpcClient
         ReInstateNodeEntries?.Invoke(this, null);
         wasConnected = true;
         subscriptions.Clear();
-        Xmls.Clear();
-        Xmls.AddRange(GetServerTypeSchema().Select(o => { var temp = new XmlDocument(); temp.LoadXml(o); return temp; }));
-        PreparedNodeTypes.Clear();
-        PreparedTypes.Clear();
-        UpdateNodeType(Xmls).Select(o=>PreparedTypes[o.Key]= o.Value);
+
+        UpdateTypeData();
       }
       catch (Exception e)
       {
@@ -1173,38 +1171,52 @@ namespace Autabee.Communication.ManagedOpcClient
 
     #region Typing
 
-    public KeyValuePair<string,NodeTypeData> GetNodeTypeEncoding(string nodeIdString)
+    public NodeTypeData GetNodeTypeEncoding(string nodeIdString)
     {
-      if (PreparedNodeTypes.ContainsKey(nodeIdString))
+      if (PreparedNodeTypes.TryGetValue(nodeIdString, out string parseString))
       {
-        var parseString = PreparedNodeTypes[nodeIdString];
-        return new KeyValuePair<string, NodeTypeData>(parseString, PreparedTypes[parseString]);
+        return PreparedTypes[parseString];
       }
-      else
+
+      parseString = GetTypeDictionary(nodeIdString, session);
+      PreparedNodeTypes.Add(nodeIdString, parseString);
+      return GetTypeEncoding(parseString);
+
+    }
+
+    public NodeTypeData GetTypeEncoding(string parseString)
+    {
+      NodeTypeData value;
+      if (PreparedTypes.TryGetValue(parseString, out value))
       {
-        var (xmlString, parseString) = GetTypeDictionary(nodeIdString, session);
-        PreparedNodeTypes.Add(nodeIdString, parseString);
-        return GetTypeEncoding(parseString, xmlString);
+        return value;
+      }
+
+      //trying updating the type data
+
+      UpdateTypeData();
+
+      if (PreparedTypes.TryGetValue(parseString, out value))
+      {
+        return value;
+      }
+
+      throw new Exception("Type not found");
+    }
+
+    private void UpdateTypeData()
+    {
+      Xmls.Clear();
+      Xmls.AddRange(GetServerTypeSchema().Select(o => { var temp = new XmlDocument(); temp.LoadXml(o); return temp; }));
+      var dict = UpdateNodeType(Xmls);
+      foreach (var o in dict)
+      {
+        if (PreparedTypes.ContainsKey(o.Key)) PreparedTypes.Remove(o.Key);
+        PreparedTypes.Add(o.Key, o.Value);
       }
     }
 
-    public KeyValuePair<string, NodeTypeData> GetTypeEncoding(string parseString, string xmlString)
-    {
-      //if (PreparedTypes.ContainsKey(parseString))
-      //{
-        return new KeyValuePair<string, NodeTypeData>(parseString, PreparedTypes[parseString]);
-      //}
-      //else
-      //{
-      //  //var varList = ParseTypeDictionary(xmlString, parseString);
-      //  var item = new KeyValuePair<string, List<NodeTypeData>>(parseString, varList);
-      //  PreparedTypes.Add(item.Key, item.Value);
-      //  return item;
-      //}
-    }
-
-
-    private static (string xml, string parse) GetTypeDictionary(string nodeIdString, Session session)
+    private static string GetTypeDictionary(string nodeIdString, Session session)
     {
       //Read the desired node first and chekc if it's a variable
       Node node = session.ReadNode(nodeIdString);
@@ -1260,125 +1272,121 @@ namespace Autabee.Communication.ManagedOpcClient
 
       //Browse for ComponentOf from last browsing result inversly
       session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
-
+      //
       //Check if reference was found
-      if (refDescCol.Count == 0)
-      {
-        Exception ex = new Exception("Data type isn't a component of parent type in address space. Can't continue decoding.");
-        throw ex;
-      }
+      //if (refDescCol.Count == 0)
+      //{
+      //  Exception ex = new Exception("Data type isn't a component of parent type in address space. Can't continue decoding.");
+      //  throw ex;
+      //}
 
       //Read from node id of the found HasCompoment reference to get a XML file (as HEX string) containing struct/UDT information
 
-      nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
-      resultValue = session.ReadValue(nodeId);
+      //nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
+      //resultValue = session.ReadValue(nodeId);
 
       //Convert the HEX string to ASCII string
-      string xmlString = Encoding.ASCII.GetString((byte[])resultValue.Value);
+      //string xmlString = Encoding.ASCII.GetString((byte[])resultValue.Value);
 
       //Return the dictionary as ASCII string
-      return (xmlString, parseString);
+      return parseString;
     }
-    private static Dictionary<string,NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
+
+
+    private object FormatObject(object value, ExtensionObject eoValue)
+    {
+      var type = GetTypeEncoding(GetCorrectedTypeName(eoValue));
+      return eoValue.Encoding switch
+      {
+        ExtensionObjectEncoding.None => value,
+        ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext)),
+        ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext)),
+        ExtensionObjectEncoding.EncodeableObject => value,
+        ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext)),
+        _ => value,
+      };
+    }
+
+    
+
+    private static Dictionary<string, NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
     {
       var dict = new Dictionary<string, NodeTypeData>();
 
       foreach (var item in xmls)
       {
-        var element = item.DocumentElement;
-        foreach (var child in element.ChildNodes)
+        foreach (XmlNode child in item.GetElementsByTagName("opc:StructuredType"))
         {
+          var nodetype = new NodeTypeData();
+          nodetype.Name = GetCorrectedName(child);
+          nodetype.TypeName = GetCorrectedName(child);
+          nodetype.ChildData = new List<NodeTypeData>();
+          foreach (XmlNode child2 in child.ChildNodes)
+          {
+            if (child2.Name == "opc:Field")
+            {
+              var childNode = new NodeTypeData();
+              childNode.Name = GetCorrectedName(child2);
+              childNode.TypeName = GetCorrectedTypeName(child2);
+              childNode.ChildData = new List<NodeTypeData>();
+              nodetype.ChildData.Add(childNode);
+            }
+          }
+          dict.Add(nodetype.Name, nodetype);
         }
       }
 
+      foreach (var item in dict)
+      {
+        var type = item.Value;
+        AddChilderen(dict, type);
+      }
       return dict;
     }
 
-    private static List<NodeTypeData> ParseTypeDictionary(String xmlStringToParse, String stringToParserFor)
+    private static void AddChilderen(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
     {
-      List<NodeTypeData> varList = new List<NodeTypeData>();
-
-      //Remove last XML sign and create a XML document out of the dictionary string
-      xmlStringToParse = xmlStringToParse.Remove(xmlStringToParse.Length - 1);
-      XmlDocument docToParse = new XmlDocument();
-      docToParse.LoadXml(xmlStringToParse);
-
-      //Get a XML node list of objectes named by "stringToParseFor"
-      docToParse.GetElementsByTagName(stringToParserFor);
-      XmlNodeList nodeList;
-      nodeList = docToParse.GetElementsByTagName("opc:StructuredType");
-
-      XmlNode foundNode = null;
-
-      //search for the attribute name == "stringToParseFor"
-      foreach (XmlNode node in nodeList)
+      for (int i = 0; i < type.ChildData.Count; i++)
       {
-        if (node.Attributes["Name"].Value == stringToParserFor)
+        var child = type.ChildData[i];
+        if (dict.ContainsKey(child.TypeName))
         {
-          foundNode = node;
-          break;
-        }
-      }
-
-      //check if attribute name was found
-      if (foundNode == null)
-      {
-        return null;
-      }
-
-      //get child nodes of parent node with attribute name == "stringToParseFor" and parse for var name and var type
-      foreach (XmlNode node in foundNode.ChildNodes)
-      {
-        string typeName = node.Attributes["TypeName"].Value;
-        NodeTypeData dataReferenceStringArray = new NodeTypeData
-        {
-          Name = node.Attributes["Name"].Value,
-          TypeName = typeName,
-          OpcNodeTypeId = OpcNodeTypeIdExtension.GetOpcNodeTypeId(typeName)
-        };
-
-        varList.Add(dataReferenceStringArray);
-      }
-
-      //Check if result contains another struct/UDT inside and parse for var name and var type
-      //Note: This check is consistent even if there are more structs/UDTs inside of structs/UDTs
-      for (int count = 0; count < varList.Count; count++)
-      {
-        var varObject = varList[count];
-        if (varObject.TypeName.Contains("tns:"))
-        {
-          XmlNode innerNode = null;
-          foreach (XmlNode anotherNode in nodeList)
+          type.ChildData[i].ChildData = dict[child.TypeName].ChildData;
+          foreach (var item in type.ChildData[i].ChildData)
           {
-            if (anotherNode.Attributes["Name"].Value == varObject.TypeName.Remove(0, 4))
-            {
-              innerNode = anotherNode;
-              break;
-            }
-          }
-
-          if (innerNode == null)
-          {
-            return null;
-          }
-
-          int i = 0;
-          foreach (XmlNode innerChildNode in innerNode.ChildNodes)
-          {
-            var typeName = innerChildNode.Attributes["TypeName"].Value;
-            NodeTypeData innerDataReferenceStringArray = new NodeTypeData
-            {
-              Name = innerChildNode.Attributes["Name"].Value,
-              TypeName = typeName,
-              OpcNodeTypeId = OpcNodeTypeIdExtension.GetOpcNodeTypeId(typeName)
-            };
-
-            varList.Insert(varList.IndexOf(varObject) + 1 + i, innerDataReferenceStringArray);
-            i += 1;
+            AddChilderen(dict, item);
           }
         }
       }
-      return varList;
+    }
+
+    static string GetCorrectedName(XmlNode value)
+    {
+      return ((string)value.Attributes["Name"].Value)
+              .Replace("&quot;", "")
+              .Replace("\"", "");
+    }
+    static string GetCorrectedTypeName(XmlNode value)
+    {
+      return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
+    }
+
+    static string GetCorrectedTypeName(ExtensionObject eoValue)
+    {
+      return eoValue.TypeId.Identifier.ToString().Replace("\"", "").Replace("TE_", "");
+    }
+
+    static string GetCorrectedTypeName(string value)
+    {
+      if (value.Contains("tns:"))
+      {
+        return value
+            .Replace("&quot;", "")
+            .Replace("\"", "")
+            .Substring(4);
+      }
+
+      return value;
     }
     #endregion Typing
 
@@ -1598,9 +1606,15 @@ namespace Autabee.Communication.ManagedOpcClient
     #region Read
     public object ReadValue(string nodeIdString) => ReadValue(new NodeId(nodeIdString));
     public object ReadValue(ExpandedNodeId nodeId, Type type = null) => ReadValue((NodeId)nodeId, null);
-    public object ReadValue(NodeId nodeId, Type type = null) => type == null
-        ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
-
+    public object ReadValue(NodeId nodeId, Type type = null)
+    {
+      var value = type == null ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
+      if (value is ExtensionObject eoValue)
+      {
+        return FormatObject(value, eoValue);
+      }
+      return value;
+    }
     public T ReadValue<T>(string nodeIdString) => ReadValue<T>(new NodeId(nodeIdString));
 
     public T ReadValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
