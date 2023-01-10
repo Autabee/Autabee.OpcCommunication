@@ -2,26 +2,27 @@
 @using Autabee.OpcScoutApp.Controller;
 @using Autabee.Utility.Messaging;
 @using Opc.Ua
+@using System.Text.Json;
 <div class="@ScannedNodeModel.NodeClassType" style="padding-left:@depthString;">
-    @if (ScannedNodeModel.RetrievedChildren
+  @if (ScannedNodeModel.RetrievedChildren
     && ScannedNodeModel.Children.Length == 0
     || ScannedNodeModel.Node.NodeClass == NodeClass.Method)
-    {
-        <span class="node-caret"></span>
-    }
-    else if (ScannedNodeModel.open)
-    {
-        <span class="node-caret caret-down" @onclick="Close" />
-    }
-    else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
-    {
-        <span class="node-caret caret" @onclick="Open" />
-    }
-    else
-    {
-        <span class="node-caret caret-close" @onclick="Open" />
+  {
+      <span class="node-caret"></span>
+  }
+  else if (ScannedNodeModel.open)
+  {
+      <span class="node-caret caret-down" @onclick="Close" />
+  }
+  else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
+  {
+      <span class="node-caret caret" @onclick="Open" />
+  }
+  else
+  {
+      <span class="node-caret caret-close" @onclick="Open" />
 
-    }
+  }
     <div class="node-img" style="grid-area:node-img; height:100%">
         <NodeImage Value="ScannedNodeModel.NodeImage" />
     </div>
@@ -29,93 +30,97 @@
     <div class="node-actions" style="grid-area:node-actions">
 
         <button @onclick="ReadNode" title="read node settings"><icon class="mdi mdi-tag-text" /></button>
-        @if (ScannedNodeModel.GetNodeClass() == NodeClass.Variable)
-        {
-            <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
-            <button @onclick="SubscribeValue" title="read node value"><icon class="mdi mdi-tag-plus" /></button>
-        }
+    @if (ScannedNodeModel.GetNodeClass() == NodeClass.Variable)
+    {
+          <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+          <button @onclick="SubscribeValue" title="read node value"><icon class="mdi mdi-tag-plus" /></button>
+    }
     </div>
 </div>
 @if (ScannedNodeModel.open)
 {
-    @for (var i = 0; i < ScannedNodeModel.Children.Length; i++)
-    {
-        <ScannedNodeItem ScannedNodeModel="@(ScannedNodeModel.Children[i])" depth="@depthNext" Browser="@Browser" />
-    }
+  @for (var i = 0; i < ScannedNodeModel.Children.Length; i++)
+  {
+    <ScannedNodeItem ScannedNodeModel="@(ScannedNodeModel.Children[i])" depth="@depthNext" Browser="@Browser" />
+  }
 }
 
 @code {
-    [Parameter]
-    public ScannedNodeModel ScannedNodeModel { get; set; }
-    [Parameter]
-    public int depth { get; set; }
-    [Parameter]
-    public NodeBrowserModel Browser { get; set; }
+  [Parameter]
+  public ScannedNodeModel ScannedNodeModel { get; set; }
+  [Parameter]
+  public int depth { get; set; }
+  [Parameter]
+  public NodeBrowserModel Browser { get; set; }
 
-    public int depthNext { get => depth + 1; }
+  public int depthNext { get => depth + 1; }
 
 
-    public string depthString { get => (depth * 8).ToString() + "px"; }
-    private bool openedOnce { get; set; }
-    protected override void OnInitialized()
+  public string depthString { get => (depth * 8).ToString() + "px"; }
+  private bool openedOnce { get; set; }
+  protected override void OnInitialized()
+  {
+
+    base.OnInitialized();
+    ScannedNodeModel.DoneGettingChildren += UpdateChildState;
+    ScannedNodeModel.deSelect += DeSelect;
+    if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
+    { ScannedNodeModel?.GetChildren(); }
+  }
+
+  private void UpdateChildState(object sender, EventArgs args)
+  {
+    //ScannedNodeModel.Open();
+    this.InvokeAsync(delegate { StateHasChanged(); });
+  }
+  private async void Open()
+  {
+    if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
+    { ScannedNodeModel?.GetChildren(); }
+    ScannedNodeModel.Open();
+    if (ScannedNodeModel.open) openedOnce = true;
+  }
+  private async void Close()
+  {
+    ScannedNodeModel.Close();
+  }
+
+  private async void ReadValue()
+  {
+    try
     {
+      var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Reference.NodeId);
+      Message message = GetValueMessage(data);
+      Browser.ReadNode(message);
+    }
+    catch (Exception e)
+    {
+      Browser.ReadNode(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
+    }
+  }
+  private Message GetValueMessage(object value)
+  {
+    if (value == null) return new Message(level: MessageLevel.Info, text: "NULL");
+    else if (value is Dictionary<string, object> dic) return new Message(level: MessageLevel.Info, text: "{0}", JsonSerializer.Serialize(dic));
+    else if (value is object[] list) return new Message(level: MessageLevel.Info, text: string.Join("\n", list));
+    else return new Message(level: MessageLevel.Info, text: value?.ToString());
+  }
+  
+  private async void SubscribeValue()
+  {
+    Browser.SubscriptionRequest(ScannedNodeModel);
+  }
 
-        base.OnInitialized();
-        ScannedNodeModel.DoneGettingChildren += UpdateChildState;
-        ScannedNodeModel.deSelect += DeSelect;
-        if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
-        { ScannedNodeModel?.GetChildren(); }
-    }
+  private async void ReadNode()
+  {
+    Browser.UpdateSelected(ScannedNodeModel);
+    ScannedNodeModel.NodeClassType = "Node-Selected Node";
+    StateHasChanged();
+  }
 
-    private void UpdateChildState(object sender, EventArgs args)
-    {
-        //ScannedNodeModel.Open();
-        this.InvokeAsync(delegate { StateHasChanged(); });
-    }
-    private async void Open()
-    {
-        if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
-        { ScannedNodeModel?.GetChildren(); }
-        ScannedNodeModel.Open();
-        if (ScannedNodeModel.open) openedOnce = true;
-    }
-    private async void Close()
-    {
-        ScannedNodeModel.Close();
-    }
-
-    private async void ReadValue()
-    {
-        try
-        {
-            var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Reference.NodeId);
-            string dataString = "";
-            if (data == null) dataString = "NULL";
-            else if (data is object[] list) dataString = string.Join("\n", list);
-            else dataString = data?.ToString();
-            Browser.ReadNode(new Message(level: MessageLevel.Info, text: dataString));
-        }
-        catch (Exception e)
-        {
-            Browser.ReadNode(new Message(level: MessageLevel.Error, text:" {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
-        }
-    }
-
-    private async void SubscribeValue()
-    {
-        Browser.SubscriptionRequest(ScannedNodeModel);
-    }
-
-    private async void ReadNode()
-    {
-        Browser.UpdateSelected(ScannedNodeModel);
-        ScannedNodeModel.NodeClassType = "Node-Selected Node";
-        StateHasChanged();
-    }
-
-    private async void DeSelect(object sender, EventArgs data)
-    {
-        ScannedNodeModel.NodeClassType = "Node";
-        StateHasChanged();
-    }
+  private async void DeSelect(object sender, EventArgs data)
+  {
+    ScannedNodeModel.NodeClassType = "Node";
+    StateHasChanged();
+  }
 }

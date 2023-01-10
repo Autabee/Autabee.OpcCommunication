@@ -9,25 +9,29 @@
     <div class="OpcNodeController">
     </div>
 
-
-  @if (values.Count > 0)
-  {
-      <table>
+    <table>
           <thead>
               <tr><th>Data</th><th>Value</th></tr>
           </thead>
+  @if (values.Count > 0)
+  {
           <tbody>
         @foreach (var item in values)
         {
                 <tr><td>@item.Key</td><td><span>@item.Value</span><button @onclick="()=>Copy(item)"><icon class="mdi mdi-content-copy" /></button></td></tr>
         }
           </tbody>
-      </table>
   }
   else
   {
-      <p style="text-align:center">None selected</p>
+      
+          <tbody>
+              <tr><td>Empty</td><td>Empty</td></tr>
+          
+            </tbody>
+      
   }
+    </table>
 </div>
 
 @code {

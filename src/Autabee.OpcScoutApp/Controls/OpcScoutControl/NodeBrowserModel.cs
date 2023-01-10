@@ -1,4 +1,5 @@
-﻿using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse;
+﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse;
 using Autabee.Utility.Messaging;
 using System;
 using System.Linq;
@@ -21,7 +22,7 @@ namespace Autabee.OpcScoutApp.Controls.OpcScoutControl
 
         public void SubscriptionRequest(ScannedNodeModel selected)
         {
-            OnAddSubscriptionRequest?.Invoke(this, selected);
+          OnAddSubscriptionRequest?.Invoke(this, selected);
         }
 
         public void ReadNode(Message selected)

@@ -1,0 +1,58 @@
+﻿@using System.Text.Json;
+<tr>
+    <td>@SubscriptionViewModel.monitoredItem.StartNodeId</td>
+    <td>@updateTime.ToString()</td>
+  @if (complex)
+  {
+      <td><button @onclick="ShowSubscription" class="@showButtonClass"/></td>
+  }
+  else
+  {
+      <td>@monitoredValue</td>
+  }
+
+</tr>
+@if(complex && show)  {
+  <ComplexSubscriptionNode Value="@dictMonitoredValue" NodeId="@SubscriptionViewModel.monitoredItem.StartNodeId.ToString()" />
+  }
+
+@code {
+  [Parameter]
+  public SubscriptionNodeModel SubscriptionViewModel { get; set; }
+  public object monitoredValue { get; set; }
+  public Dictionary<string, object> dictMonitoredValue => (Dictionary<string, object>)monitoredValue;
+  //public string jsonMonitoredValue { get; set; }
+  public DateTime updateTime { get; set; }
+  public bool complex { get; set; }
+  public bool show { get; set; }
+  public string showButtonClass => show ? "mdi mdi-eye-off" : "mdi mdi-eye";
+
+  protected override void OnInitialized()
+  {
+    SubscriptionViewModel.ValueUpdated += dispatchValueUpdated;
+  }
+  private async void dispatchValueUpdated(object sender, object e)
+  {
+    await InvokeAsync(()=>SubscriptionViewModel_ValueUpdated(sender, e));
+  }
+  private async void SubscriptionViewModel_ValueUpdated(object sender, object e)
+  {
+    if (e is Dictionary<string, object> dict)
+    {
+      updateTime = DateTime.Now;
+      complex = true;
+      monitoredValue = dict;
+    }
+    else
+    {
+      updateTime = DateTime.Now;
+      complex = false;
+      monitoredValue = e;
+    }
+    StateHasChanged();
+  }
+  private async void ShowSubscription()
+  {
+    show = !show;
+  }
+}

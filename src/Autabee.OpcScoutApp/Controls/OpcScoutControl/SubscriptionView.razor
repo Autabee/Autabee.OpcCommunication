@@ -1,5 +1,29 @@
-﻿<h3>SubscriptionView</h3>
+﻿@using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+@using Opc.Ua.Client;
+
+<div class="SubscriptionView">
+<table>
+    <tr>
+        <th>NodeId</th>
+        <th>Time</th>
+        <th>Value</th>
+    </tr>
+@foreach (var item in SubscriptionViewModel.subscriptionNodeModels)
+{
+    <SubscriptionNode SubscriptionViewModel="@item"/>
+}
+</table>
+</div>
+
 
 @code {
+  [Parameter]
+  public SubscriptionViewModel SubscriptionViewModel { get; set; }
+
+  protected override void OnInitialized()
+  {
+    SubscriptionViewModel.OnListChanged += (sender, obj) => StateHasChanged();
+  }
+
 
 }

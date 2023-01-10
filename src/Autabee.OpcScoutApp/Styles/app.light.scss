@@ -109,7 +109,7 @@ h1:focus {
 }
 
 
-.Node:nth-child(odd), .logitem:nth-child(odd), tbody>tr:nth-child(odd) {
+.Node:nth-child(odd), .logitem:nth-child(odd) {
     background: adjust-color($color-main-background,$lightness: 5);
 }
 th {
@@ -119,11 +119,14 @@ table {
     border: 0px;
     border-spacing: 0px;
 }
+tr:nth-child(even) {
+    background: adjust-color($color-main-background,$lightness: 5);
+}
 
-button{
-    background-color:transparent;
+button {
+    background-color: transparent;
     border: none;
-    cursor:pointer;
+    cursor: pointer;
 }
 
 button:hover {

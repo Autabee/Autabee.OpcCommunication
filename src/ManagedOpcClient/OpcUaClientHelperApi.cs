@@ -24,7 +24,8 @@ using System.Xml;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
-  public delegate void MonitoredNodeValueEventHandler(OpcUaClientHelperApi sender, NodeValueRecord e);
+  public delegate void MonitoredNodeValueRecordEventHandler(object sender, NodeValueRecord e);
+  public delegate void MonitoredNodeValueEventHandler(MonitoredItem nodeId, object e);
 
   public class OpcUaClientHelperApi
   {
@@ -61,7 +62,7 @@ namespace Autabee.Communication.ManagedOpcClient
     /// Provides the event for KeepAliveNotifications.
     /// </summary>
     public event KeepAliveEventHandler KeepAliveNotification;
-    public event MonitoredNodeValueEventHandler NodeChangedNotification;
+    public event MonitoredNodeValueRecordEventHandler NodeChangedNotification;
     internal event EventHandler ReInstateNodeEntries;
 
     #region xml
@@ -1307,8 +1308,6 @@ namespace Autabee.Communication.ManagedOpcClient
       };
     }
 
-    
-
     private static Dictionary<string, NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
     {
       var dict = new Dictionary<string, NodeTypeData>();
@@ -1609,12 +1608,27 @@ namespace Autabee.Communication.ManagedOpcClient
     public object ReadValue(NodeId nodeId, Type type = null)
     {
       var value = type == null ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
+      return GetCorrectValue(value);
+    }
+
+    private object GetCorrectValue(object value)
+    {
       if (value is ExtensionObject eoValue)
       {
         return FormatObject(value, eoValue);
       }
+      else if (value is ExtensionObject[] eoValues)
+      {
+        Dictionary<string, object> result = new Dictionary<string, object>();
+        for (int i = 0; i < eoValues.Length; i++)
+        {
+          result.Add(i.ToString(), FormatObject(value, eoValues[i]));
+        }
+        return result;
+      }
       return value;
     }
+
     public T ReadValue<T>(string nodeIdString) => ReadValue<T>(new NodeId(nodeIdString));
 
     public T ReadValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
@@ -1665,48 +1679,47 @@ namespace Autabee.Communication.ManagedOpcClient
     #endregion Read
 
     #region UDT Read/Write
-    private static T CreateDefaultInstance<T>()
-    {
-      //Get the Parameterless Constructor
-      var constructor = typeof(T).GetConstructors().FirstOrDefault(o => o.GetParameters().Length == 0);
-      if (constructor == null) throw new TypeInitializationException(
-                                    typeof(T).FullName,
-                                    new Exception("No parameterless constructor"));
+    //private static T CreateDefaultInstance<T>()
+    //{
+    //  //Get the Parameterless Constructor
+    //  var constructor = typeof(T).GetConstructors().FirstOrDefault(o => o.GetParameters().Length == 0);
+    //  if (constructor == null) throw new TypeInitializationException(
+    //                                typeof(T).FullName,
+    //                                new Exception("No parameterless constructor"));
 
-      return (T)constructor.Invoke(new object[0]);
-    }
+    //  return (T)constructor.Invoke(new object[0]);
+    //}
+    //public T ReadStructUdt<T>(string nodeIdString) where T : IEncodeable => ReadStructUdt<T>(
+    //    new NodeId(nodeIdString));
 
-    public T ReadStructUdt<T>(string nodeIdString) where T : IEncodeable => ReadStructUdt<T>(
-        new NodeId(nodeIdString));
+    //public T ReadStructUdt<T>(ValueNodeEntry nodeId) where T : IEncodeable => (T)ReadValues(new ValueNodeEntryCollection() { nodeId })[0].Value;
 
-    public T ReadStructUdt<T>(ValueNodeEntry nodeId) where T : IEncodeable => (T)ReadValues(new ValueNodeEntryCollection() { nodeId })[0].Value;
+    //public T ReadStructUdt<T>(NodeId nodeId) where T : IEncodeable
+    //{
+    //  try
+    //  {
+    //    T result = CreateDefaultInstance<T>();
+    //    var buffer = (byte[])session.ReadValue(nodeId, typeof(byte[]));
+    //    result.Decode(new BinaryDecoder(buffer, session.MessageContext));
+    //    return result;
+    //  }
+    //  catch (Exception e)
+    //  {
+    //    throw;
+    //  }
+    //}
 
-    public T ReadStructUdt<T>(NodeId nodeId) where T : IEncodeable
-    {
-      try
-      {
-        T result = CreateDefaultInstance<T>();
-        var buffer = (byte[])session.ReadValue(nodeId, typeof(byte[]));
-        result.Decode(new BinaryDecoder(buffer, session.MessageContext));
-        return result;
-      }
-      catch (Exception e)
-      {
-        throw;
-      }
-    }
+    //public ExtensionObject ReadStructUdt(string nodeId) => ReadStructUdt(new NodeId(nodeId));
 
-    public ExtensionObject ReadStructUdt(string nodeId) => ReadStructUdt(new NodeId(nodeId));
+    //public ExtensionObject ReadStructUdt(NodeId nodeId) => (ExtensionObject)session.ReadValue(nodeId).Value;
 
-    public ExtensionObject ReadStructUdt(NodeId nodeId) => (ExtensionObject)session.ReadValue(nodeId).Value;
+    //public ExtensionObject[] ReadArrayStructUdt(string nodeId) => ReadArrayStructUdt(new NodeId(nodeId));
 
-    public ExtensionObject[] ReadArrayStructUdt(string nodeId) => ReadArrayStructUdt(new NodeId(nodeId));
+    //public ExtensionObject[] ReadArrayStructUdt(NodeId nodeId) => (ExtensionObject[])session.ReadValue(nodeId).Value;
 
-    public ExtensionObject[] ReadArrayStructUdt(NodeId nodeId) => (ExtensionObject[])session.ReadValue(nodeId).Value;
+    //public async Task<object> ReadStructUdtAsync(NodeId nodeId) => (await session.ReadValueAsync(nodeId)).Value;
 
-    public async Task<object> ReadStructUdtAsync(NodeId nodeId) => (await session.ReadValueAsync(nodeId)).Value;
-
-    public void WriteStructUdt(NodeId nodeId, ExtensionObject dataToWrite) { WriteValue(nodeId, dataToWrite); }
+    //public void WriteStructUdt(NodeId nodeId, ExtensionObject dataToWrite) { WriteValue(nodeId, dataToWrite); }
     #endregion UDT Read/Write
 
     #region NodeCollection Read / Write
@@ -1995,10 +2008,10 @@ namespace Autabee.Communication.ManagedOpcClient
     /// </summary>
     /// <param name="subscription">The subscription</param>
     /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-    public void AddMonitoredItem(
+    public MonitoredItem AddMonitoredItem(
         Subscription subscription,
         ValueNodeEntry nodeEntry,
-        MonitoredNodeValueEventHandler handler = null)
+        MonitoredNodeValueRecordEventHandler handler = null)
     {
       MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, handler: handler);
       try
@@ -2010,8 +2023,9 @@ namespace Autabee.Communication.ManagedOpcClient
       {
         throw e;
       }
+      return monitoredItem;
     }
-    public void AddMonitoredItem(
+    public MonitoredItem AddMonitoredItem(
             Subscription subscription,
             NodeId nodeEntry,
             MonitoredNodeValueEventHandler handler = null)
@@ -2026,28 +2040,72 @@ namespace Autabee.Communication.ManagedOpcClient
       {
         throw e;
       }
+      return monitoredItem;
+    }
+    public void AddMonitoredItem(
+            Subscription subscription,
+            MonitoredItem item)
+    {
+      try
+      {
+        subscription.AddItem(item);
+        subscription.ApplyChanges();
+      }
+      catch (Exception e)
+      {
+        throw e;
+      }
     }
 
-    public void AddMonitoredItem(
-            int publishingInterval,
+    public MonitoredItem AddMonitoredItem(
+            TimeSpan publishingInterval,
             ValueNodeEntry nodeEntry,
-            MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
+            MonitoredNodeValueRecordEventHandler handler = null) => AddMonitoredItem(
             GetSubscription(publishingInterval),
             nodeEntry,
             handler);
 
-    public void AddMonitoredItems(int publishingInterval, ValueNodeEntryCollection nodeEntrys)
+    public MonitoredItem AddMonitoredItem(
+            TimeSpan publishingInterval,
+            NodeId nodeId,
+            MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
+            GetSubscription(publishingInterval),
+            nodeId,
+            handler);
+    public MonitoredItem AddMonitoredItem(
+            int publishingIntervalMilliSec,
+            ValueNodeEntry nodeEntry,
+            MonitoredNodeValueRecordEventHandler handler = null) => AddMonitoredItem(
+            GetSubscription(publishingIntervalMilliSec),
+            nodeEntry,
+            handler);
+    public MonitoredItem AddMonitoredItem(
+            int publishingIntervalMilliSec,
+            NodeId nodeId,
+            MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
+            GetSubscription(publishingIntervalMilliSec),
+            nodeId,
+            handler);
+
+    public IEnumerable<MonitoredItem> AddMonitoredItems(TimeSpan publishingInterval, ValueNodeEntryCollection nodeEntrys)
         => AddMonitoredItems(
             GetSubscription(publishingInterval),
             nodeEntrys);
 
-    private Subscription GetSubscription(int publishingInterval)
+    public IEnumerable<MonitoredItem> AddMonitoredItems(int publishingIntervalMilliSec, ValueNodeEntryCollection nodeEntrys)
+        => AddMonitoredItems(
+            GetSubscription(publishingIntervalMilliSec),
+            nodeEntrys);
+    public Subscription GetSubscription(TimeSpan publishingInterval) => GetSubscription((int)publishingInterval.Milliseconds);
+
+
+    public Subscription GetSubscription(int publishingIntervalMilliSec)
     {
-      var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingInterval);
-      return subscription != null ? subscription : CreateSubscription(publishingInterval);
+      var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingIntervalMilliSec);
+      return subscription != null ? subscription : CreateSubscription(publishingIntervalMilliSec);
     }
 
-    public void AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
+    public IEnumerable<MonitoredItem> AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
     {
       IEnumerable<MonitoredItem> items = nodeEntrys.NodeEntries.Select(o => CreateMonitoredItem(o));
       try
@@ -2059,6 +2117,7 @@ namespace Autabee.Communication.ManagedOpcClient
       {
         throw e;
       }
+      return items;
     }
 
     public MonitoredItem CreateMonitoredItem(
@@ -2066,7 +2125,42 @@ namespace Autabee.Communication.ManagedOpcClient
         int samplingInterval = 1,
         uint queueSize = 1,
         bool discardOldest = true,
-        MonitoredNodeValueEventHandler handler = null)
+        bool globalCall = false,
+        MonitoredNodeValueRecordEventHandler handler = null)
+    {
+      MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, samplingInterval, queueSize, discardOldest);
+      if (handler != null)
+      {
+        monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, handler);
+      }
+      if (globalCall)
+      {
+        monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, NodeChangedNotification);
+      }
+
+      return monitoredItem;
+    }
+    public MonitoredItem CreateMonitoredItem(
+            NodeId nodeId,
+            int samplingInterval = 1,
+            uint queueSize = 1,
+            bool discardOldest = true,
+            bool globalCall = false,
+            MonitoredNodeValueEventHandler handler = null)
+    {
+      MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, samplingInterval, queueSize, discardOldest);
+      if (handler != null)
+      {
+        monitoredItem.Notification += (sender, arg) => MoniteredNode(sender, arg, handler);
+      }
+      if (globalCall)
+      {
+        monitoredItem.Notification += (sender, arg) => MoniteredNode(sender, arg, NodeChangedNotification);
+      }
+
+      return monitoredItem;
+    }
+    public static MonitoredItem CreateMonitoredItem(ValueNodeEntry nodeEntry, int samplingInterval, uint queueSize, bool discardOldest)
     {
       MonitoredItem monitoredItem = new MonitoredItem();
       monitoredItem.DisplayName = nodeEntry.NodeString;
@@ -2076,18 +2170,10 @@ namespace Autabee.Communication.ManagedOpcClient
       monitoredItem.SamplingInterval = samplingInterval;
       monitoredItem.QueueSize = queueSize;
       monitoredItem.DiscardOldest = discardOldest;
-      if (handler == null)
-        monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, NodeChangedNotification);
-      else
-        monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, handler);
       return monitoredItem;
     }
-    public MonitoredItem CreateMonitoredItem(
-            NodeId nodeId,
-            int samplingInterval = 1,
-            uint queueSize = 1,
-            bool discardOldest = true,
-            MonitoredNodeValueEventHandler handler = null)
+
+    static public MonitoredItem CreateMonitoredItem(NodeId nodeId, int samplingInterval, uint queueSize, bool discardOldest)
     {
       MonitoredItem monitoredItem = new MonitoredItem();
       monitoredItem.DisplayName = nodeId.ToString();
@@ -2097,46 +2183,31 @@ namespace Autabee.Communication.ManagedOpcClient
       monitoredItem.SamplingInterval = samplingInterval;
       monitoredItem.QueueSize = queueSize;
       monitoredItem.DiscardOldest = discardOldest;
-      //var (xmlString, parseString) = GetTypeDictionary(nodeIdString, session, out );
-
-      //Parse xmlString to create objects of the struct/UDT containing var name and var data type
-      //List<object> varList = new List<object>();
-      //varList = ParseTypeDictionary(xmlString, parseString);
-      if (handler == null)
-        monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeId, arg, NodeChangedNotification);
-      else
-        monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeId, arg, handler);
       return monitoredItem;
     }
-    private void MoniteredNode(
-            NodeId entry,
+
+    public void MoniteredNode(
+            MonitoredItem monitorItem,
             MonitoredItemNotificationEventArgs arg,
-            MonitoredNodeValueEventHandler handler)
+            MonitoredNodeValueEventHandler handeler)
     {
-      var value = ((MonitoredItemNotification)arg.NotificationValue).Value.Value;
-      if (value is ExtensionObject obj)
-      {
-        //if (obj.Encoding == ExtensionObjectEncoding.Binary)
-        //{
-        //  handler.Invoke(this, entry.CreateRecord(ConstructEncodable(entry, (byte[])obj.Body)));
-        //}
-        //else
-        //{
-        //  logger.Error($"No Decoding methode for monitored item {entry}");
-        //}
-      }
-      else
-      {
-        //handler.Invoke(
-        //    this,
-        //    CreateNodeValue(entry, value));
-      }
+      var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
+      handeler.Invoke(monitorItem,value);
     }
 
-    private void MoniteredNode(
+    public void MoniteredNode(
+            MonitoredItem monitorItem,
+            MonitoredItemNotificationEventArgs arg,
+            MonitoredNodeValueRecordEventHandler handeler)
+    {
+      var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
+      handeler.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
+    }
+
+    public void MoniteredNode(
         ValueNodeEntry entry,
         MonitoredItemNotificationEventArgs arg,
-        MonitoredNodeValueEventHandler handler)
+        MonitoredNodeValueRecordEventHandler handler)
     {
       if (!entry.IsUDT)
       {

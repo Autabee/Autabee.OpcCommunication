@@ -54,6 +54,7 @@
       <None Remove="Controls\OpcManipulator.razor.css" />
       <None Remove="Controls\OpcScoutControl\Browse\ScannedNodeItem.razor.css" />
       <None Remove="Controls\OpcScoutControl\NodeView.razor.css" />
+      <None Remove="Controls\OpcScoutControl\SubscriptionView.razor.css" />
       <None Remove="Pages\Index.razor.css" />
       <None Remove="Pages\OpcLogin.razor.css" />
       <None Remove="Pages\OpcManipulator.razor.css" />
@@ -63,6 +64,7 @@
     <ItemGroup>
       <Content Include="Controls\OpcScoutControl\Browse\ScannedNodeItem.razor.css" />
       <Content Include="Controls\OpcScoutControl\NodeView.razor.css" />
+      <Content Include="Controls\OpcScoutControl\SubscriptionView.razor.css" />
       <Content Include="Pages\Index.razor.css" />
       <Content Include="Pages\OpcLogin.razor.css" />
       <Content Include="Pages\OpcManipulator.razor.css" />
