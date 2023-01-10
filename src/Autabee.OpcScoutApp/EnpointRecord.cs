@@ -2,7 +2,10 @@
 {
     public class EndpointRecord
     {
-        public Opc.Ua.EndpointDescription EndpointDescription { get; set; }
+        public string Server { get; set; }
+        public string EndpointUrl { get; set; }
+        public Opc.Ua.MessageSecurityMode SecurityMode { get; set; }
+        public string SecurityPolicyUri { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public EndpointRecord()
