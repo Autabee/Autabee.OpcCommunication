@@ -17,6 +17,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{47FB823C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcScoutApp", "Autabee.OpcScoutApp\Autabee.OpcScoutApp.csproj", "{7CC07B16-F0BD-47DC-A17A-1A6DE5C844EC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Autabee.OpcScout.RazorControl", "Autabee.OpcScout.RazorControls\Autabee.OpcScout.RazorControl.csproj", "{E877D40F-E489-4449-B0BE-7B7448E40713}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +50,10 @@ Global
 		{7CC07B16-F0BD-47DC-A17A-1A6DE5C844EC}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{7CC07B16-F0BD-47DC-A17A-1A6DE5C844EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7CC07B16-F0BD-47DC-A17A-1A6DE5C844EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E877D40F-E489-4449-B0BE-7B7448E40713}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E877D40F-E489-4449-B0BE-7B7448E40713}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E877D40F-E489-4449-B0BE-7B7448E40713}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E877D40F-E489-4449-B0BE-7B7448E40713}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

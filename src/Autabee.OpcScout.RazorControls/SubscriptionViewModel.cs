@@ -1,12 +1,11 @@
-﻿using Autabee.Communication.ManagedOpcClient;
-using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse;
+﻿using Autabee.OpcScout.RazorControl.Subscription;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Autabee.OpcScoutApp.Controls.OpcScoutControl
+namespace Autabee.OpcScout.RazorControl
 {
   public class SubscriptionViewModel
   {

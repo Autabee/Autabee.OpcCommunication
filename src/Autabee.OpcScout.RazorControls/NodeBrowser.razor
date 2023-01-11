@@ -1,7 +1,7 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
-@using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+@using Autabee.OpcScout.RazorControl.Browse
 @using Opc.Ua;
-@using Autabee.OpcScoutApp.Controller;
+
 <div class="OpcBrowser">
 @if (clients != null) {
     @foreach (var client in clients)
@@ -13,8 +13,6 @@ else{
     <div> No Clients </div>
 }
 </div>
-
-
 
 @code {
     [Parameter]

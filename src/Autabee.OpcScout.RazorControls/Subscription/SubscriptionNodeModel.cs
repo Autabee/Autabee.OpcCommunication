@@ -1,6 +1,4 @@
-﻿using Autabee.Communication.ManagedOpcClient;
-using Autabee.Communication.ManagedOpcClient.ManagedNode;
-using Opc.Ua;
+﻿using Opc.Ua;
 using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
@@ -8,12 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+namespace Autabee.OpcScout.RazorControl.Subscription
 {
   public class SubscriptionNodeModel
   {
     public TimeSpan timeSpan = TimeSpan.FromMilliseconds(500);
-    private Subscription subscription;
+    private Opc.Ua.Client.Subscription subscription;
     public readonly MonitoredItem monitoredItem;
     public event EventHandler<object> ValueUpdated;
     public SubscriptionNodeModel(ScannedNodeModel nodeItem)
@@ -25,11 +23,6 @@ namespace Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
     }
     public async void MonitoredNodeValueEventHandler(object sender, object record)
     {
-      var dispatcher = Dispatcher.GetForCurrentThread();
-
-      if (dispatcher!= null && dispatcher.IsDispatchRequired)
-        await dispatcher.DispatchAsync(() => ValueUpdated?.Invoke(sender, record));
-      else
         ValueUpdated?.Invoke(sender, record);
     }
   }

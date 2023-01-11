@@ -1,9 +1,10 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.OpcScout.RazorControl.Browse;
 using Opc.Ua;
 using System;
 using System.Linq;
 
-namespace Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+namespace Autabee.OpcScout.RazorControl
 {
     public class ScannedNodeModel
     {

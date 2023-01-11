@@ -1,6 +1,6 @@
 ﻿using Opc.Ua;
 
-namespace Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse
+namespace Autabee.OpcScout.RazorControl.Browse
 {
     public enum NodeImageId
     {

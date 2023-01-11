@@ -1,10 +1,9 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
-using Autabee.OpcScoutApp.Controls.OpcScoutControl.Browse;
 using Autabee.Utility.Messaging;
 using System;
 using System.Linq;
 
-namespace Autabee.OpcScoutApp.Controls.OpcScoutControl
+namespace Autabee.OpcScout.RazorControl
 {
     public class NodeBrowserModel
     {
