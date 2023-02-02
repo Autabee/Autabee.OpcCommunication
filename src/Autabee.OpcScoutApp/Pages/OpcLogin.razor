@@ -1,4 +1,5 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScout.RazorControl;
 @using Autabee.OpcScoutApp.Data;
 @using Autabee.Utility.Logger;
 @using Opc.Ua;
@@ -270,7 +271,7 @@ else
             }
             if (Client.Connected)
             {
-                backend.clients.Add(Client);
+                backend.clients.Add((Client, new List<ScannedNodeModel>()));
                 Navigation.NavigateTo("/Opc/Manipulation");
             }
             else

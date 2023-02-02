@@ -12,6 +12,9 @@ namespace Autabee.OpcScout.RazorControl
         public event EventHandler<Message> OnNodeRead;
         public event EventHandler<OpcUaClientHelperApi> OnClientDisconnect;
 
+        public List<(OpcUaClientHelperApi, List<ScannedNodeModel>)> Clients { get; set; } = new List<(OpcUaClientHelperApi, List<ScannedNodeModel>)>();
+
+
         private ScannedNodeModel Selected { get; set; }
         public void UpdateSelected(ScannedNodeModel selected)
         {

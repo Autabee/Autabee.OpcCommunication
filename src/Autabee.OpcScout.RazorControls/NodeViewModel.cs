@@ -7,7 +7,7 @@ namespace Autabee.OpcScout.RazorControl
     {
         public event EventHandler<ScannedNodeModel> OnSelectedChanged;
 
-        private ScannedNodeModel Selected { get; set; }
+        public ScannedNodeModel Selected { get; set; }
         public void UpdateSelected(object sender, ScannedNodeModel selected)
         {
             Selected?.DeSelect();

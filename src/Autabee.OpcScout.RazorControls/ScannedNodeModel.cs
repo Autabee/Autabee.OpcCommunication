@@ -24,6 +24,7 @@ namespace Autabee.OpcScout.RazorControl
 
         public event EventHandler deSelect;
         public event EventHandler DoneGettingChildren;
+        public event EventHandler StateUpdated;
 
         public void Close()
         {

@@ -49,6 +49,10 @@
     {
         base.OnInitialized();
         Model.OnSelectedChanged += NewOpcNodeSelected;
+        if (Model.Selected != null)
+        {
+            NewOpcNodeSelected(this, Model.Selected);
+        }
     }
 
     public void NewOpcNodeSelected(object sender, ScannedNodeModel value)

@@ -87,8 +87,7 @@ namespace Autabee.OpcScoutApp
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
 #endif
-            builder.Services.AddScoped<IPresistantProgramData<List<EndpointRecord>>>(o => new AppProgramData<List<EndpointRecord>>("EndpointsRecord"));
-
+            
 
             builder.Services.AddScoped<UserTheme>(o => new UserTheme() { Theme = "app"
 #if WINDOWS
@@ -99,6 +98,8 @@ namespace Autabee.OpcScoutApp
             builder.Services.AddScoped<InMemoryLog>();
             builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));
             builder.Services.AddSingleton(o => new OpcScoutPersistentData());
+            builder.Services.AddScoped<IPresistantProgramData<List<EndpointRecord>>>(o => new AppProgramData<List<EndpointRecord>>("EndpointsRecord"));
+
             return builder.Build();
         }
 #if WINDOWS

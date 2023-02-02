@@ -57,21 +57,17 @@
 
     public string depthString { get => (depth * 8).ToString() + "px"; }
     private bool openedOnce { get; set; }
-    protected override void OnInitialized()
+    protected override async void OnInitialized()
     {
-
         base.OnInitialized();
-        ScannedNodeModel.DoneGettingChildren += UpdateChildState;
+        ScannedNodeModel.DoneGettingChildren += UpdateState;
         ScannedNodeModel.deSelect += DeSelect;
+        ScannedNodeModel.StateUpdated += UpdateState;
         if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
-        { ScannedNodeModel?.GetChildren(); }
+        { ScannedNodeModel.GetChildren(); }
+        if (ScannedNodeModel.open) openedOnce = true;
     }
 
-    private void UpdateChildState(object sender, EventArgs args)
-    {
-        //ScannedNodeModel.Open();
-        this.InvokeAsync(delegate { StateHasChanged(); });
-    }
     private async void Open()
     {
         if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
@@ -121,5 +117,9 @@
     {
         ScannedNodeModel.NodeClassType = "Node";
         StateHasChanged();
+    }
+    private async void UpdateState(object sender, EventArgs data)
+    {
+        InvokeAsync(StateHasChanged);
     }
 }

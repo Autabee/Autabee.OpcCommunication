@@ -15,7 +15,7 @@
     <div class="OpcNodeBrowserItem Viewport">
         <h3>Browser</h3>
         <div class="InnerItem OpcNodeBrowser">
-            <NodeBrowser clients="@controlBackend.clients" nodeBrowser="nodeBrowser" />
+            <NodeBrowser Model="nodeBrowser" />
         </div>
     </div>
 
@@ -79,7 +79,7 @@
 </div>
 
 @code {
-    public NodeBrowserModel nodeBrowser = new NodeBrowserModel();
+    public NodeBrowserModel nodeBrowser;
     public NodeViewModel nodeViewerModel = new NodeViewModel();
     public SubscriptionViewModel subscriptionViewModel;
 
@@ -88,6 +88,8 @@
 
     protected override void OnInitialized()
     {
+        nodeBrowser = new NodeBrowserModel(){ Clients    = controlBackend.clients };
+        
         subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes);
         if (controlBackend.observing != null) nodeViewerModel.UpdateSelected(this, controlBackend.observing);
         logger.Information("Open Manipulator");
@@ -110,7 +112,7 @@
         readwrite = true;
     }
 
-    private void UpdateSelected(ScannedNodeModel selected)
+    private void UpdateSelected(object sender, ScannedNodeModel selected)
     {
         nodeViewerModel.UpdateSelected(this, selected);
         controlBackend.observing = selected;
@@ -125,7 +127,7 @@
     {
         client.Disconnect();
         subscriptionViewModel.RemoveSubscriptions(client);
-        controlBackend.clients.Remove(client);
+        controlBackend.clients.Remove(controlBackend.clients.First(o => o.Item1 == client));
         StateHasChanged();
     }
 }

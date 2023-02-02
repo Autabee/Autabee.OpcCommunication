@@ -3,26 +3,26 @@
 @using Opc.Ua;
 
 <div class="OpcBrowser">
-@if (clients != null) {
-    @foreach (var client in clients)
+    @if (Model.Clients != null)
     {
-        <RootScannedNodeItem Browser="nodeBrowser" Client="client" />
+        @foreach (var client in Model.Clients)
+        {
+            <RootScannedNodeItem Browser="Model" Client=client.Item1 ScannedNodes=client.Item2 />
+        }
     }
-}
-else{
-    <div> No Clients </div>
-}
+    else
+    {
+        <div> No Clients </div>
+    }
 </div>
 
 @code {
     [Parameter]
-    public List<OpcUaClientHelperApi> clients { get; set; }
-    [Parameter]
-    public NodeBrowserModel nodeBrowser { get; set; }
+    public NodeBrowserModel Model { get; set; } = new NodeBrowserModel();
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        
+
     }
 }

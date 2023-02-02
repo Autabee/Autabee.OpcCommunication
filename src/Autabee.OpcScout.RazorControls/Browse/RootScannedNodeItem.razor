@@ -10,9 +10,9 @@
             <button class="mdi mdi-lan-disconnect" @onclick=Disconnect />
         </div>
     </div>
-    @if (scannedNodes != null && scannedNodes.Count >= 0)
+    @if (ScannedNodes != null && ScannedNodes.Count >= 0)
     {
-        @foreach (var node in scannedNodes)
+        @foreach (var node in ScannedNodes)
         {
             <ScannedNodeItem ScannedNodeModel="@node" depth="0" Browser="Browser" />
         }
@@ -31,27 +31,28 @@ else
     [Parameter]
     public OpcUaClientHelperApi Client { get; set; }
 
-    List<ScannedNodeModel> scannedNodes = new List<ScannedNodeModel>();
+    [Parameter]
+    public  List<ScannedNodeModel> ScannedNodes { get; set; } = new List<ScannedNodeModel>();
 
-    protected override void OnInitialized()
+    protected override async void OnInitialized()
     {
         base.OnInitialized();
-        Initialize();
+        InvokeAsync( Initialize);
     }
 
     public void Initialize()
     {
-        scannedNodes = new List<ScannedNodeModel>();
-
-        if (Client.Connected)
+        if (Client.Connected && ScannedNodes.Count == 0)
         {
             var scan = Client.BrowseRoot();
             var nodes = Client.ReadNodes(scan);
+            InvokeAsync(StateHasChanged);
             for (var i = 0; i < scan.Count; i++)
             {
                 var result = new ScannedNodeModel(scan[i], Client, nodes[i]);
-                scannedNodes.Add(result);
+                ScannedNodes.Add(result);
             }
+            InvokeAsync(StateHasChanged);
         }
     }
 
