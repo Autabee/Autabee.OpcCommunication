@@ -1,0 +1,20 @@
+﻿.Root-Node {
+    display: grid;
+    grid: "node-text node-actions" / auto 60px;
+}
+
+.node-text {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    grid-area: node-text;
+}
+
+.node-actions {
+    grid-area: node-actions;
+}
+
+.node-actions button {
+    width:20px;
+    padding:0px 1px 0px 1px;
+    float:right;
+}

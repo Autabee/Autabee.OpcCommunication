@@ -1,5 +1,4 @@
-﻿using Autabee.Utility.Messaging;
-using System;
+﻿using System;
 using System.Linq;
 
 namespace Autabee.OpcScout.RazorControl

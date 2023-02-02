@@ -1,0 +1,68 @@
+﻿$color-error: #FF2200;
+$color-warning: #FF6600;
+$color-info: #009CCC;
+
+$bold: 700;
+
+.OpcNodeBrowser, .SubscriptionView {
+    font-size: 12px;
+}
+
+.Node button {
+    font-size: 12px;
+    height:100%;
+    padding: 1px;
+    margin: 0px;
+    border: 0px;
+    background-color: transparent;
+}
+
+.Theme {
+    font-size: 20px;
+    margin-left: auto;
+    border: none;
+}
+
+
+.SubscriptionView input {
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    height: 100%;
+    width: 100%;
+    text-decoration: underline;
+}
+.SubscriptionView button {
+    padding: 1px;
+    margin: 0px;
+    width: 20px;
+    display:block;
+    float:right;
+}
+td.subscription-actions {
+    padding: 0px;
+}
+
+.Viewportheader {
+    height: 24px;
+}
+
+.Viewportheader > button {
+    border: 0px;
+    height: 24px;
+    font-weight: $bold;
+    padding: 0px 10px 0px 10px;
+}
+
+.Root-Node {
+    font-weight: $bold;
+}
+
+dialog {
+    position: absolute;
+    z-index: 1; /* Sit on top */
+    top: 50%;
+    overflow: auto; /* Enable scroll if needed */
+    text-align: left;
+    vertical-align: middle;
+}

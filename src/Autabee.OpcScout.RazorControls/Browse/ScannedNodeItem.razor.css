@@ -16,19 +16,21 @@
     display: grid;
     grid: "node-charet node-img node-text node-actions" / 15px 15px auto 60px;
 }
-    .Node > .node-text {
+     .node-text {
         text-overflow: ellipsis;
+        overflow:hidden;
     }
 
-    .Node > .node-caret {
+     .node-caret {
         grid-area: node-charet
     }
-    .Node > .node-img {
+     .node-img {
         max-height:16px;
     }
 
-.node-actions > button {
+.node-actions button {
     float: right;
+    padding: 0px 1px 0px 1px;
     width: 20px;
 }
 

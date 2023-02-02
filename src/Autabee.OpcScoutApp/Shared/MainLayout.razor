@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @inject IJSRuntime _jsRuntime;
 @inject UserTheme theme;
+@inject NavigationManager Navigation
 
 <div class="page">
 
@@ -9,12 +10,17 @@
             <!--<button title="Navigation menu" @onclick="ToggleNavMenu">
                 <span class="navbar-toggler-icon"></span>
             </button>-->
-            <img class="HomeItem" src="/images/autabee_dark_transparent.svg" style="height: 30px" />
-            <div class="HomeItem ABnavitem ">
-                <NavLink href="" Match="NavLinkMatch.All" style="color:white">
-                    Opc Scout
-                </NavLink>
-            </div>
+            @if (theme.NavDark)
+            {
+                <img class="HomeItem" src="/images/autabee_dark_transparent.svg" style="height: 30px" />
+            }
+            else
+            {
+                <img class="HomeItem" src="/images/autabee_light_transparent.svg" style="height: 30px" />
+            }
+            <button class="ABnavitem HomeItem" @onclick=NavigateTo >
+                Opc Scout
+            </button>
             <!--<nav class="@NavMenuCssClass">-->
             <!--<div class="ABnavitem">
                 <NavLink href="" Match="NavLinkMatch.All">
@@ -27,16 +33,15 @@
                     <span class="oi oi-plus" aria-hidden="true"></span><span>  Counter</span>
                 </NavLink>
             </div>-->
-            <div class="ABnavitem">
-                <NavLink href="Opc/Login">
-                    <span class="mdi mdi-lan-connect" />  Connect
-                </NavLink>
-            </div>
-            <div class="ABnavitem">
-                <NavLink href="Opc/Manipulation">
-                    <span class="mdi mdi-state-machine" />  Manipulator
-                </NavLink>
-            </div>
+
+            <button class="ABnavitem" @onclick=NavigateToLogin >
+                <span class="mdi mdi-lan-connect" />  Connect
+            </button>
+
+            <button class="ABnavitem" @onclick=NavigateToController >
+                <span class="mdi mdi-state-machine" />  Manipulator
+            </button>
+
 
             <button class="Theme" @onclick="()=>ToggleTheme()">
                 <icon class="mdi mdi-@mdiTheme" />
@@ -55,11 +60,13 @@
 @code {
     //private bool collapseNavMenu = true;
 
+
+
     private string mdiTheme { get => !theme.Dark ? "weather-sunny" : "weather-night"; }
 
     protected override void OnInitialized()
     {
-        
+        _jsRuntime.InvokeVoidAsync("SetNavTheme", theme.NavThemeCss);
         _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
     }
 
@@ -75,5 +82,19 @@
     {
         theme.Dark = !theme.Dark;
         _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
+    }
+
+    private void NavigateTo()
+    {
+        Navigation.NavigateTo("");
+    }
+
+    private void NavigateToLogin()
+    {
+        Navigation.NavigateTo("Opc/Login");
+    }
+    private void NavigateToController()
+    {
+        Navigation.NavigateTo("Opc/Manipulation");
     }
 }

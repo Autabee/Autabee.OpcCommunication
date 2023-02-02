@@ -2,7 +2,6 @@
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   height: 100vh;
   margin: 0px;
-  background-color: #e6e6e6;
 }
 
 h1:focus {
@@ -78,37 +77,105 @@ h1:focus {
     padding-left: env(safe-area-inset-left);
   }
 }
-.OpcNodeBrowser {
+table {
+  border: 0px;
+  border-spacing: 0px;
+}
+
+button {
+  background-color: transparent;
+  border: thick;
+  cursor: pointer;
+}
+
+.logitem {
   font-size: 12px;
+}
+
+.OpcNodeBrowser, .SubscriptionView {
+  font-size: 12px;
+}
+
+.Node button {
+  font-size: 12px;
+  height: 100%;
+  padding: 1px;
+  margin: 0px;
+  border: 0px;
+  background-color: transparent;
+}
+
+.Theme {
+  font-size: 20px;
+  margin-left: auto;
+  border: none;
+}
+
+.SubscriptionView input {
+  background-color: transparent;
+  border: none;
+  padding: 0px;
+  height: 100%;
+  width: 100%;
+  text-decoration: underline;
+}
+
+.SubscriptionView button {
+  padding: 1px;
+  margin: 0px;
+  width: 20px;
+  display: block;
+  float: right;
+}
+
+td.subscription-actions {
+  padding: 0px;
+}
+
+.Viewportheader {
+  height: 24px;
+}
+
+.Viewportheader > button {
+  border: 0px;
+  height: 24px;
+  font-weight: 700;
+  padding: 0px 10px 0px 10px;
+}
+
+.Root-Node {
+  font-weight: 700;
+}
+
+dialog {
+  position: absolute;
+  z-index: 1; /* Sit on top */
+  top: 50%;
+  overflow: auto; /* Enable scroll if needed */
+  text-align: left;
+  vertical-align: middle;
+}
+
+html, body {
+  background-color: #e6e6e6;
 }
 
 .node-img > img {
   height: 12px;
 }
 
-.Node:nth-child(odd), .logitem:nth-child(odd) {
-  background: #f3f3f3;
-}
-
 th {
   background: #FFD000;
 }
 
-table {
-  border: 0px;
-  border-spacing: 0px;
-}
-
-tr:nth-child(even) {
+.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even) {
   background: #f3f3f3;
 }
 
-button {
-  background-color: transparent;
-  border: none;
-  cursor: pointer;
-}
-
+/*
+.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even) {
+    background: adjust-color($color-main-background,$lightness: 8);
+}*/
 button:hover {
   background-color: #009CCC;
 }
@@ -126,11 +193,6 @@ input {
   background: #009CCC;
 }
 
-.Node-Selected:nth-child(odd) {
-  color: white;
-  background: #007599;
-}
-
 .Node-Selected {
   color: white;
   background: #009CCC;
@@ -138,61 +200,57 @@ input {
 
 .Node-Selected:hover {
   color: white;
+  background: #007599;
+}
+
+.Node button:hover {
+  background-color: #007599;
+}
+
+.Node-Selected button:hover {
+  color: white;
   background: #009CCC;
 }
 
-.Node > .node-actions > button {
-  font-size: 12px;
-  margin: 0px;
-  border: 0px;
-  width: 100%;
-  background-color: transparent;
+.Root-Node {
+  background: #FFD000;
 }
 
-.Node > .node-actions > button:hover {
+.OpcNodeViewer button:hover {
   background-color: #007599;
 }
 
-.ABnavitem > a {
-  text-decoration: none;
-  color: black;
-}
-
-.OpcNodeViewer > table > tr > td > button:hover {
-  background-color: #007599;
-}
-
-.Viewport > h3 {
+.Viewport h3 {
   background-color: #FFD000;
+}
+
+.Viewport {
+  /*resize: both;*/
 }
 
 .Viewportheader {
   background-color: #FFD000;
-  height: 24px;
 }
 
 .Viewportheader > button {
   background-color: transparent;
-  border: 0px;
-  height: 24px;
-  font-weight: 700;
-  padding: 0px 10px 0px 10px;
 }
 
 .Viewportheader > button:hover {
   background-color: #cca600;
 }
 
-.top-row {
-  background: #cccccc;
-  color: black;
+.log-message {
+  white-space: pre-line;
 }
 
-.Theme {
-  background-color: transparent;
-  font-size: 20px;
-  margin-left: auto;
-  border: none;
+.log-message-short {
+  white-space: pre-line;
+}
+
+.top-row {
+  background-color: #b3b3b3;
+  color: black;
 }
 
 .SelectEnpoint {
@@ -202,18 +260,18 @@ input {
   font-size: 22px;
 }
 
-.Danger {
+button.Danger {
   background-color: #FF2200;
   color: white;
   font-weight: 700;
 }
 
-.InfoButton {
+button.Info {
   background-color: #009CCC;
   color: white;
   font-weight: 700;
 }
 
-.InfoButton:hover, .Danger:hover {
+button.Info:hover, button.Danger:hover {
   background-color: #e6bb00;
 }

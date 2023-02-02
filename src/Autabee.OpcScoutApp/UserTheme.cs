@@ -15,6 +15,8 @@
             }
         }
         public string DarkString { get => Dark ? "dark" : "light"; }
+        public string NavDarkString { get => navdark ? "dark" : "light"; }
+        public string Nav { get; set; }
         string theme;
         public string Theme
         {
@@ -28,6 +30,9 @@
             }
         }
         public string ThemeCss { get => $"{Theme}.{DarkString}.css"; }
+        public string NavThemeCss { get => $"nav.{NavDarkString}.css"; }
+        bool navdark;
+        public bool NavDark { get => navdark; set => navdark = value; }
         public UserTheme()
         {
         }

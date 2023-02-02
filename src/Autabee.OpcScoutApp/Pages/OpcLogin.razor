@@ -1,48 +1,53 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScoutApp.Data;
+@using Autabee.Utility.Logger;
 @using Opc.Ua;
 @using System.Security.Cryptography.X509Certificates
+@using System.Text.RegularExpressions;
 
-@inject Controller.OpcScoutBackend backend;
-@inject NavigationManager Navigation;
-@inject ApplicationConfiguration config;
-@inject IPresistantProgramData<List<EndpointRecord>> EndpointsConnection;
+@inject IAutabeeLogger logger
+@inject OpcScoutPersistentData backend
+@inject NavigationManager Navigation
+@inject ApplicationConfiguration config
+@inject IPresistantProgramData<List<EndpointRecord>> EndpointsConnection
 @page "/Opc/Login"
 
-<dialog title="Error" open="@(!string.IsNullOrWhiteSpace(messageTitle))">
-    <p>@messageTitle</p>
-  @if (@messageData.Count > 0)
-  {
-      <table>
-          <tr><th>Data</th><th>Value</th></tr>
-      @foreach (var item in messageData)
-      {
-            <tr><td>@item.Key</td><td>@item.Value</td></tr>
-      }
-      </table>
-  }
+<dialog open="@(!string.IsNullOrWhiteSpace(messageTitle))">
+    <h3>@messageTitle</h3>
+    @if (@messageData.Count > 0)
+    {
+        <table>
+            <tr><th>Data</th><th>Value</th></tr>
+            @foreach (var item in messageData)
+            {
+                <tr><td>@item.Key</td><td>@item.Value</td></tr>
+            }
+        </table>
+    }
 
-  @foreach (var button in Buttons)
-  {
-      <button @onclick="button.Value">@button.Key</button>
-  }
+    @foreach (var button in Buttons)
+    {
+        <button class="@button.Value.Item1" @onclick="button.Value.Item2">@button.Key</button>
+    }
 </dialog>
+
 <table class="loginform">
     <tr>
         <td>Server:</td>
         <td><input @bind="server" type="url" /></td>
-        <td><button @onclick="GetEnpoints" class="InfoButton" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-magnify"></icon></button></td>
+        <td><button @onclick="GetEnpoints" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-magnify"></icon></button></td>
     </tr>
     <tr>
         <td>Endpoint record:</td>
         <td>
             <select type="connection record" @onchange="SetEndpoint" placeholder="***">
-        @foreach (var item in savedEndpoints)
-        {
-                  <option value="@item.Name;@item.Server;@item.Description">@item.Name : @item.Server : @item.Description</option>
-        }
+                @foreach (var item in savedEndpoints)
+                {
+                    <option value="@item.Name;@item.Server;@item.Description">@item.Name : @item.Server : @item.Description</option>
+                }
             </select>
         </td>
-        <td><button @onclick="Connect" class="InfoButton" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-connection"></icon></button></td>
+        <td><button @onclick="Connect" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-connection"></icon></button></td>
     </tr>
 
     <tr>
@@ -60,248 +65,293 @@
 
 @if (endpoints == null)
 {
-  <p class="SelectEnpoint"><em>Request server for endpoints</em></p>
+    <p class="SelectEnpoint"><em>Request server for endpoints</em></p>
 }
 else
 {
-  <br />
-  <table class="Endpoints">
-      <thead>
-          <tr>
-              <th>Endpoint</th>
-              <th>Policy</th>
-              <th>Mode</th>
-              <th>Actions</th>
-          </tr>
-      </thead>
-      <tbody>
-      @foreach (var endpoint in endpoints)
-      {
+    <br />
+    <table class="Endpoints">
+        <thead>
             <tr>
-                <td>@endpoint.EndpointUrl</td>
-                <td>@endpoint.SecurityPolicyUri.Substring(43)</td>
-                <td>@endpoint.SecurityMode</td>
-                <td class="actions">
-                    <button @onclick="()=> SaveAndConnect(endpoint)" class="mdi mdi-content-save InfoButton" title="Connect & Save" />
-                    <button @onclick="()=> Connect(endpoint)" class="mdi mdi-connection InfoButton" title="Try Connect" />
-            @if (!@CertAccepted[endpoints.IndexOf(endpoint)])
-            {
-                      <button @onclick="() => AcceptCert(endpoint.ServerCertificate)" class="mdi mdi-certificate Danger" title="Accept Certificate" />
-            }
-                </td>
+                <th>Endpoint</th>
+                <th>Policy</th>
+                <th>Mode</th>
+                <th>Actions</th>
             </tr>
-      }
-      </tbody>
-  </table>
+        </thead>
+        <tbody>
+            @foreach (var endpoint in endpoints)
+            {
+                <tr class="data-item">
+                    <td>@endpoint.EndpointUrl</td>
+                    <td>@endpoint.SecurityPolicyUri.Substring(43)</td>
+                    <td>@endpoint.SecurityMode</td>
+                    <td class="actions">
+                        <button @onclick="()=> SaveAndConnect(endpoint)" class="mdi mdi-content-save Info" title="Connect & Save" />
+                        <button @onclick="()=> Connect(endpoint)" class="mdi mdi-connection Info" title="Try Connect" />
+                        @if (!@CertAccepted[endpoints.IndexOf(endpoint)])
+                        {
+                            <button @onclick="() => AcceptCert(endpoint.ServerCertificate)" class="mdi mdi-certificate Danger" title="Accept Certificate" />
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }
 
 @code {
-  OpcUaClientHelperApi Client;
-  string messageTitle = string.Empty;
-  Dictionary<string, string> messageData = new Dictionary<string, string>();
-  string server = string.Empty;
-  string username = string.Empty;
-  string password = string.Empty;
+    OpcUaClientHelperApi Client;
+    string messageTitle = string.Empty;
+    Dictionary<string, string> messageData = new Dictionary<string, string>();
+    string server = string.Empty;
+    string username = string.Empty;
+    string password = string.Empty;
 
-  Dictionary<string, Action> Buttons = new Dictionary<string, Action>();
-  EndpointDescriptionCollection endpoints;
-  EndpointDescription selectedEndpoint;
-  EndpointRecord dropSelectedEndpoint;
-  bool[] CertAccepted;
-  X509Certificate2 lastCert = null;
-  bool AcceptLast;
-  List<EndpointRecord> savedEndpoints = new List<EndpointRecord>();
+    Dictionary<string, (string, Action)> Buttons = new Dictionary<string, (string, Action)>();
+    EndpointDescriptionCollection endpoints;
+    EndpointDescription selectedEndpoint;
+    EndpointRecord dropSelectedEndpoint;
+    bool[] CertAccepted;
+    X509Certificate2 lastCert = null;
+    bool AcceptLast;
+    List<EndpointRecord> savedEndpoints = new List<EndpointRecord>();
 
-  protected override void OnInitialized()
-  {
-    Client = new OpcUaClientHelperApi(config);
-    Client.CertificateValidationNotification += CertificateValidation;
-    savedEndpoints = EndpointsConnection.Load();
-    savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
-  }
-  public async ValueTask DisposeAsync()
-  {
-    Client.CertificateValidationNotification -= CertificateValidation;
-  }
-
-  private void CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
-  {
-    if (lastCert != null && lastCert.Thumbprint == e.Certificate.Thumbprint && AcceptLast)
+    protected override void OnInitialized()
     {
-      e.Accept = AcceptLast;
-      e.AcceptAll = AcceptLast;
-      return;
+        Client = new OpcUaClientHelperApi(config);
+        Client.CertificateValidationNotification += CertificateValidation;
+        savedEndpoints = EndpointsConnection.Load();
+        savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
+        if (savedEndpoints.Count >= 1)
+        {
+            dropSelectedEndpoint = savedEndpoints.First();
+        }
     }
-    messageTitle = "Accept certificate?";
-    messageData["Issuer"] = e.Certificate.Issuer;
-    messageData["Thumbprint"] = e.Certificate.Thumbprint;
-    Buttons.Clear();
-    Buttons.Add("Reject", delegate () { ClearMessage(); });
-    Buttons.Add("Accept", delegate ()
+    public async ValueTask DisposeAsync()
     {
-      AcceptLast = true;
-      ClearMessage();
-      Connect(selectedEndpoint);
-    });
-    lastCert = e.Certificate;
-  }
+        Client.CertificateValidationNotification -= CertificateValidation;
+    }
 
-  void SetEndpoint(ChangeEventArgs e)
-  {
-    var key = (e.Value as string);
-    var selected = savedEndpoints.FirstOrDefault(o =>
+    private void CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
     {
-      var thiskey = $"{o.Name};{o.Server};{o.Description}";
-      return key == thiskey;
-    });
-    dropSelectedEndpoint = selected;
-  }
-
-  public async void SaveAndConnect(EndpointDescription endpoint)
-  {
-    var endpointRecord = new EndpointRecord()
-    {
-        Server = server,
-        EndpointUrl = endpoint.EndpointUrl,
-        SecurityMode = endpoint.SecurityMode,
-        SecurityPolicyUri = endpoint.SecurityPolicyUri
-    };
-    savedEndpoints.Add(endpointRecord);
-    EndpointsConnection.Save(savedEndpoints);
-    Connect(endpoint);
-  }
-
-  public async void Connect()
-  {
-    if (dropSelectedEndpoint != null) {
-
-      endpoints = OpcUaClientHelperApi.GetEndpoints(dropSelectedEndpoint.Server);
-      CertAccepted = new bool[endpoints.Count];
-      var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
-      if (selectedEndpoint != null) { 
-          Connect(selectedEndpoint); 
-      }
-      else
-      {
-        messageTitle = "unable to find server";
+        if (lastCert != null && lastCert.Thumbprint == e.Certificate.Thumbprint && AcceptLast)
+        {
+            e.Accept = AcceptLast;
+            e.AcceptAll = AcceptLast;
+            return;
+        }
+        messageTitle = "Accept certificate?";
+        messageData["Issuer"] = e.Certificate.Issuer;
+        messageData["Thumbprint"] = e.Certificate.Thumbprint;
         Buttons.Clear();
-        Buttons.Add("Okay", ClearMessage);
-      }
+        Buttons.Add("Reject", ("Danger", delegate () { ClearMessage(); }));
+        Buttons.Add("Accept", ("Info", delegate ()
+        {
+            AcceptLast = true;
+            ClearMessage();
+            Connect(selectedEndpoint);
+        }
+        ));
+        lastCert = e.Certificate;
     }
-  }
 
-  public async void GetEnpoints()
-  {
-    messageTitle = string.Empty;
-    try
+    void SetEndpoint(ChangeEventArgs e)
     {
-      endpoints = OpcUaClientHelperApi.GetEndpoints(server);
-
-      UpdateCertificateStatus();
+        var key = (e.Value as string);
+        var selected = savedEndpoints.FirstOrDefault(o =>
+        {
+            var thiskey = $"{o.Name};{o.Server};{o.Description}";
+            return key == thiskey;
+        });
+        dropSelectedEndpoint = selected;
     }
-    catch (Exception e)
+
+    public async void SaveAndConnect(EndpointDescription endpoint)
     {
-      messageTitle = e.Message;
-      Buttons.Clear();
-      Buttons.Add("Okay", ClearMessage);
+        var endpointRecord = new EndpointRecord()
+            {
+                Server = server,
+                EndpointUrl = endpoint.EndpointUrl,
+                SecurityMode = endpoint.SecurityMode,
+                SecurityPolicyUri = endpoint.SecurityPolicyUri
+            };
+        savedEndpoints.Add(endpointRecord);
+        EndpointsConnection.Save(savedEndpoints);
+        Connect(endpoint);
     }
-  }
-  public async void Connect(EndpointDescription endpoint)
-  {
-    selectedEndpoint = endpoint;
-    messageTitle = string.Empty;
 
-    try
+    public async void Connect()
     {
-      if (endpoint.SecurityMode == MessageSecurityMode.None)
-      {
-        await Client.Connect(server);
-      }
-      else
-      {
-        if (string.IsNullOrEmpty(username)) await Client.Connect(endpoint, null);
-        else await Client.Connect(endpoint, new UserIdentity(username, password));
-      }
-      if (Client.Connected)
-      {
-        backend.clients.Add(Client);
-        Navigation.NavigateTo("/Opc/Manipulation");
-      }
-      else
-      {
-        messageTitle = "Not Connected";
-        Buttons.Clear();
-        Buttons.Add("Okay", ClearMessage);
-      }
+        if (dropSelectedEndpoint != null)
+        {
+            try
+            {
+                endpoints = OpcUaClientHelperApi.GetEndpoints(dropSelectedEndpoint.Server);
+                CertAccepted = new bool[endpoints.Count];
+                var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
+                if (selectedEndpoint != null)
+                {
+                    logger.Information("attempting to connect with:" + selectedEndpoint.Server.ApplicationUri);
+                    Connect(selectedEndpoint);
+                }
+                else
+                {
+                    messageTitle = "unable to find server";
+                    Buttons.Clear();
+                    Buttons.Add(ClearMessageButton);
+                }
+            }
+            catch (Exception e)
+            {
+                messageTitle = e.Message;
+                Buttons.Clear();
+                Buttons.Add(ClearMessageButton);
+            }
+        }
+    }
+
+    public async void GetEnpoints()
+    {
+        messageTitle = string.Empty;
+        Stack<string> stackSearch = new Stack<string>();
+        if (!Regex.IsMatch(server, @"^((\bopc\.tcp\:\/{2})|(\bhttps\:\/{2}))"))
+        {
+            stackSearch.Push("https://" + server);
+            stackSearch.Push("opc.tcp://" + server);
+
+        }
+        else
+        {
+            stackSearch.Push(server);
+        }
+        string error = string.Empty;
+        do
+        {
+            endpoints = null;
+            try
+            {
+                var str = stackSearch.Pop();
+                logger.Information("attempting to retrieve endpoints from: " + str);
+                endpoints = OpcUaClientHelperApi.GetEndpoints(str);
+                UpdateCertificateStatus();
+            }
+            catch (Exception e)
+            {
+                error += "." + e.Message;
+
+            }
+        } while (stackSearch.Count > 0 && (endpoints == null || endpoints.Count == 0));
+
+        if ((endpoints == null || endpoints.Count == 0))
+        {
+            if (string.IsNullOrWhiteSpace(error)) messageTitle = "none found";
+            else messageTitle = error.Substring(1);
+            Buttons.Clear();
+            Buttons.Add(ClearMessageButton);
+        }
 
     }
-    catch (Exception e)
+    public async void Connect(EndpointDescription endpoint)
     {
-      if (messageTitle.Contains("Accept certificate"))
-      {
-        return;
-      }
-      messageTitle = e.Message;
-      Buttons.Clear();
-      Buttons.Add("Okay", ClearMessage);
-    }
-  }
+        selectedEndpoint = endpoint;
+        messageTitle = string.Empty;
 
-  private void UpdateCertificateStatus()
-  {
-
-    CertAccepted = new bool[endpoints.Count];
-    for (var i = 0; i < endpoints.Count; i++)
-    {
-      CertificateValidator validator = new CertificateValidator();
-
-      if (endpoints[i].SecurityMode == MessageSecurityMode.None) CertAccepted[i] = (true);
-      else
-      {
-        var cert = new X509Certificate2(endpoints[i].ServerCertificate);
         try
         {
-          //OpcUaClientHelperApi.ValidateCertificate(cert);
-          validator.Validate(cert);
-          CertAccepted[i] = (true);
+            if (endpoint.SecurityMode == MessageSecurityMode.None)
+            {
+                await Client.Connect(endpoint);
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(username)) await Client.Connect(endpoint, null);
+                else await Client.Connect(endpoint, new UserIdentity(username, password));
+            }
+            if (Client.Connected)
+            {
+                backend.clients.Add(Client);
+                Navigation.NavigateTo("/Opc/Manipulation");
+            }
+            else
+            {
+                messageTitle = "Not Connected";
+                Buttons.Clear();
+                Buttons.Add(ClearMessageButton);
+            }
+
         }
         catch (Exception e)
         {
-
-          CertAccepted[i] = (false);
+            if (messageTitle.Contains("Accept certificate"))
+            {
+                return;
+            }
+            messageTitle = e.Message;
+            Buttons.Clear();
+            Buttons.Add(ClearMessageButton);
         }
-      }
     }
-  }
 
 
-  public void ClearMessage()
-  {
+    private KeyValuePair<string, (string, Action)> ClearMessageButton
+    => new KeyValuePair<string, (string, Action)>("Okay", ("Info", ClearMessage));
 
-    messageTitle = string.Empty;
-    Buttons.Clear();
-    messageData.Clear();
-  }
-
-  public void AcceptCert(byte[] certdata)
-  {
-    try
-    {
-      X509Certificate2 cert = new X509Certificate2(certdata);
-      var stored = cert.AddToStore("X509Store", "CurrentUser\\Root");
-      UpdateCertificateStatus();
-    }
-    catch
+    private void UpdateCertificateStatus()
     {
 
+        CertAccepted = new bool[endpoints.Count];
+        for (var i = 0; i < endpoints.Count; i++)
+        {
+            CertificateValidator validator = new CertificateValidator();
+
+            if (endpoints[i].SecurityMode == MessageSecurityMode.None) CertAccepted[i] = (true);
+            else
+            {
+                var cert = new X509Certificate2(endpoints[i].ServerCertificate);
+                try
+                {
+                    //OpcUaClientHelperApi.ValidateCertificate(cert);
+                    validator.Validate(cert);
+                    CertAccepted[i] = (true);
+                }
+                catch (Exception e)
+                {
+
+                    CertAccepted[i] = (false);
+                }
+            }
+        }
     }
 
-  }
 
-  public void Execute(string button)
-  {
-    Buttons[button].Invoke();
-  }
+    public void ClearMessage()
+    {
+
+        messageTitle = string.Empty;
+        Buttons.Clear();
+        messageData.Clear();
+    }
+
+    public void AcceptCert(byte[] certdata)
+    {
+        try
+        {
+            X509Certificate2 cert = new X509Certificate2(certdata);
+            var stored = cert.AddToStore("X509Store", "CurrentUser\\Root");
+            UpdateCertificateStatus();
+        }
+        catch
+        {
+
+        }
+
+    }
+
+    public void Execute(string button)
+    {
+        Buttons[button].Item2.Invoke();
+    }
 
 
 }

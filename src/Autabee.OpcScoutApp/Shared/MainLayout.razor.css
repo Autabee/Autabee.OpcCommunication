@@ -20,44 +20,25 @@ article{
     padding: 0px;
 }
 
-    .top-row > img {
-        padding: 5px;
-        background-color: #333333;
-    }
 
 
 
 .ABnavitem {
-    padding: 8px 5px 5px 15px;
-    
+    display: block;
+    padding: 8px 10px 5px 10px;
+    vertical-align: middle;
     text-align-last: auto;
     vertical-align: -webkit-baseline-middle;
-}
-    .ABnavitem > a {
-        text-decoration: none;
-        
-    }
-
-.HomeItem {
-    color: white;
-    background-color: #333333;
-    padding: 8px 10px 5px 10px;
+    text-decoration: none;
+    font-size: large;
+    font: 700;
+    font-weight: bold;
 }
 
-    .HomeItem > a {
-        color: white;
-    }
 
 .Theme {
     float: right;
-    border-radius: 15px;
-    height: 30px;
     width: 50px;
-    margin: 5px 5px 5px auto
-}
-
-.Theme>icon {
-    
 }
 
 

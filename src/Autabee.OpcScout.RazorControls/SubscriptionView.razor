@@ -7,6 +7,7 @@
         <th>NodeId</th>
         <th>Time</th>
         <th>Value</th>
+        <th></th>
     </tr>
 @foreach (var item in SubscriptionViewModel.subscriptionNodeModels)
 {
@@ -17,13 +18,16 @@
 
 
 @code {
-  [Parameter]
-  public SubscriptionViewModel SubscriptionViewModel { get; set; }
+    [Parameter]
+    public SubscriptionViewModel SubscriptionViewModel { get; set; }
 
-  protected override void OnInitialized()
-  {
-    SubscriptionViewModel.OnListChanged += (sender, obj) => StateHasChanged();
-  }
+    protected override void OnInitialized()
+    {
+        SubscriptionViewModel.OnListChanged += (sender, obj) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+    }
 
 
 }

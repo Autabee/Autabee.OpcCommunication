@@ -7,12 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Browse\RootScannedNodeItem.razor.css" />
     <None Remove="Browse\ScannedNodeItem.razor.css" />
     <None Remove="NodeView.razor.css" />
     <None Remove="SubscriptionView.razor.css" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Browse\RootScannedNodeItem.razor.css" />
     <Content Include="Browse\ScannedNodeItem.razor.css" />
     <Content Include="NodeView.razor.css" />
     <Content Include="SubscriptionView.razor.css" />

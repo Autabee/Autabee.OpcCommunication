@@ -3,9 +3,13 @@
 
 @if (Client.Connected)
 {
+    <div class="Root-Node">
+        <span class="node-text">@Client.GetConnectedServer()?.ApplicationName</span>
 
-
-    @Client.GetConnectedServer()?.ApplicationName
+        <div class="node-actions">
+            <button class="mdi mdi-lan-disconnect" @onclick=Disconnect />
+        </div>
+    </div>
     @if (scannedNodes != null && scannedNodes.Count >= 0)
     {
         @foreach (var node in scannedNodes)
@@ -15,8 +19,11 @@
     }
 }
 
-else{
-    <icon class="mdi mdi-disconnect"/>@Client.ApplicationDescription.ApplicationName
+else
+{
+    <icon class="mdi mdi-disconnect" />
+
+    @Client.ApplicationDescription.ApplicationName
 }
 @code {
     [Parameter]
@@ -46,6 +53,13 @@ else{
                 scannedNodes.Add(result);
             }
         }
+    }
+
+    public void Disconnect()
+    {
+
+
+        Browser.Disconnect(Client);
     }
 }
 

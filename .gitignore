@@ -364,10 +364,8 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # remove secrets
-*.secret.json
-*.secrets.json
-*.Secret.json
-*.Secrets.json
+*.[Ss]ecret.json
+*.[Ss]ecrets.json
 
 [Ss]ecret.json
 [Ss]ecrets.json

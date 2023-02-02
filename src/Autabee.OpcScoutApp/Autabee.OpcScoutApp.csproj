@@ -51,19 +51,15 @@
 
     <ItemGroup>
       <None Remove="autabeeopcscout.Config.xml" />
-      <None Remove="Controls\OpcManipulator.razor.css" />
       <None Remove="Pages\Index.razor.css" />
       <None Remove="Pages\OpcLogin.razor.css" />
       <None Remove="Pages\OpcManipulator.razor.css" />
-      <None Remove="Styles\autabee.dark.scss" />
     </ItemGroup>
 
     <ItemGroup>
       <Content Include="Pages\Index.razor.css" />
       <Content Include="Pages\OpcLogin.razor.css" />
       <Content Include="Pages\OpcManipulator.razor.css" />
-      <Content Include="Styles\autabee.dark.scss" />
-      <Content Include="Styles\autabee.light.scss" />
     </ItemGroup>
 
     <ItemGroup>
@@ -74,6 +70,7 @@
 
     <ItemGroup>
       <PackageReference Include="BuildWebCompiler" Version="1.12.405" />
+      <PackageReference Include="System.Management" Version="7.0.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -94,10 +91,6 @@
         <Generator>ResXFileCodeGenerator</Generator>
         <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       </EmbeddedResource>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Controls\" />
     </ItemGroup>
 
 </Project>

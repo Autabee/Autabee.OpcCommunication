@@ -1,37 +1,39 @@
 ﻿@using System.Text.Json;
 @foreach (var item in Value)
 {
-  if (item.Value is Dictionary<string, object> dicItem)
-  {
-    if (dicItem.Count > 0)
+    if (item.Value is Dictionary<string, object> dicItem)
     {
-      <ComplexSubscriptionNode Value="@dicItem" NodeId="@string.Join('.',NodeId,item.Key)" />
+        if (dicItem.Count > 0)
+        {
+            <ComplexSubscriptionNode Value="@dicItem" NodeId="@string.Join('.',NodeId,item.Key)" />
+        }
+        else
+        {
+            <tr>
+                <td>@item.Key</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        }
     }
     else
     {
-      <tr>
-          <td>@item.Key</td>
-          <td></td>
-          <td></td>
-      </tr>
+        <tr>
+            <td>@string.Join('.',NodeId,item.Key)</td>
+            <td></td>
+            <td>@item.Value</td>
+            <td></td>
+        </tr>
     }
-  }
-  else
-  {
-    <tr>
-        <td>@string.Join('.',NodeId,item.Key)</td>
-        <td></td>
-        <td>@item.Value</td>
-    </tr>
-  }
 }
 
 
 @code {
-  [Parameter]
-  public Dictionary<string,object> Value { get; set; }
-  [Parameter]
-  public string NodeId { get; set; }
-  
- 
+    [Parameter]
+    public Dictionary<string, object> Value { get; set; }
+    [Parameter]
+    public string NodeId { get; set; }
+
+
 }
