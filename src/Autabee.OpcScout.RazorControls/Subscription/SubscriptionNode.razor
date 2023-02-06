@@ -1,8 +1,9 @@
 ﻿@using System.Text.Json;
 @using Autabee.Communication.ManagedOpcClient;
+@using Autabee.Communication.ManagedOpcClient.ManagedNode;
 @using Opc.Ua;
 <tr>
-    <td>@SubscriptionViewModel.monitoredItem.StartNodeId</td>
+    <td class="subscription-nodeid">@SubscriptionViewModel.monitoredItem.StartNodeId</td>
     <td>@SubscriptionViewModel.UpdateTime.ToString()</td>
 
     @if (SubscriptionViewModel.complex)
@@ -29,6 +30,7 @@
     {
         <td>@SubscriptionViewModel.MonitoredValueString</td>
     }
+    <td>@SubscriptionViewModel.NodeType.TypeName</td>
     <td class="subscription-actions"><button class="mdi mdi-close-thick" @onclick=SubscriptionViewModel.Remove /></td>
 </tr>
 @if (SubscriptionViewModel.complex && SubscriptionViewModel.show)

@@ -13,7 +13,7 @@ namespace Autabee.OpcScout.RazorControl
         public ScannedNodeModel[] Children = new ScannedNodeModel[0];
         public bool open = false;
 
-        public ScannedNodeModel(ReferenceDescription referenceDescription, OpcUaClientHelperApi client, Node node, ScannedNodeModel parent = null)
+        public ScannedNodeModel(ReferenceDescription referenceDescription, AutabeeManagedOpcClient client, Node node, ScannedNodeModel parent = null)
         {
             Reference = referenceDescription;
             Client = client;
@@ -86,7 +86,7 @@ namespace Autabee.OpcScout.RazorControl
         public NodeClass GetNodeClass() => Reference.NodeClass;
 
         public string NodeClassType { get; set; } = "Node";
-        public OpcUaClientHelperApi Client { get; }
+        public AutabeeManagedOpcClient Client { get; }
         public Node Node { get; }
         public NodeImageId NodeImage { get; private set; }
         public ReferenceDescription Reference { get; }

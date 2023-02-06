@@ -9,7 +9,7 @@ namespace AutabeeTestFixtures
     {
         protected readonly ApplicationDescription server;
         public bool SkipServerNotFound { get; private set; }
-        public OpcUaClientHelperApi Communicator { get; private set; }
+        public AutabeeManagedOpcClient Communicator { get; private set; }
 
         //private readonly bool UseAnonymous = false;
         protected readonly EndpointDescriptionCollection endpoints;
@@ -28,7 +28,7 @@ namespace AutabeeTestFixtures
             {
                 try
                 {
-                    Communicator = new OpcUaClientHelperApi("Autabee", "xUnitApiTester", "Autabee.Tester");
+                    Communicator = new AutabeeManagedOpcClient("Autabee", "xUnitApiTester", "Autabee.Tester");
                     var task = Communicator.Connect(endpointString, userIdentity: new UserIdentity());
                     task.Wait(10000);
                     SkipServerNotFound = task.IsCompleted && !Communicator.Connected;

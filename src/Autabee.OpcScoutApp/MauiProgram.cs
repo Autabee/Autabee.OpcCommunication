@@ -76,7 +76,7 @@ namespace Autabee.OpcScoutApp
 #if DEBUG
             builder.Services.AddSingleton(o =>
             {
-                return OpcUaClientHelperApi.CreateDefaultClientConfiguration(Assembly.GetExecutingAssembly()
+                return AutabeeManagedOpcClientExtension.CreateDefaultClientConfiguration(Assembly.GetExecutingAssembly()
                     .GetManifestResourceStream("Autabee.OpcScoutApp.autabeeopcscout.Config.xml"));
             }
             );

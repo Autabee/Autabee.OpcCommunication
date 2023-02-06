@@ -58,7 +58,7 @@
                 }
             else if (readwrite)
             {
-
+                
             }
         </div>
     </div>
@@ -123,7 +123,7 @@
     {
         StateHasChanged();
     }
-    private void DisconnectClient(object sender, OpcUaClientHelperApi client)
+    private void DisconnectClient(object sender, AutabeeManagedOpcClient client)
     {
         client.Disconnect();
         subscriptionViewModel.RemoveSubscriptions(client);

@@ -27,7 +27,7 @@ namespace Tests
       var file = "config/secret.json";
 
       SharperTestSettings settings = GetSettings(file);
-      OpcUaClientHelperApi service = await GetService(settings);
+      AutabeeManagedOpcClient service = await GetService(settings);
       OpcSharper.GenerateProject(service, settings.GeneratorSettings, logger);
     }
 
@@ -42,7 +42,7 @@ namespace Tests
       string file = "config/boiler.json";
 
       SharperTestSettings settings = GetSettings(file);
-      OpcUaClientHelperApi service = await GetService(settings);
+      AutabeeManagedOpcClient service = await GetService(settings);
       OpcSharper.GenerateProject(service, settings.GeneratorSettings, logger);
     }
 
@@ -52,14 +52,14 @@ namespace Tests
       var file = "config/DataAccess.json";
 
       SharperTestSettings settings = GetSettings(file);
-      OpcUaClientHelperApi service = await GetService(settings);
+      AutabeeManagedOpcClient service = await GetService(settings);
 
       OpcSharper.GenerateProject(service, settings.GeneratorSettings, logger);
     }
 
-    private async Task<OpcUaClientHelperApi> GetService(SharperTestSettings settings)
+    private async Task<AutabeeManagedOpcClient> GetService(SharperTestSettings settings)
     {
-      var service = new OpcUaClientHelperApi("Autabee", "UnitX.ApiTester", "Autabee.Tester");
+      var service = new AutabeeManagedOpcClient("Autabee", "UnitX.ApiTester", "Autabee.Tester");
       await TryConnect(settings, service);
       Skip.If(!service.Connected, "Error connecting to server");
       return service;
@@ -79,11 +79,11 @@ namespace Tests
       return settings;
     }
 
-    private async Task TryConnect(SharperTestSettings settings, OpcUaClientHelperApi service)
+    private async Task TryConnect(SharperTestSettings settings, AutabeeManagedOpcClient service)
     {
       try
       {
-        EndpointDescriptionCollection endpointDescriptionCollection = OpcUaClientHelperApi.GetEndpoints(settings.server);
+        EndpointDescriptionCollection endpointDescriptionCollection = AutabeeManagedOpcClient.GetEndpoints(settings.server);
         endpointDescriptionCollection.ForEach(ep => Console.WriteLine(ep.EndpointUrl));
 
         //always accept cert

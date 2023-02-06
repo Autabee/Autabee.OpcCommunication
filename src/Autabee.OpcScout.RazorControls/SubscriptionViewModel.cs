@@ -30,7 +30,7 @@ namespace Autabee.OpcScout.RazorControl
             subscriptionNodeModels.Remove((SubscriptionNodeModel)sender);
             OnListChanged?.Invoke(sender, null);
         }
-        public IEnumerable<string> RemoveSubscriptions(OpcUaClientHelperApi client)
+        public IEnumerable<string> RemoveSubscriptions(AutabeeManagedOpcClient client)
         {
             var items = subscriptionNodeModels.Where(o => o.nodeItem.Client == client).ToList();
             foreach (var item in items)

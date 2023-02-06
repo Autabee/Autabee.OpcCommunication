@@ -11,7 +11,7 @@ using System.Xml;
 
 public static class OpcSharper
 {
-    public static void GenerateProject(OpcUaClientHelperApi service, GeneratorSettings settings, IAutabeeLogger logger = null)
+    public static void GenerateProject(AutabeeManagedOpcClient service, GeneratorSettings settings, IAutabeeLogger logger = null)
     {
         List<Exception> exceptions = new List<Exception>();
         if (settings == null)

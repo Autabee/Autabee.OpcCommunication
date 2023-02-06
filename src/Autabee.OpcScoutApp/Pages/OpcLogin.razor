@@ -102,7 +102,7 @@ else
 }
 
 @code {
-    OpcUaClientHelperApi Client;
+    AutabeeManagedOpcClient Client;
     string messageTitle = string.Empty;
     Dictionary<string, string> messageData = new Dictionary<string, string>();
     string server = string.Empty;
@@ -120,7 +120,7 @@ else
 
     protected override void OnInitialized()
     {
-        Client = new OpcUaClientHelperApi(config);
+        Client = new AutabeeManagedOpcClient(config);
         Client.CertificateValidationNotification += CertificateValidation;
         savedEndpoints = EndpointsConnection.Load();
         savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
@@ -188,7 +188,7 @@ else
         {
             try
             {
-                endpoints = OpcUaClientHelperApi.GetEndpoints(dropSelectedEndpoint.Server);
+                endpoints = AutabeeManagedOpcClient.GetEndpoints(dropSelectedEndpoint.Server);
                 CertAccepted = new bool[endpoints.Count];
                 var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
                 if (selectedEndpoint != null)
@@ -234,7 +234,7 @@ else
             {
                 var str = stackSearch.Pop();
                 logger.Information("attempting to retrieve endpoints from: " + str);
-                endpoints = OpcUaClientHelperApi.GetEndpoints(str);
+                endpoints = AutabeeManagedOpcClient.GetEndpoints(str);
                 UpdateCertificateStatus();
             }
             catch (Exception e)

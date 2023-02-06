@@ -34,7 +34,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
         }
         internal void NewSessionEstablished(object sender, EventArgs args)
         {
-            if (ConnectedSessionId == null && sender is OpcUaClientHelperApi communicator)
+            if (ConnectedSessionId == null && sender is AutabeeManagedOpcClient communicator)
             {
                 communicator.RegisterNodeId(this);
             }

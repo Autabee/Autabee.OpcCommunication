@@ -33,6 +33,7 @@ namespace Autabee.OpcScout.RazorControl.Subscription
         public string error { get; set; } = string.Empty;
         public object lockItem { get; set; } = new object();
         public object MonitoredValue { get; set; }
+        public NodeTypeData NodeType { get; set; }
         public string MonitoredValueString { get; set; } = string.Empty;
         public object BackendMonitoredValue { get; set; }
         public string BackendMonitoredValueString { get; set; }
@@ -40,6 +41,7 @@ namespace Autabee.OpcScout.RazorControl.Subscription
         {
             this.nodeItem = nodeItem;
             var client = nodeItem.Client;
+            NodeType = client.GetNodeTypeEncoding(nodeItem.Node);
             subscription = client.GetSubscription(timeSpan);
             monitoredItem = client.CreateMonitoredItem((NodeId)nodeItem.Reference.NodeId, handler: MonitoredNodeValueEventHandler);
             client.AddMonitoredItem(subscription, monitoredItem);

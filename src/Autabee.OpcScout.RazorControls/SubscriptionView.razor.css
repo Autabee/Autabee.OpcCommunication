@@ -1,28 +1,2 @@
 ﻿
-.SubscriptionView {
-    max-width: 100%;
-    font-size: 12px;
-}
 
-    .SubscriptionView table{
-        width: 100%;
-        max-width: 100%;
-        word-wrap: anywhere;
-        word-break: break-word;
-        border-spacing: 0px;
-    }
-
-
-    .SubscriptionView td {
-        max-width: 100%;
-        padding: 5px;
-        background-color: blue;
-    }
-
-    .SubscriptionView button{
-        float: right;
-        width: 30px;
-        border: 0px;
-        padding: 2px;
-        height: 100%;
-    }
