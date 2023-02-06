@@ -69,6 +69,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Blazor.ContextMenu" Version="1.15.0" />
       <PackageReference Include="BuildWebCompiler" Version="1.12.405" />
       <PackageReference Include="System.Management" Version="7.0.0" />
     </ItemGroup>

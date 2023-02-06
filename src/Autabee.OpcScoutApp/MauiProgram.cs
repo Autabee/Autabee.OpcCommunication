@@ -46,6 +46,7 @@ namespace Autabee.OpcScoutApp
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
 
+            builder.Services.AddBlazorContextMenu();
             builder.Services.AddMauiBlazorWebView();
 #if WINDOWS
             int res = 0;
