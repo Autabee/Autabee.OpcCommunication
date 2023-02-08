@@ -1,0 +1,81 @@
+﻿@using Autabee.OpcScoutApp;
+@using Autabee.Utility.Logger;
+@using Microsoft.AspNetCore.Components.Forms
+@using Opc.Ua;
+@inject IAutabeeLogger logger
+<h3>EditConnectionDetails</h3>
+<EditForm Model="@endpointRecord" OnSubmit="@HandleSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <table>
+        <tr>
+            <td>server:</td>
+            <td><InputText @bind-Value="@endpointRecord.Server" /></td>
+        </tr>
+        <tr>
+            <td>endpointUrl:</td>
+            <td><InputText @bind-Value="@endpointRecord.Server" readonly /></td>
+        </tr>
+        <tr>
+            <td>security mode:</td>
+            <td>
+                <InputSelect @bind-Value="@endpointRecord.SecurityMode">
+                    <option value="@MessageSecurityMode.None">None</option>
+                    <option value="@MessageSecurityMode.Sign">Sign</option>
+                    <option value="@MessageSecurityMode.SignAndEncrypt">Sign And Encrypt</option>
+                </InputSelect>
+            </td>
+        </tr>
+        <tr>
+            <td>securityPolicyUri:</td>
+            <td><InputText @bind-Value="@endpointRecord.SecurityPolicyUri" /></td>
+        </tr>
+
+        <tr>
+            <td>Name:</td>
+            <td><InputText @bind-Value="@endpointRecord.Name" /></td>
+        </tr>
+        <tr>
+            <td>Description:</td>
+            <td><InputText @bind-Value="@endpointRecord.Description" /></td>
+        </tr>
+    </table>
+    <button class="Info" type="submit">Save</button>
+    <button @onclick=@(()=>cancel=true) class="Danger" type="submit">Cancel</button>
+</EditForm>
+
+@code {
+    [Parameter]
+    public EndpointRecord Endpoint { get; set; }
+    [Parameter]
+    public EventCallback<Tuple<bool, EndpointRecord>> EndpointEditResult { get; set; }
+
+    private EndpointRecord endpointRecord;
+    public bool cancel = false;
+
+
+    protected override void OnInitialized()
+    {
+        endpointRecord = Endpoint.Copy();
+        base.OnInitialized();
+    }
+
+
+    private void HandleSubmit()
+    {
+        logger.Information("HandleSubmit called");
+
+        // Process the form
+        if (cancel)
+        {
+            logger.Information("Cancel called");
+
+            EndpointEditResult.InvokeAsync(new Tuple<bool, EndpointRecord>(false, null));
+        }
+        else
+        {
+            logger.Information("Save called");
+            EndpointEditResult.InvokeAsync(new Tuple<bool, EndpointRecord>(true, endpointRecord));
+        }
+    }
+}

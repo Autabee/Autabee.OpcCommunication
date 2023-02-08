@@ -99,7 +99,7 @@ namespace Autabee.OpcScoutApp
             builder.Services.AddScoped<InMemoryLog>();
             builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));
             builder.Services.AddSingleton(o => new OpcScoutPersistentData());
-            builder.Services.AddScoped<IPresistantProgramData<List<EndpointRecord>>>(o => new AppProgramData<List<EndpointRecord>>("EndpointsRecord"));
+            builder.Services.AddScoped<IPersistentProgramData<List<EndpointRecord>>>(o => new AppProgramData<List<EndpointRecord>>("EndpointsRecord"));
 
             return builder.Build();
         }

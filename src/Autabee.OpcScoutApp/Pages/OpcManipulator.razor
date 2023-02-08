@@ -14,7 +14,7 @@
     
     <div class="OpcNodeBrowserItem Viewport">
         <h3>Browser</h3>
-        <div class="InnerItem OpcNodeBrowser">
+        <div class="InnerItem">
             <NodeBrowser Model="nodeBrowser" />
         </div>
     </div>
@@ -96,7 +96,8 @@
         base.OnInitialized();
         nodeBrowser.OnSelectedChanged += UpdateSelected;
         nodeBrowser.OnAddSubscriptionRequest += subscriptionViewModel.AddSubscription;
-        nodeBrowser.OnClientDisconnect += DisconnectClient;
+        nodeBrowser.OnDisconnect += DisconnectClient;
+        nodeBrowser.OnRemoveConnection += RemoveConnnection;
         nodeBrowser.OnNodeRead += (sender, args) => { logger.Log(args); };
         logger.MessageUpdate += Logger_MessageUpdate;
     }
@@ -126,6 +127,14 @@
     private void DisconnectClient(object sender, AutabeeManagedOpcClient client)
     {
         client.Disconnect();
+        //subscriptionViewModel.RemoveSubscriptions(client);
+        //controlBackend.clients.Remove(controlBackend.clients.First(o => o.Item1 == client));
+        StateHasChanged();
+    }
+    
+    private void RemoveConnnection(object sender, AutabeeManagedOpcClient client)
+    {
+        if (client.Connected) client.Disconnect();
         subscriptionViewModel.RemoveSubscriptions(client);
         controlBackend.clients.Remove(controlBackend.clients.First(o => o.Item1 == client));
         StateHasChanged();

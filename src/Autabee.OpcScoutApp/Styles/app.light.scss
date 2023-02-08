@@ -139,3 +139,9 @@ button.Info {
 button.Info:hover, button.Danger:hover {
     background-color: adjust-color($color-primary,$lightness: -5);
 }
+
+dialog, .blazor-context-menu--default {
+    border-width:thick;
+    background: adjust-color($color-main-background,$lightness: -5);
+    border-color: adjust-color($color-main-background,$lightness: 10);
+}

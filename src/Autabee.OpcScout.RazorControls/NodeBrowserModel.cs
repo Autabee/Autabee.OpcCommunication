@@ -9,18 +9,31 @@ namespace Autabee.OpcScout.RazorControl
     {
         public event EventHandler<ScannedNodeModel> OnSelectedChanged;
         public event EventHandler<ScannedNodeModel> OnAddSubscriptionRequest;
+        public event EventHandler<ScannedNodeModel> OnOpenCall;
         public event EventHandler<Message> OnNodeRead;
-        public event EventHandler<AutabeeManagedOpcClient> OnClientDisconnect;
+        public event EventHandler OnStateHasChanged;
+        public event EventHandler<AutabeeManagedOpcClient> OnDisconnect;
+        public event EventHandler<AutabeeManagedOpcClient> OnRemoveConnection;
+        internal event EventHandler<AutabeeManagedOpcClient> OnStateUpdateRoot;
 
         public List<(AutabeeManagedOpcClient, List<ScannedNodeModel>)> Clients { get; set; } = new List<(AutabeeManagedOpcClient, List<ScannedNodeModel>)>();
 
 
         private ScannedNodeModel Selected { get; set; }
-        public void UpdateSelected(ScannedNodeModel selected)
+        public void UpdateSelectedNode(ScannedNodeModel selected)
         {
             Selected?.DeSelect();
             Selected = selected;
             OnSelectedChanged?.Invoke(this, selected);
+        }
+
+        public void StateHasChanged()
+        {
+            OnStateHasChanged?.Invoke(this, null);
+        }
+        public void ClearClientCash(AutabeeManagedOpcClient client)
+        {
+            OnStateUpdateRoot.Invoke(this,client);
         }
 
         public void SubscriptionRequest(ScannedNodeModel selected)
@@ -28,14 +41,22 @@ namespace Autabee.OpcScout.RazorControl
           OnAddSubscriptionRequest?.Invoke(this, selected);
         }
 
-        public void ReadNode(Message selected)
+        public void ReadNodeValue(Message selected)
         {
             OnNodeRead?.Invoke(this, selected);
+        }
+        public void OpenCall(ScannedNodeModel selected)
+        {
+            OnOpenCall?.Invoke(this, selected);
         }
 
         public void Disconnect(AutabeeManagedOpcClient client)
         {
-            OnClientDisconnect?.Invoke(this, client);
+            OnDisconnect?.Invoke(this, client);
+        }
+        public void RemoveConnection(AutabeeManagedOpcClient client)
+        {
+            OnRemoveConnection?.Invoke(this, client);
         }
     }
 }

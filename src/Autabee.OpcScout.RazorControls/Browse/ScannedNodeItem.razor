@@ -2,6 +2,7 @@
 @using Autabee.Utility.Messaging;
 @using Opc.Ua
 @using System.Text.Json;
+<ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="ScannedNodeModel">
 <div class="@ScannedNodeModel.NodeClassType" style="padding-left:@depthString;">
     @if (ScannedNodeModel.RetrievedChildren
     && ScannedNodeModel.Children.Length == 0
@@ -34,8 +35,13 @@
             <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
             <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
         }
+            @if (ScannedNodeModel.GetNodeClass() == NodeClass.Method)
+            {
+                <button @onclick="OpenCall" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+            }
     </div>
 </div>
+</ContextMenuTrigger>
 @if (ScannedNodeModel.open)
 {
     @for (var i = 0; i < ScannedNodeModel.Children.Length; i++)
@@ -75,6 +81,11 @@
         ScannedNodeModel.Open();
         if (ScannedNodeModel.open) openedOnce = true;
     }
+
+    private async void OpenCall()
+    {
+        Browser.OpenCall(ScannedNodeModel);
+    }
     private async void Close()
     {
         ScannedNodeModel.Close();
@@ -86,11 +97,11 @@
         {
             var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Reference.NodeId);
             Message message = GetValueMessage(data);
-            Browser.ReadNode(message);
+            Browser.ReadNodeValue(message);
         }
         catch (Exception e)
         {
-            Browser.ReadNode(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
+            Browser.ReadNodeValue(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
         }
     }
     private Message GetValueMessage(object value)
@@ -108,7 +119,7 @@
 
     private async void ReadNode()
     {
-        Browser.UpdateSelected(ScannedNodeModel);
+        Browser.UpdateSelectedNode(ScannedNodeModel);
         ScannedNodeModel.NodeClassType = "Node-Selected Node";
         StateHasChanged();
     }

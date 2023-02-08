@@ -10,7 +10,7 @@
 @inject OpcScoutPersistentData backend
 @inject NavigationManager Navigation
 @inject ApplicationConfiguration config
-@inject IPresistantProgramData<List<EndpointRecord>> EndpointsConnection
+@inject IPersistentProgramData<List<EndpointRecord>> EndpointsConnection
 @page "/Opc/Login"
 
 <dialog open="@(!string.IsNullOrWhiteSpace(messageTitle))">
@@ -48,7 +48,10 @@
                 }
             </select>
         </td>
-        <td><button @onclick="Connect" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-connection"></icon></button></td>
+        <td>
+            <button @onclick="Connect" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-connection"></icon></button>
+            <button @onclick="Edit" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-cog"></icon></button>
+        </td>
     </tr>
 
     <tr>
@@ -64,9 +67,13 @@
 
 </table>
 
-@if (endpoints == null)
+@if (endpoints == null && !editingEndpoint)
 {
     <p class="SelectEnpoint"><em>Request server for endpoints</em></p>
+}
+else if (editingEndpoint)
+{
+    <EditConnectionDetails Endpoint="@editingEndpointRecord" EndpointEditResult="@EditResult" />
 }
 else
 {
@@ -113,9 +120,11 @@ else
     EndpointDescriptionCollection endpoints;
     EndpointDescription selectedEndpoint;
     EndpointRecord dropSelectedEndpoint;
+    EndpointRecord editingEndpointRecord;
     bool[] CertAccepted;
     X509Certificate2 lastCert = null;
     bool AcceptLast;
+    bool editingEndpoint = false;
     List<EndpointRecord> savedEndpoints = new List<EndpointRecord>();
 
     protected override void OnInitialized()
@@ -211,6 +220,28 @@ else
             }
         }
     }
+    public async void Edit()
+    {
+        if (dropSelectedEndpoint != null)
+        {
+            editingEndpointRecord = dropSelectedEndpoint;
+            editingEndpoint = true;
+            StateHasChanged();
+        }
+    }
+    public async void EditResult(Tuple<bool, EndpointRecord> record)
+    {
+        if(record.Item1) {
+            var index = savedEndpoints.IndexOf(editingEndpointRecord);
+            savedEndpoints.Remove(editingEndpointRecord);
+            savedEndpoints.Insert(index, record.Item2);
+            EndpointsConnection.Save(savedEndpoints);
+            savedEndpoints = EndpointsConnection.Load();
+            savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
+        }
+        editingEndpoint = false;
+    }
+
 
     public async void GetEnpoints()
     {

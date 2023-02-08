@@ -19,8 +19,7 @@ button {
     color: $color-main-text;
 }
 
-.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
-
+.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .node-set>*:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
     background: adjust-color($color-main-background,$lightness: 5);
 }
 /*.data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even) {
@@ -147,7 +146,7 @@ input, select {
     color: black;
 }
 
-dialog {
+dialog, .blazor-context-menu--default {
     color: white;
     background: adjust-color($color-main-background,$lightness: -5);
     border-color: adjust-color($color-main-background,$lightness: 10);

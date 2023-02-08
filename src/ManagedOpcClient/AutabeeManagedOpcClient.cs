@@ -31,6 +31,7 @@ namespace Autabee.Communication.ManagedOpcClient
     {
         private bool closing;
         private readonly IAutabeeLogger logger;
+        private IUserIdentity mUserIdentity;
         private ApplicationConfiguration mApplicationConfig;
         private ConfiguredEndpoint mEndpoint;
 
@@ -89,9 +90,9 @@ namespace Autabee.Communication.ManagedOpcClient
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
             mApplicationConfig = AutabeeManagedOpcClientExtension.GetClientConfiguration(
-                                     company, 
-                                     product, 
-                                     directory, 
+                                     company,
+                                     product,
+                                     directory,
                                      logger);
         }
         public AutabeeManagedOpcClient(Stream stream, IAutabeeLogger logger = null)
@@ -292,7 +293,7 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <param name="userName">The user name</param>
         /// <param name="password">The password</param>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public async Task Connect(EndpointDescription endpointDescription, UserIdentity userIdentity = null)
+        public async Task Connect(EndpointDescription endpointDescription, IUserIdentity userIdentity = null)
         {
             try
             {
@@ -304,7 +305,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     userIdentity = new UserIdentity(new AnonymousIdentityToken());
                 }
-
+                mUserIdentity = userIdentity;
                 var endpointConfiguration = EndpointConfiguration.Create(mApplicationConfig);
                 mEndpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
                 mApplicationConfig.CertificateValidator.CertificateValidation += Notification_CertificateValidation;
@@ -483,6 +484,55 @@ namespace Autabee.Communication.ManagedOpcClient
                     closing = false;
                     timer?.Dispose();
                 }
+            }
+            catch (Exception e)
+            {
+                //handle Exception here
+                throw;
+            }
+        }
+
+
+        public async void Reconnect()
+        {
+            if (Connected) return;
+
+            try
+            {
+                if (mApplicationConfig == null
+                    || mEndpoint == null
+                    || mUserIdentity == null)
+                {
+                    throw new Exception("No connection information available");
+                }
+
+                //Creat a session name
+                sessionName =
+                mApplicationConfig.ApplicationName +
+                "_" +
+                Guid.NewGuid().GetHashCode().ToString().Substring(0, 4);
+
+                //Create and connect session
+                session = await Session.Create(
+                    mApplicationConfig,
+                    mEndpoint,
+                    false,
+                    true,
+                    sessionName,
+                    //5_000,
+                    60_000,
+                    mUserIdentity,
+                    null);
+
+                ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
+                session.KeepAlive += Notification_KeepAlive;
+                ConnectionUpdated?.Invoke(this, null);
+                session.SessionClosing += Session_SessionClosing;
+                ReInstateNodeEntries?.Invoke(this, null);
+                wasConnected = true;
+                subscriptions.Clear();
+
+                UpdateTypeData();
             }
             catch (Exception e)
             {
@@ -1017,7 +1067,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Typing
 
-        
+
 
         public NodeTypeData GetNodeTypeEncoding(string nodeIdString)
         {

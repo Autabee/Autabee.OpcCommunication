@@ -2,7 +2,8 @@
 
     <PropertyGroup>
 		<!--<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>-->
-        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net6.0-windows10.0.19041.0;net7.0-windows10.0.19041.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net6.0-windows10.0.19041.0</TargetFrameworks>
+        <!--<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net7.0-windows10.0.19041.0</TargetFrameworks>-->
         <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
         <!-- <TargetFrameworks>$(TargetFrameworks);net6.0-tizen</TargetFrameworks> -->
         <OutputType>Exe</OutputType>
@@ -52,6 +53,7 @@
     <ItemGroup>
       <None Remove="autabeeopcscout.Config.xml" />
       <None Remove="Pages\Index.razor.css" />
+      <None Remove="Pages\OpcLogin - Copy.razor.css" />
       <None Remove="Pages\OpcLogin.razor.css" />
       <None Remove="Pages\OpcManipulator.razor.css" />
     </ItemGroup>
@@ -71,6 +73,7 @@
     <ItemGroup>
       <PackageReference Include="Blazor.ContextMenu" Version="1.15.0" />
       <PackageReference Include="BuildWebCompiler" Version="1.12.405" />
+      <PackageReference Include="MudBlazor" Version="6.1.8" />
       <PackageReference Include="System.Management" Version="7.0.0" />
     </ItemGroup>
 

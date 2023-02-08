@@ -6,7 +6,7 @@ using Android.Content.PM;
 #endif
 namespace Autabee.OpcScoutApp
 {
-  public class AppProgramData<T> : IPresistantProgramData<T>
+  public class AppProgramData<T> : IPersistentProgramData<T>
   {
     string fileName;
 

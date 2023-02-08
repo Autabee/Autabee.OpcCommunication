@@ -2,6 +2,10 @@
 @using Autabee.OpcScout.RazorControl.Browse
 @using Opc.Ua;
 
+
+<BrowseContextMenu Browser="Model" />
+
+
 <div class="OpcBrowser">
     @if (Model.Clients != null)
     {
@@ -23,6 +27,7 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
+        Model.OnStateHasChanged += (_,_) => InvokeAsync(StateHasChanged);
 
     }
 }
