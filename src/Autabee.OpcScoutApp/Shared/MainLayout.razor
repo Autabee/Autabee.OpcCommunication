@@ -2,7 +2,7 @@
 @inject IJSRuntime _jsRuntime;
 @inject UserTheme theme;
 @inject NavigationManager Navigation
-
+<MudThemeProvider Theme="new MudTheme()" @bind-IsDarkMode="@theme.Dark" />
 <div class="page">
 
     <main>
@@ -12,11 +12,11 @@
             </button>-->
             @if (theme.NavDark)
             {
-                <img class="HomeItem" src="/images/autabee_dark_transparent.svg" style="height: 30px" />
+                <img class="HomeItem" src="/images/autabee_dark_transparent.svg" style="height: 40px" />
             }
             else
             {
-                <img class="HomeItem" src="/images/autabee_light_transparent.svg" style="height: 30px" />
+                <img class="HomeItem" src="/images/autabee_light_transparent.svg" style="height: 40px" />
             }
             <button class="ABnavitem HomeItem" @onclick=NavigateTo >
                 Opc Scout

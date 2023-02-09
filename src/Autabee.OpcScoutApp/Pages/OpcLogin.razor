@@ -1,4 +1,5 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScout.MBRazorControl.Dialoges;
 @using Autabee.OpcScout.RazorControl;
 @using Autabee.OpcScoutApp.Data;
 @using Autabee.Utility.Logger;
@@ -11,6 +12,8 @@
 @inject NavigationManager Navigation
 @inject ApplicationConfiguration config
 @inject IPersistentProgramData<List<EndpointRecord>> EndpointsConnection
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 @page "/Opc/Login"
 
 <dialog open="@(!string.IsNullOrWhiteSpace(messageTitle))">
@@ -34,47 +37,50 @@
 
 <table class="loginform">
     <tr>
-        <td>Server:</td>
+        <td>Server</td>
         <td><input @bind="server" type="url" /></td>
-        <td><button @onclick="GetEnpoints" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-magnify"></icon></button></td>
+        <td><button @onclick="GetEnpoints" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-magnify"></icon></button></td>
     </tr>
     <tr>
-        <td>Endpoint record:</td>
+        <td>Endpoint record</td>
         <td>
-            <select type="connection record" @onchange="SetEndpoint" placeholder="***">
+            <select style="height:25px; " type="connection record" @onchange="SetEndpoint" placeholder="***">
                 @foreach (var item in savedEndpoints)
-                {
-                    <option value="@item.Name;@item.Server;@item.Description">@item.Name : @item.Server : @item.Description</option>
+                { 
+                    @if (item != null)
+                    {
+                        <option value="@item.Name;@item.Server;@item.Description">@item.Name : @item.Server</option>
+                    }
                 }
             </select>
         </td>
         <td>
-            <button @onclick="Connect" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-connection"></icon></button>
-            <button @onclick="Edit" class="Info" style="float:left;margin-left:0.5em;"><icon class="mdi mdi-cog"></icon></button>
+            <button @onclick="Connect" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-connection"></icon></button>
+            <button @onclick="Edit" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-cog"></icon></button>
         </td>
     </tr>
 
     <tr>
-        <td>Username:</td>
+        <td>Username</td>
         <td><input type="text" placeholder="username.." /></td>
         <td></td>
     </tr>
     <tr>
-        <td>Password:</td>
+        <td>Password</td>
         <td><input type="password" @bind="password" placeholder="***" /></td>
         <td></td>
     </tr>
 
 </table>
 
-@if (endpoints == null && !editingEndpoint)
+@if (endpoints == null)
 {
     <p class="SelectEnpoint"><em>Request server for endpoints</em></p>
 }
-else if (editingEndpoint)
+@*else if (editingEndpoint)
 {
     <EditConnectionDetails Endpoint="@editingEndpointRecord" EndpointEditResult="@EditResult" />
-}
+}*@
 else
 {
     <br />
@@ -207,16 +213,12 @@ else
                 }
                 else
                 {
-                    messageTitle = "unable to find server";
-                    Buttons.Clear();
-                    Buttons.Add(ClearMessageButton);
+                    Snackbar.Add("unable to find server", Severity.Error);
                 }
             }
             catch (Exception e)
             {
-                messageTitle = e.Message;
-                Buttons.Clear();
-                Buttons.Add(ClearMessageButton);
+                Snackbar.Add(e.Message, Severity.Error);
             }
         }
     }
@@ -225,23 +227,45 @@ else
         if (dropSelectedEndpoint != null)
         {
             editingEndpointRecord = dropSelectedEndpoint;
-            editingEndpoint = true;
-            StateHasChanged();
-        }
-    }
-    public async void EditResult(Tuple<bool, EndpointRecord> record)
-    {
-        if(record.Item1) {
-            var index = savedEndpoints.IndexOf(editingEndpointRecord);
-            savedEndpoints.Remove(editingEndpointRecord);
-            savedEndpoints.Insert(index, record.Item2);
-            EndpointsConnection.Save(savedEndpoints);
-            savedEndpoints = EndpointsConnection.Load();
-            savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
-        }
-        editingEndpoint = false;
-    }
+            var parameters = new DialogParameters { ["record"] = editingEndpointRecord.Copy() };
+            var dialog = await DialogService.ShowAsync<EndpointEdit>("Simple Dialog", parameters);
+            var result = await dialog.Result;
+            if (!result.Canceled)
+            {
+                if (result.Data is Tuple<DialogAction, EndpointRecord> data)
+                {
+                    var index = 0;
+                    if (data.Item1 == DialogAction.Save)
+                    {
+                        index = savedEndpoints.IndexOf(editingEndpointRecord);
+                        savedEndpoints.Remove(editingEndpointRecord);
+                        savedEndpoints.Insert(index, data.Item2);
 
+                    }
+                    else
+                    {
+                        index = savedEndpoints.IndexOf(editingEndpointRecord);
+                        savedEndpoints.Remove(editingEndpointRecord);
+                        index = 0;
+                    }
+                    EndpointsConnection.Save(savedEndpoints);
+                    savedEndpoints = EndpointsConnection.Load();
+                    savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
+                    if (index < savedEndpoints.Count)
+                    {
+                        dropSelectedEndpoint = savedEndpoints[index];
+                    }
+                    else
+                    {
+                        dropSelectedEndpoint = null;
+                    }
+
+                    Snackbar.Add((data.Item1 == DialogAction.Save ? "Saved" : "Removed") + " Record", Severity.Success);
+                    StateHasChanged();
+                }
+            }
+        }
+    }
 
     public async void GetEnpoints()
     {
@@ -270,6 +294,7 @@ else
             }
             catch (Exception e)
             {
+
                 error += "." + e.Message;
 
             }
@@ -319,9 +344,11 @@ else
             {
                 return;
             }
-            messageTitle = e.Message;
-            Buttons.Clear();
-            Buttons.Add(ClearMessageButton);
+
+            Snackbar.Add(e.Message, Severity.Error);
+            //messageTitle = e.Message;
+            //Buttons.Clear();
+            //Buttons.Add(ClearMessageButton);
         }
     }
 

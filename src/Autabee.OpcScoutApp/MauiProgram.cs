@@ -6,6 +6,7 @@ using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Components;
+using MudBlazor.Services;
 
 
 #if ANDROID
@@ -15,6 +16,7 @@ using Android.Content.PM;
 #if WINDOWS
 using Microsoft.Win32;
 using System.Management;
+using MudBlazor;
 #endif
 
 namespace Autabee.OpcScoutApp
@@ -46,8 +48,24 @@ namespace Autabee.OpcScoutApp
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
 
-            builder.Services.AddBlazorContextMenu();
+            
             builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddBlazorContextMenu();
+            builder.Services.AddMudServices(
+                config =>
+                {
+                    config.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.BottomLeft;
+
+                    config.SnackbarConfiguration.PreventDuplicates = false;
+                    config.SnackbarConfiguration.NewestOnTop = false;
+                    config.SnackbarConfiguration.ShowCloseIcon = true;
+                    config.SnackbarConfiguration.VisibleStateDuration = 10000;
+                    config.SnackbarConfiguration.HideTransitionDuration = 500;
+                    config.SnackbarConfiguration.ShowTransitionDuration = 500;
+                    config.SnackbarConfiguration.SnackbarVariant = MudBlazor.Variant.Filled;
+                });
+
+
 #if WINDOWS
             int res = 0;
             try

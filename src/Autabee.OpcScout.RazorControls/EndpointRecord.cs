@@ -5,6 +5,7 @@ namespace Autabee.OpcScoutApp
 {
     public class EndpointRecord
     {
+        public int Id { get; set; }
         [Required]
         public string Server { get; set; }
         [Required]

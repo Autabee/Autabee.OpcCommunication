@@ -78,6 +78,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Autabee.OpcScout.MBRazorControl\Autabee.OpcScout.MBRazorControl.csproj" />
       <ProjectReference Include="..\Autabee.OpcScout.RazorControls\Autabee.OpcScout.RazorControl.csproj" />
       <ProjectReference Include="..\ManagedOpcClient\Autabee.Communication.ManagedOpcClient.csproj" />
     </ItemGroup>

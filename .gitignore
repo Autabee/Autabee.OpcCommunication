@@ -370,3 +370,6 @@ FodyWeavers.xsd
 [Ss]ecret.json
 [Ss]ecrets.json
 src/.cr
+
+wwwroot/css/app.*.css
+wwwroot/css/nav.*.css
