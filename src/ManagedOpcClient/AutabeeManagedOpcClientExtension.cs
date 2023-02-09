@@ -16,6 +16,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -137,6 +138,18 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         #endregion Typing
 
+        #region Methods
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, string methodNodeString, object[] inputArguments)
+            => client.CallMethod(
+           new NodeId(objectNodeString),
+           new NodeId(methodNodeString),
+           inputArguments);
 
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeEntry objectEntry, MethodNodeEntry methodEntry, object[] inputArguments)
+            => client.CallMethod(
+            objectEntry.GetNodeId(),
+            methodEntry.GetNodeId(),
+            inputArguments);
+        #endregion
     }
 }

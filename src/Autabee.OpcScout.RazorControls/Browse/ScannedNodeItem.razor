@@ -3,44 +3,51 @@
 @using Opc.Ua
 @using System.Text.Json;
 <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="ScannedNodeModel">
-<div class="@ScannedNodeModel.NodeClassType" style="padding-left:@depthString;">
-    @if (ScannedNodeModel.RetrievedChildren
-    && ScannedNodeModel.Children.Length == 0
-    || ScannedNodeModel.Node.NodeClass == NodeClass.Method)
-    {
-        <span class="node-caret"></span>
-    }
-    else if (ScannedNodeModel.open)
-    {
-        <span class="node-caret caret-down" @onclick="Close" />
-    }
-    else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
-    {
-        <span class="node-caret caret" @onclick="Open" />
-    }
-    else
-    {
-        <span class="node-caret caret-close" @onclick="Open" />
-
-    }
-    <div class="node-img" style="grid-area:node-img; height:100%">
-        <NodeImage Value="ScannedNodeModel.NodeImage" />
-    </div>
-    <span class="node-text" style="grid-area:node-text">@ScannedNodeModel.Node.DisplayName</span>
-    <div class="node-actions" style="grid-area:node-actions">
-
-        <button @onclick="ReadNode" title="read node settings"><icon class="mdi mdi-tag-text" /></button>
-        @if (ScannedNodeModel.GetNodeClass() == NodeClass.Variable)
+    <div class="@ScannedNodeModel.NodeClassType" style="padding-left:@depthString;">
+        @if (ScannedNodeModel.RetrievedChildren
+        && ScannedNodeModel.Children.Length == 0
+        || ScannedNodeModel.Node.NodeClass == NodeClass.Method)
         {
-            <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
-            <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
+            <span class="node-caret"></span>
         }
+        else if (ScannedNodeModel.open)
+        {
+            <span class="node-caret caret-down" @onclick="Close" />
+        }
+        else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
+        {
+            <span class="node-caret caret" @onclick="Open" />
+        }
+        else
+        {
+            <span class="node-caret caret-close" @onclick="Open" />
+
+        }
+        <div class="node-img" style="grid-area:node-img; height:100%">
+            <NodeImage Value="ScannedNodeModel.NodeImage" />
+        </div>
+        <span class="node-text" style="grid-area:node-text">@ScannedNodeModel.Node.DisplayName</span>
+        <div class="node-actions" style="grid-area:node-actions">
+
+            <button @onclick="ReadNode" title="read node settings"><icon class="mdi mdi-tag-text" /></button>
+            @if (ScannedNodeModel.GetNodeClass() == NodeClass.Variable)
+            {
+                <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+                <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
+            }
             @if (ScannedNodeModel.GetNodeClass() == NodeClass.Method)
             {
-                <button @onclick="OpenCall" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+                @if (ScannedNodeModel.arguments.InputArguments.Count == 0)
+                {
+                    <button @onclick="OpenDirectCall" title="Call Function"><icon class="mdi mdi-function" /></button>
+                }
+                else
+                {
+                    <button @onclick="OpenCall" title="read node value"><icon class="mdi mdi-function-variant" /></button>
+                }
             }
+        </div>
     </div>
-</div>
 </ContextMenuTrigger>
 @if (ScannedNodeModel.open)
 {
@@ -82,8 +89,29 @@
         if (ScannedNodeModel.open) openedOnce = true;
     }
 
+    private async void OpenDirectCall()
+    {
+        try
+        {
+            //var result = ScannedNodeModel.Client.GetParent(ScannedNodeModel.Node.NodeId);
+
+
+            var result = ScannedNodeModel.Client.CallMethod(ScannedNodeModel.Node.NodeId, new object[0]);
+
+            Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call succeded, output return: {0}", parameters:
+            new string[1] { JsonSerializer.Serialize(result) }));
+
+        }
+        catch (Exception e)
+        {
+            Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call failed: {0}", parameters:
+            new string[1] { e.Message }));
+        }
+    }
+
     private async void OpenCall()
     {
+        //((MethodNode)ScannedNodeModel.Node).TypeId
         Browser.OpenCall(ScannedNodeModel);
     }
     private async void Close()

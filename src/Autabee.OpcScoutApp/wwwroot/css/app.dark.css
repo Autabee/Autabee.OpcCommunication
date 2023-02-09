@@ -96,6 +96,10 @@ button {
   font-size: 12px;
 }
 
+.Root-Node {
+  padding-left: 1em;
+}
+
 .Node button {
   font-size: 12px;
   height: 100%;
@@ -109,6 +113,23 @@ button {
   font-size: 20px;
   margin-left: auto;
   border: none;
+}
+
+.loginform > tr > td:nth-child(1) {
+  padding-right: 5px;
+}
+
+.loginform > tr > td:nth-child(2) > * {
+  border-top-width: 0px;
+}
+
+.loginform > tr:nth-child(1) > td:nth-child(2) > * {
+  border-top-width: 2px;
+}
+
+.loginform > tr > td > input, .loginform > tr > td > select {
+  height: 25px;
+  border-radius: 0px;
 }
 
 .SubscriptionView input {
@@ -150,12 +171,24 @@ td.subscription-actions > button {
 }
 
 .Viewportheader {
-  height: 24px;
+  height: 28px;
+}
+
+.Viewport h3 {
+  height: 28px;
 }
 
 .Viewportheader > button {
   border: 0px;
   height: 24px;
+  font-weight: 700;
+  padding: 0px 10px 0px 10px;
+}
+
+.Viewportheader > button {
+  background-color: transparent;
+  border: 0px;
+  height: 100%;
   font-weight: 700;
   padding: 0px 10px 0px 10px;
 }
@@ -242,16 +275,10 @@ th {
 
 .Viewportheader {
   background-color: #FFD000;
-  height: 24px;
 }
 
 .Viewportheader > button {
-  background-color: transparent;
-  border: 0px;
-  height: 24px;
-  font-weight: 700;
   color: black;
-  padding: 0px 10px 0px 10px;
 }
 
 .top-row {

@@ -1,8 +1,10 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.OpcScout.RazorControl.Browse;
 using Opc.Ua;
 using System;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Autabee.OpcScout.RazorControl
 {
@@ -18,9 +20,16 @@ namespace Autabee.OpcScout.RazorControl
             Reference = referenceDescription;
             Client = client;
             Node = node;
+            if (node is MethodNode mnode)
+            {
+                arguments = client.GetMethodArguments(mnode.NodeId);
+            }
             this.parent = parent;
             NodeImage = NodeImageId.Unknown;
         }
+
+
+        public MethodArguments arguments;
 
         public event EventHandler deSelect;
         public event EventHandler DoneGettingChildren;

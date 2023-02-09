@@ -693,8 +693,10 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <param name="refDesc">The ReferenceDescription</param>
         /// <returns>ReferenceDescriptionCollection of found nodes</returns>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) => BrowseNode(
-            ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris));
+        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) => 
+            session != null
+? BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris))
+: throw new Exception("BadNotConnected");
 
         public ReferenceDescriptionCollection BrowseNode(NodeId node) => BrowseNode(
             new BrowseDescriptionCollection() { GetNodeHierarchalBrowseDescription(node) });
@@ -745,6 +747,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw e;
             }
         }
+        
 
         public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(NodeId node, CancellationToken token)
         {
@@ -884,6 +887,65 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 logger.Error(e.Message, e);
                 throw e;
+            }
+        }
+
+        public ReferenceDescription GetParent(NodeId nodeId)
+        {
+            var methode = new MethodArguments();
+
+            try
+            {
+                Node methodNode = ReadNode(nodeId);
+
+                if (methodNode.NodeClass != NodeClass.Method) { throw new ServiceResultException(StatusCodes.BadNodeClassInvalid); }
+
+                //We need to browse for property (input and output arguments)
+                //Create a collection for the browse results
+                ReferenceDescriptionCollection referenceDescriptionCollection;
+                ReferenceDescriptionCollection nextreferenceDescriptionCollection;
+                //Create a continuationPoint
+                byte[] continuationPoint;
+                byte[] revisedContinuationPoint;
+
+                session.Browse(
+                    null,
+                    null,
+                    nodeId,
+                    0u,
+                    BrowseDirection.Inverse,
+                    null,
+                    true,
+                    0,
+                    out continuationPoint,
+                    out referenceDescriptionCollection);
+
+                while (continuationPoint != null)
+                {
+                    session.BrowseNext(
+                        null,
+                        false,
+                        continuationPoint,
+                        out revisedContinuationPoint,
+                        out nextreferenceDescriptionCollection);
+                    referenceDescriptionCollection.AddRange(nextreferenceDescriptionCollection);
+                    continuationPoint = revisedContinuationPoint;
+                }
+
+                //Gaurd Clause
+                if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
+                {
+                    throw new Exception("No Parent Id Found");
+                }
+                if (referenceDescriptionCollection.Count > 1)
+                {
+                    throw new Exception("Multiple Parent Id Found");
+                }
+                return referenceDescriptionCollection[0];
+            }
+            catch (Exception e)
+            {
+                throw;
             }
         }
 
@@ -1192,13 +1254,15 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private object FormatObject(object value, ExtensionObject eoValue)
         {
+            if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
+                || eoValue.Encoding == ExtensionObjectEncoding.None) 
+                return value;
+
             var type = GetTypeEncoding(GetCorrectedTypeName(eoValue));
             return eoValue.Encoding switch
             {
-                ExtensionObjectEncoding.None => value,
                 ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext)),
                 ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext)),
-                ExtensionObjectEncoding.EncodeableObject => value,
                 ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext)),
                 _ => value,
             };
@@ -1574,50 +1638,6 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         #endregion Read
 
-        #region UDT Read/Write
-        //private static T CreateDefaultInstance<T>()
-        //{
-        //  //Get the Parameterless Constructor
-        //  var constructor = typeof(T).GetConstructors().FirstOrDefault(o => o.GetParameters().Length == 0);
-        //  if (constructor == null) throw new TypeInitializationException(
-        //                                typeof(T).FullName,
-        //                                new Exception("No parameterless constructor"));
-
-        //  return (T)constructor.Invoke(new object[0]);
-        //}
-        //public T ReadStructUdt<T>(string nodeIdString) where T : IEncodeable => ReadStructUdt<T>(
-        //    new NodeId(nodeIdString));
-
-        //public T ReadStructUdt<T>(ValueNodeEntry nodeId) where T : IEncodeable => (T)ReadValues(new ValueNodeEntryCollection() { nodeId })[0].Value;
-
-        //public T ReadStructUdt<T>(NodeId nodeId) where T : IEncodeable
-        //{
-        //  try
-        //  {
-        //    T result = CreateDefaultInstance<T>();
-        //    var buffer = (byte[])session.ReadValue(nodeId, typeof(byte[]));
-        //    result.Decode(new BinaryDecoder(buffer, session.MessageContext));
-        //    return result;
-        //  }
-        //  catch (Exception e)
-        //  {
-        //    throw;
-        //  }
-        //}
-
-        //public ExtensionObject ReadStructUdt(string nodeId) => ReadStructUdt(new NodeId(nodeId));
-
-        //public ExtensionObject ReadStructUdt(NodeId nodeId) => (ExtensionObject)session.ReadValue(nodeId).Value;
-
-        //public ExtensionObject[] ReadArrayStructUdt(string nodeId) => ReadArrayStructUdt(new NodeId(nodeId));
-
-        //public ExtensionObject[] ReadArrayStructUdt(NodeId nodeId) => (ExtensionObject[])session.ReadValue(nodeId).Value;
-
-        //public async Task<object> ReadStructUdtAsync(NodeId nodeId) => (await session.ReadValueAsync(nodeId)).Value;
-
-        //public void WriteStructUdt(NodeId nodeId, ExtensionObject dataToWrite) { WriteValue(nodeId, dataToWrite); }
-        #endregion UDT Read/Write
-
         #region NodeCollection Read / Write
         public DataValueCollection ReadValues(NodeIdCollection nodeCollection, List<Type> types = null)
         {
@@ -1683,7 +1703,6 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
         public MethodArguments GetMethodArguments(string nodeIdString)
             => GetMethodArguments(new NodeId(nodeIdString));
-
 
         public MethodArguments GetMethodArguments(NodeId nodeId)
         {
@@ -1798,23 +1817,18 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
+        public IList<object> CallMethod(NodeId methodNodeId, object[] inputArguments)
+            => Session.Call(
+            (NodeId)GetParent(methodNodeId).NodeId,
+            methodNodeId,
+            inputArguments ?? new object[0]);
+
         public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, object[] inputArguments)
             => Session.Call(
             objectNodeId,
             methodNodeId,
             inputArguments ?? new object[0]);
 
-        public IList<object> CallMethod(string objectNodeString, string methodNodeString, object[] inputArguments)
-            => CallMethod(
-           new NodeId(objectNodeString),
-           new NodeId(methodNodeString),
-           inputArguments);
-
-        public IList<object> CallMethod(NodeEntry objectEntry, MethodNodeEntry methodEntry, object[] inputArguments)
-            => CallMethod(
-            objectEntry.GetNodeId(),
-            methodEntry.GetNodeId(),
-            inputArguments);
 
         public IList<object> CallMethods(IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
         {
