@@ -2,9 +2,9 @@
     flex: 1;
     overflow: auto;
     display: grid;
-    grid-template: "browser node-touch macro" 2fr
-        "nodeview subscriptions macro" 2fr
-        / 1fr 2fr 1fr;
+    grid-template: "browser subscriptions" 2fr
+        "nodeview node-touch" 2fr
+        / 1fr 3fr;
     max-height: 100%;
 }
 

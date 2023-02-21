@@ -1,4 +1,5 @@
-﻿@using Autabee.Utility.Logger
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.Utility.Logger
 @using Autabee.Utility.Messaging;
 @using Opc.Ua
 @using System.Text.Json;
@@ -21,7 +22,6 @@
         else
         {
             <span class="node-caret caret-close" @onclick="Open" />
-
         }
         <div class="node-img" style="grid-area:node-img; height:100%">
             <NodeImage Value="ScannedNodeModel.NodeImage" />
@@ -30,12 +30,20 @@
         <div class="node-actions" style="grid-area:node-actions">
 
             <button @onclick="ReadNode" title="read node settings"><icon class="mdi mdi-tag-text" /></button>
-            @if (ScannedNodeModel.GetNodeClass() == NodeClass.Variable)
+            @if (ScannedNodeModel.Node.NodeClass == NodeClass.Variable)
             {
-                <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+                @if (ScannedNodeModel.Node.HasCurrentReadAccess()) 
+                {
+                    <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+                }
+                @if (ScannedNodeModel.Node.HasCurrentWriteAccess())
+                {
+                    <button @onclick="WriteValue" title="write node value"><icon class="mdi mdi-tag-arrow-right" /></button>
+                }
+                
                 <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
             }
-            @if (ScannedNodeModel.GetNodeClass() == NodeClass.Method)
+            @if (ScannedNodeModel.Node.NodeClass == NodeClass.Method)
             {
                 @if (ScannedNodeModel.arguments.InputArguments.Count == 0)
                 {
@@ -74,7 +82,7 @@
     {
         base.OnInitialized();
         ScannedNodeModel.DoneGettingChildren += UpdateState;
-        ScannedNodeModel.deSelect += DeSelect;
+        ScannedNodeModel.DeSelectEvent += DeSelect;
         ScannedNodeModel.StateUpdated += UpdateState;
         if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
         { ScannedNodeModel.GetChildren(); }
@@ -91,22 +99,27 @@
 
     private async void OpenDirectCall()
     {
-        try
+        if (Browser.DirectCall)
         {
-            //var result = ScannedNodeModel.Client.GetParent(ScannedNodeModel.Node.NodeId);
+            try
+            {
+                var result = ScannedNodeModel.Client.CallMethod(ScannedNodeModel.parent.Node.NodeId,ScannedNodeModel.Node.NodeId);
 
+                Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call succeded, output return: {0}", parameters:
+                new string[1] { JsonSerializer.Serialize(result) }));
 
-            var result = ScannedNodeModel.Client.CallMethod(ScannedNodeModel.Node.NodeId, new object[0]);
-
-            Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call succeded, output return: {0}", parameters:
-            new string[1] { JsonSerializer.Serialize(result) }));
-
+            }
+            catch (Exception e)
+            {
+                Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call failed: {0}", parameters:
+                new string[1] { e.Message }));
+            }
         }
-        catch (Exception e)
+        else
         {
-            Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call failed: {0}", parameters:
-            new string[1] { e.Message }));
+            Browser.OpenCall(ScannedNodeModel);
         }
+
     }
 
     private async void OpenCall()
@@ -123,7 +136,7 @@
     {
         try
         {
-            var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Reference.NodeId);
+            var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Node.NodeId);
             Message message = GetValueMessage(data);
             Browser.ReadNodeValue(message);
         }
@@ -132,12 +145,18 @@
             Browser.ReadNodeValue(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
         }
     }
+
+    private async void WriteValue()
+    {
+        Browser.WriteNodeValue(ScannedNodeModel);
+    }
+    
     private Message GetValueMessage(object value)
     {
         if (value == null) return new Message(level: MessageLevel.Info, text: "NULL");
         else if (value is Dictionary<string, object> dic) return new Message(level: MessageLevel.Info, text: "{0}", JsonSerializer.Serialize(dic));
-        else if (value is object[] list) return new Message(level: MessageLevel.Info, text: string.Join("\n", list));
-        else return new Message(level: MessageLevel.Info, text: value?.ToString());
+        else if (value is object[] list) return new Message(level: MessageLevel.Info, text: "{0}", string.Join("\n", list));
+        else return new Message(level: MessageLevel.Info, text: "{0}", value?.ToString());
     }
 
     private async void SubscribeValue()

@@ -6,6 +6,7 @@ using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
+using Opc.Ua.Export;
 using Opc.Ua.Security.Certificates;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
@@ -100,6 +102,18 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public static NodeTypeData GetNodeTypeEncoding(this AutabeeManagedOpcClient client, Node node)
         {
+            if (node is VariableNode varNode1)
+            {
+                try
+                {
+                    var type2 = Opc.Ua.TypeInfo.GetSystemType(varNode1.DataType, client.Session.Factory);
+                    return new NodeTypeData(type2);
+                }
+                catch
+                {
+                }
+            }
+
             var type = ConvertOpc.NodeTypeString(node);
             if (type == "unkown")
             {
@@ -114,7 +128,7 @@ namespace Autabee.Communication.ManagedOpcClient
                         TypeName = "opc:" + type,
                         Name = varNode.DataType.Identifier.ToString()
                     };
-                    
+
                 }
                 else
                 {
@@ -124,7 +138,7 @@ namespace Autabee.Communication.ManagedOpcClient
                         Name = varNode.DataType.Identifier.ToString()
                     };
                 }
-                
+
             }
             else
             {
@@ -138,18 +152,33 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         #endregion Typing
 
-        #region Methods
-        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, string methodNodeString, object[] inputArguments)
-            => client.CallMethod(
-           new NodeId(objectNodeString),
-           new NodeId(methodNodeString),
-           inputArguments);
+        #region ReadValue
+        public static object ReadValue(this AutabeeManagedOpcClient client, string nodeIdString)
+            => client.ReadValue(new NodeId(nodeIdString));
 
-        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeEntry objectEntry, MethodNodeEntry methodEntry, object[] inputArguments)
-            => client.CallMethod(
-            objectEntry.GetNodeId(),
-            methodEntry.GetNodeId(),
-            inputArguments);
+        public static object ReadValue(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId, Type type = null)
+            => client.ReadValue((NodeId)nodeId, type);
+
+        public static T ReadValue<T>(this AutabeeManagedOpcClient client, string nodeIdString)
+            => client.ReadValue<T>(new NodeId(nodeIdString));
         #endregion
+
+        #region ReadNode
+        public static Node ReadNode(this AutabeeManagedOpcClient client, string nodeIdString)
+            => client.ReadNode(new NodeId(nodeIdString));
+        public static Node ReadNode(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId)
+            => client.ReadNode(ExpandedNodeId.ToNodeId(nodeId, client.Session.NamespaceUris));
+        public static Node ReadNode(this AutabeeManagedOpcClient client, ReferenceDescription reference)
+            => client.ReadNode(ExpandedNodeId.ToNodeId(reference.NodeId, client.Session.NamespaceUris));
+
+        public static NodeCollection ReadNodes(this AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceDescriptions)
+        {
+            NodeIdCollection nodeIds = new NodeIdCollection();
+            nodeIds.AddRange(referenceDescriptions.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, client.Session.NamespaceUris)));
+            return client.ReadNodes(nodeIds);
+        }
+        #endregion
+
+
     }
 }

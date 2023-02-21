@@ -234,6 +234,76 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
+        public static object StringToObject(Type type, string value)
+        {
+            return type.FullName switch {
+                "System.Boolean" => bool.Parse(value),
+                "System.Byte" => byte.Parse(value),
+                "System.SByte" => sbyte.Parse(value),
+
+                "System.UInt16" => ushort.Parse(value),
+                "System.UInt32" => uint.Parse(value),
+                "System.UInt64" => ulong.Parse(value),
+
+                "System.Int16" => short.Parse(value),
+                "System.Int32" => int.Parse(value),
+                "System.Int64" => long.Parse(value),
+
+                "System.Single" => float.Parse(value),
+                "System.Double" => double.Parse(value),
+
+                "System.String" => value,
+                "System.Char[]" => value.ToCharArray(),
+
+                "System.Guid" => Guid.Parse(value),
+                "System.DateTime" => DateTime.Parse(value),
+                "Opc.Ua.LocalizedText" => new LocalizedText(value),
+                "Opc.Ua.NodeId" => NodeId.Parse(value),
+                "Opc.Ua.ExpandedNodeId" => ExpandedNodeId.Parse(value),
+                "Opc.Ua.StatusCode" => new StatusCode(uint.Parse(value)),
+                //"opc:XmlElement" =>  new XmlElement(),
+                //"opc:ExtensionObject"=>  ExtensionObject.Parse(value),
+                //"opc:DataValue"=> DataValue.Parse(value),
+                //"opc:Variant"=>  Variant.Parse(value),
+                //"opc:DiagnosticInfo"=> new DiagnosticInfo(value),
+                "Opc.Ua.QualifiedName" => QualifiedName.Parse(value),
+
+                //arrays
+
+                "System.Boolean[]" => value.Split(';').Select(x => bool.Parse(x)).ToArray(),
+                "System.Byte[]" => value.Split(';').Select(x => byte.Parse(x)).ToArray(),
+                "System.SByte[]" => value.Split(';').Select(x => sbyte.Parse(x)).ToArray(),
+
+                "System.UInt16[]" => value.Split(';').Select(x => ushort.Parse(x)).ToArray(),
+                "System.UInt32[]" => value.Split(';').Select(x => uint.Parse(x)).ToArray(),
+                "System.UInt64[]" => value.Split(';').Select(x => ulong.Parse(x)).ToArray(),
+
+                "System.Int16[]" => value.Split(';').Select(x => short.Parse(x)).ToArray(),
+                "System.Int32[]" => value.Split(';').Select(x => int.Parse(x)).ToArray(),
+                "System.Int64[]" => value.Split(';').Select(x => long.Parse(x)).ToArray(),
+
+                "System.Single[]" => value.Split(';').Select(x => float.Parse(x)).ToArray(),
+                "System.Double[]" => value.Split(';').Select(x => double.Parse(x)).ToArray(),
+
+                "System.String[]" => value.Split(';'),
+                "System.Char[][]" => value.Split(';').Select(x => x.ToCharArray()).ToArray(),
+
+                "System.Guid[]" => value.Split(';').Select(x => Guid.Parse(x)).ToArray(),
+                "System.DateTime[]" => value.Split(';').Select(x => DateTime.Parse(x)).ToArray(),
+                "Opc.Ua.LocalizedText[]" => value.Split(';').Select(x => new LocalizedText(x)).ToArray(),
+                "Opc.Ua.NodeId[]" => value.Split(';').Select(x => NodeId.Parse(x)).ToArray(),
+                "Opc.Ua.ExpandedNodeId[]" => value.Split(';').Select(x => ExpandedNodeId.Parse(x)).ToArray(),
+                "Opc.Ua.StatusCode[]" => value.Split(';').Select(x => new StatusCode(uint.Parse(x))).ToArray(),
+                //"opc:XmlElementArray"=> value.Split(';').Select(x => XmlElement.Parse(x)).ToArray(),
+                //"opc:ExtensionObjectArray"=> value.Split(';').Select(x => ExtensionObject.Parse(x)).ToArray(),
+                //"opc:DataValueArray"=> value.Split(';').Select(x => DataValue.Parse(x)).ToArray(),
+                //"opc:VariantArray"=> value.Split(';').Select(x => Variant.Parse(x)).ToArray(),
+                //"opc:DiagnosticInfoArray"=> value.Split(';').Select(x => DiagnosticInfo.Parse(x)).ToArray(),
+                "Opc.Ua.QualifiedName[]" => value.Split(';').Select(x => QualifiedName.Parse(x)).ToArray(),
+
+                _ => throw new Exception("Unknown type"),
+            };
+        }
         public static object StringToObject(NodeId nodeId, string value)
         {
             if (nodeId.IdType == IdType.Numeric)
@@ -289,10 +359,8 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             return data;
         }
-        public static string NodeTypeString(ExpandedNodeId nodeTypeId)
-        {
-            return NodeTypeString((NodeId)nodeTypeId);
-        }
+        public static string NodeTypeString(ExpandedNodeId nodeTypeId) 
+            => NodeTypeString((NodeId)nodeTypeId);
         public static string NodeTypeString(NodeId nodeTypeId)
         {
             if (nodeTypeId.IdType == IdType.Numeric)

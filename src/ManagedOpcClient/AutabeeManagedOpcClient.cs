@@ -1,23 +1,12 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Utility.Logger;
-using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
-using Opc.Ua.Configuration;
-using Opc.Ua.Security.Certificates;
 using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.SqlTypes;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -278,7 +267,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             Uri uri = new Uri(serverUrl);
             DiscoveryClient client = DiscoveryClient.Create(uri);
-            var endpoints = await client.GetEndpointsAsync(null, "", null, null, token);
+            var endpoints = await client.GetEndpointsAsync(null, string.Empty, null, null, token);
 
             return endpoints.Endpoints;
         }
@@ -544,8 +533,6 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #endregion Connect/Disconnect
 
-
-
         #region EventHandling
 
         /// <summary>
@@ -693,10 +680,10 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <param name="refDesc">The ReferenceDescription</param>
         /// <returns>ReferenceDescriptionCollection of found nodes</returns>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) => 
+        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) =>
             session != null
-? BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris))
-: throw new Exception("BadNotConnected");
+            ? BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris))
+            : throw new Exception("BadNotConnected");
 
         public ReferenceDescriptionCollection BrowseNode(NodeId node) => BrowseNode(
             new BrowseDescriptionCollection() { GetNodeHierarchalBrowseDescription(node) });
@@ -747,7 +734,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw e;
             }
         }
-        
+
 
         public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(NodeId node, CancellationToken token)
         {
@@ -892,14 +879,8 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public ReferenceDescription GetParent(NodeId nodeId)
         {
-            var methode = new MethodArguments();
-
             try
             {
-                Node methodNode = ReadNode(nodeId);
-
-                if (methodNode.NodeClass != NodeClass.Method) { throw new ServiceResultException(StatusCodes.BadNodeClassInvalid); }
-
                 //We need to browse for property (input and output arguments)
                 //Create a collection for the browse results
                 ReferenceDescriptionCollection referenceDescriptionCollection;
@@ -1177,6 +1158,9 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private static string GetTypeDictionary(string nodeIdString, Session session)
         {
+            
+
+
             //Read the desired node first and chekc if it's a variable
             Node node = session.ReadNode(nodeIdString);
             if (node.NodeClass != NodeClass.Variable)
@@ -1186,7 +1170,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             //Get the node id of node's data type
             VariableNode variableNode = (VariableNode)node.DataLock;
-            NodeId nodeId = new NodeId(variableNode.DataType.Identifier, variableNode.DataType.NamespaceIndex);
+            NodeId nodeId = (NodeId)variableNode.DataType;
 
             //Browse for HasEncoding
             ReferenceDescriptionCollection refDescCol;
@@ -1201,36 +1185,48 @@ namespace Autabee.Communication.ManagedOpcClient
             }
 
             //Check for HasEncoding reference with name "Default Binary"
-            foreach (ReferenceDescription refDesc in refDescCol)
-            {
-                if (refDesc.DisplayName.Text == "Default Binary")
-                {
-                    nodeId = new NodeId(refDesc.NodeId.Identifier, refDesc.NodeId.NamespaceIndex);
-                }
-                else
-                {
-                    Exception ex = new Exception("No default binary data type found.");
-                    throw ex;
-                }
-            }
+
+            var tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default Binary");
+            if (tmp == null)
+                tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default XML");
+            if (tmp == null)
+                tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default JSON");
+            
+            if (tmp == null)
+                throw new Exception("No encoding found.");
+            nodeId = (NodeId)tmp.NodeId;
 
             //Browse for HasDescription
-            session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasDescription, true, 0, out _, out refDescCol);
+
+            
+
+
+            ReferenceDescriptionCollection refDescCol2;
+            session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasDescription, true, 0, out _, out refDescCol2);
 
             //Check For found reference
-            if (refDescCol.Count == 0)
+            if (refDescCol2.Count > 0)
             {
-                Exception ex = new Exception("No data type description found in address space.");
-                throw ex;
+                //Read from node id of the found description to get a value to parse for later on
+                nodeId = new NodeId(refDescCol2[0].NodeId.Identifier, refDescCol2[0].NodeId.NamespaceIndex);
+                DataValue resultValue = session.ReadValue(nodeId);
+                return resultValue.Value.ToString();
+                //parseString;
+                //Browse for ComponentOf from last browsing result inversly
+                //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
+
+            }
+            else
+            {
+                //var resultValue = session.ReadValue();
+                return nodeId.ToString();
+                //parseString;
+                //Browse for ComponentOf from last browsing result inversly
+                //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
             }
 
-            //Read from node id of the found description to get a value to parse for later on
-            nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
-            DataValue resultValue = session.ReadValue(nodeId);
-            string parseString = resultValue.Value.ToString();
 
-            //Browse for ComponentOf from last browsing result inversly
-            session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
+
             //
             //Check if reference was found
             //if (refDescCol.Count == 0)
@@ -1248,15 +1244,26 @@ namespace Autabee.Communication.ManagedOpcClient
             //string xmlString = Encoding.ASCII.GetString((byte[])resultValue.Value);
 
             //Return the dictionary as ASCII string
-            return parseString;
+
+        }
+        public object GetCorrectValue(object value)
+        {
+            if (value is ExtensionObject eoValue)
+            {
+                return FormatObject(eoValue);
+            }
+            else if (value is ExtensionObject[] eoValues)
+            {
+                return eoValues.Select(FormatObject).ToArray();
+            }
+            return value;
         }
 
-
-        private object FormatObject(object value, ExtensionObject eoValue)
+        public object FormatObject(ExtensionObject eoValue)
         {
             if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
-                || eoValue.Encoding == ExtensionObjectEncoding.None) 
-                return value;
+                || eoValue.Encoding == ExtensionObjectEncoding.None)
+                return eoValue.Body;
 
             var type = GetTypeEncoding(GetCorrectedTypeName(eoValue));
             return eoValue.Encoding switch
@@ -1264,7 +1271,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext)),
                 ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext)),
                 ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext)),
-                _ => value,
+                _ => throw new Exception("Unkown encoding"),
             };
         }
 
@@ -1321,18 +1328,17 @@ namespace Autabee.Communication.ManagedOpcClient
 
         static string GetCorrectedName(XmlNode value)
         {
-            return ((string)value.Attributes["Name"].Value)
-                    .Replace("&quot;", "")
-                    .Replace("\"", "");
+            return value.Attributes["Name"].Value.Replace("&quot;", string.Empty)
+                    .Replace("\"", string.Empty);
         }
         static string GetCorrectedTypeName(XmlNode value)
         {
-            return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
+            return GetCorrectedTypeName(value.Attributes["TypeName"].Value);
         }
 
         static string GetCorrectedTypeName(ExtensionObject eoValue)
         {
-            return eoValue.TypeId.Identifier.ToString().Replace("\"", "").Replace("TE_", "");
+            return eoValue.TypeId.Identifier.ToString().Replace("\"", string.Empty).Replace("TE_", string.Empty);
         }
 
         static string GetCorrectedTypeName(string value)
@@ -1340,8 +1346,8 @@ namespace Autabee.Communication.ManagedOpcClient
             if (value.Contains("tns:"))
             {
                 return value
-                    .Replace("&quot;", "")
-                    .Replace("\"", "")
+                    .Replace("&quot;", string.Empty)
+                    .Replace("\"", string.Empty)
                     .Substring(4);
             }
 
@@ -1563,60 +1569,46 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion Entry Read
 
         #region Read
-        public object ReadValue(string nodeIdString) => ReadValue(new NodeId(nodeIdString));
-        public object ReadValue(ExpandedNodeId nodeId, Type type = null) => ReadValue((NodeId)nodeId, null);
+
         public object ReadValue(NodeId nodeId, Type type = null)
         {
             var value = type == null ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
             return GetCorrectValue(value);
         }
-
-        private object GetCorrectValue(object value)
-        {
-            if (value is ExtensionObject eoValue)
-            {
-                return FormatObject(value, eoValue);
-            }
-            else if (value is ExtensionObject[] eoValues)
-            {
-                Dictionary<string, object> result = new Dictionary<string, object>();
-                for (int i = 0; i < eoValues.Length; i++)
-                {
-                    result.Add(i.ToString(), FormatObject(value, eoValues[i]));
-                }
-                return result;
-            }
-            return value;
-        }
-
-        public T ReadValue<T>(string nodeIdString) => ReadValue<T>(new NodeId(nodeIdString));
-
         public T ReadValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
-
-        public Node ReadNode(string nodeIdString) => ReadNode(new NodeId(nodeIdString));
-        public Node ReadNode(ExpandedNodeId nodeId) => ReadNode(((NodeId)nodeId));
         public Node ReadNode(NodeId nodeId) => session.ReadNode(nodeId);
 
-        public Node ReadNode(ReferenceDescription reference) => session.ReadNode(
-            ExpandedNodeId.ToNodeId(reference.NodeId, session.NamespaceUris));
 
-        public NodeCollection ReadNodes(ReferenceDescriptionCollection referenceDescriptions)
+
+
+        public NodeCollection ReadNodes(NodeIdCollection nodeIdCollection)
         {
-            if (referenceDescriptions is null || referenceDescriptions.Count == 0) return new NodeCollection();
+            if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new NodeCollection();
             Func<NodeCollection> task = delegate ()
             {
-                NodeIdCollection nodeIds = new NodeIdCollection();
-                nodeIds.AddRange(
-                    referenceDescriptions.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, session.NamespaceUris)));
-                session.ReadNodes(nodeIds, out var nodes, out IList<ServiceResult> statusResults);
+                session.ReadNodes(nodeIdCollection, out var nodes, out IList<ServiceResult> statusResults);
                 ValidateResponse(statusResults.Select(o => o.StatusCode));
                 var nodes2 = new NodeCollection();
                 nodes2.AddRange(nodes);
                 return nodes2;
             };
-
-            return (NodeCollection)HandleTask(task);
+            return HandleTask(task);
         }
+
+        public async Task<NodeCollection> AsyncReadNodes(NodeIdCollection nodeIdCollection, CancellationToken token)
+        {
+            if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new NodeCollection();
+            Func<Task<NodeCollection>> task = async delegate ()
+            {
+                var (nodes, statusResults) = await session.ReadNodesAsync(nodeIdCollection, true, token).ConfigureAwait(false);
+                ValidateResponse(statusResults.Select(o => o.StatusCode));
+                var nodes2 = new NodeCollection();
+                nodes2.AddRange(nodes);
+                return nodes2;
+            };
+            return await HandleTask(task);
+        }
+
 
         public async Task<NodeCollection> AsyncReadNodes(
             ReferenceDescriptionCollection referenceDescriptions,
@@ -1634,7 +1626,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 nodes2.AddRange(nodes);
                 return nodes2;
             };
-            return (NodeCollection)await HandleTask(task);
+            return await HandleTask(task);
         }
         #endregion Read
 
@@ -1817,37 +1809,14 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        public IList<object> CallMethod(NodeId methodNodeId, object[] inputArguments)
-            => Session.Call(
-            (NodeId)GetParent(methodNodeId).NodeId,
-            methodNodeId,
-            inputArguments ?? new object[0]);
-
-        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, object[] inputArguments)
+        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, params object[] inputArguments)
             => Session.Call(
             objectNodeId,
             methodNodeId,
             inputArguments ?? new object[0]);
 
 
-        public IList<object> CallMethods(IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
-        {
-            var methodRequests = new CallMethodRequestCollection();
-            methodRequests.AddRange(
-                data.Select(
-                    o =>
-                    {
-                        var collection = new VariantCollection();
-                        collection.AddRange(o.Item3.Select(k => new Variant(k)));
-                        return new CallMethodRequest()
-                        {
-                            ObjectId = o.Item1.GetNodeId(),
-                            MethodId = o.Item2.GetNodeId(),
-                            InputArguments = collection
-                        };
-                    }));
-            return CallMethods(methodRequests);
-        }
+
 
         public IList<object> CallMethods(CallMethodRequestCollection methodRequests)
         {
@@ -2006,7 +1975,7 @@ namespace Autabee.Communication.ManagedOpcClient
             => AddMonitoredItems(
                 GetSubscription(publishingIntervalMilliSec),
                 nodeEntrys);
-        public Subscription GetSubscription(TimeSpan publishingInterval) => GetSubscription((int)publishingInterval.Milliseconds);
+        public Subscription GetSubscription(TimeSpan publishingInterval) => GetSubscription(publishingInterval.Milliseconds);
 
 
         public Subscription GetSubscription(int publishingIntervalMilliSec)
@@ -2150,15 +2119,8 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             if (subscription.MonitoredItems.Contains(monitoredItem))
             {
-                try
-                {
-                    subscription.RemoveItem(monitoredItem);
-                    subscription.ApplyChanges();
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
+                subscription.RemoveItem(monitoredItem);
+                subscription.ApplyChanges();
             }
         }
 
@@ -2248,6 +2210,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
+
         private T HandleTask<T>(Func<T> task)
         {
             try
@@ -2257,13 +2220,13 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (ServiceResultException se)
             {
                 HandleServiceResultException(se);
-                logger?.Error("Failed reading values", se, null);
+                logger?.Error("Failed executing task", se, null);
                 throw;
             }
             catch (Exception e)
             {
                 if (e is ServiceResultException se) HandleServiceResultException(se);
-                logger?.Error("Failed reading values", e, null);
+                logger?.Error("Failed executing task", e, null);
                 throw;
             }
         }
@@ -2276,13 +2239,13 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (ServiceResultException se)
             {
                 HandleServiceResultException(se);
-                logger?.Error("Failed reading values", se, null);
+                logger?.Error("Failed executing task", se, null);
                 throw;
             }
             catch (Exception e)
             {
                 if (e is ServiceResultException se) HandleServiceResultException(se);
-                logger?.Error("Failed reading values", e, null);
+                logger?.Error("Failed executing task", e, null);
                 throw;
             }
         }

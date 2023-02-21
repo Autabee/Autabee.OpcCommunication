@@ -21,6 +21,12 @@ $bold: 700;
     background-color: transparent;
 }
 
+.node-actions button {
+    float: right;
+    padding: 0px 1px 0px 1px;
+    width: 20px;
+}
+
 .Theme {
     font-size: 20px;
     margin-left: auto;
@@ -112,5 +118,5 @@ dialog {
     top: 50%;
     overflow: auto; /* Enable scroll if needed */
     text-align: left;
-    vertical-align: middle;
+    margin: auto;
 }

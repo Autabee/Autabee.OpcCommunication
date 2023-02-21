@@ -11,7 +11,15 @@
             <span class="node-text">@Client.ApplicationDescription.ApplicationName</span>
         }
         <div class="node-actions">
-            <button class="mdi mdi-lan-disconnect" @onclick=Disconnect />
+            <button class="mdi mdi-delete Danger" @onclick=Remove />
+            @if (Client.Connected)
+            {
+                <button class="mdi mdi-lan-disconnect" @onclick=Disconnect />
+            } 
+            else
+            {
+                <button class="mdi mdi-connection" @onclick=Reconnect  />
+            }
         </div>
     </div>
 </ContextMenuTrigger>
@@ -50,12 +58,12 @@
     {
         if (Client.Connected && ScannedNodes.Count == 0)
         {
-            var scan = Client.BrowseRoot();
-            var nodes = Client.ReadNodes(scan);
+            var scans = Client.BrowseRoot();
+            var nodes = Client.ReadNodes(scans);
             InvokeAsync(StateHasChanged);
-            for (var i = 0; i < scan.Count; i++)
+            for (var i = 0; i < scans.Count; i++)
             {
-                var result = new ScannedNodeModel(scan[i], Client, nodes[i]);
+                var result = new ScannedNodeModel(Client,scans[i], nodes[i]);
                 result.GetChildren();
                 ScannedNodes.Add(result);
             }
@@ -63,7 +71,7 @@
         }
     }
 
-    public void UpdateRoot(object sender, AutabeeManagedOpcClient client)
+    private  void UpdateRoot(object sender, AutabeeManagedOpcClient client)
     {
         if (client == Client)
         {
@@ -73,9 +81,18 @@
         }
     }
 
-    public void Disconnect()
+    private void Disconnect()
     {
         Browser.Disconnect(Client);
+    }
+    private void Reconnect()
+    {
+        Client.Reconnect();
+        Browser.StateHasChanged();
+    }
+    private void Remove()
+    {
+        Browser.RemoveConnection(Client);
     }
 }
 

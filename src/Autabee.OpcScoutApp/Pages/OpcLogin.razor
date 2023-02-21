@@ -138,7 +138,7 @@ else
         Client = new AutabeeManagedOpcClient(config);
         Client.CertificateValidationNotification += CertificateValidation;
         savedEndpoints = EndpointsConnection.Load();
-        savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
+        savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints.OrderBy(o => o.Name).ToList() ;
         if (savedEndpoints.Count >= 1)
         {
             dropSelectedEndpoint = savedEndpoints.First();
@@ -250,7 +250,7 @@ else
                     }
                     EndpointsConnection.Save(savedEndpoints);
                     savedEndpoints = EndpointsConnection.Load();
-                    savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints;
+                    savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints.OrderBy(o => o.Name).ToList();
                     if (index < savedEndpoints.Count)
                     {
                         dropSelectedEndpoint = savedEndpoints[index];
@@ -327,7 +327,7 @@ else
             }
             if (Client.Connected)
             {
-                backend.clients.Add((Client, new List<ScannedNodeModel>()));
+                backend.clients.Add(new ClientCache(Client, new List<ScannedNodeModel>()));
                 Navigation.NavigateTo("/Opc/Manipulation");
             }
             else

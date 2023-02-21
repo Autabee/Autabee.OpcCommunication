@@ -18,6 +18,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Autabee.OpcScout.RazorControls\Autabee.OpcScout.RazorControl.csproj" />
+        <ProjectReference Include="..\ManagedOpcClient\Autabee.Communication.ManagedOpcClient.csproj" />
     </ItemGroup>
 
     <ItemGroup>

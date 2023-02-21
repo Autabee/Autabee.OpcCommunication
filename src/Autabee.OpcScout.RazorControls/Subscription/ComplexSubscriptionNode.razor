@@ -1,5 +1,7 @@
 ﻿@using System.Text.Json;
 @using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Autabee.Communication.ManagedOpcClient;
+@using Opc.Ua;
 @foreach (var item in Value)
 {
     if (item.Value is Dictionary<string, object> dicItem)
@@ -19,13 +21,35 @@
             </tr>
         }
     }
-    else
+    else if(item.Value is ExtensionObject extension)
+    {
+        <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extension)" NodeId="@NodeId" Client="Client" />
+    }
+    else if (item.Value is ExtensionObject[] extensions)
+    {
+        for (int i = 0; i < extensions.Length; i++)
+        {
+            <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extensions[i])" NodeId="@($"{NodeId}[{i}]")" Client="Client" />
+        }
+
+    }
+    else if (item.Value is NodeDataRecord<object> record)
     {
         <tr>
             <td>@string.Join('.',NodeId,item.Key)</td>
             <td></td>
-            <td>@(((NodeDataRecord<object>)item.Value).Value)</td>
-            <td>@(((NodeDataRecord<object>)item.Value).TypeName)</td>
+            <td>@(record.Value)</td>
+            <td>@(record.TypeName)</td>
+            <td></td>
+        </tr>
+    }
+    else 
+    {
+        <tr>
+            <td>@string.Join('.',NodeId,item.Key)</td>
+            <td></td>
+            <td>@(item.Value)</td>
+            <td></td>
             <td></td>
         </tr>
     }
@@ -33,6 +57,8 @@
 
 
 @code {
+    [Parameter]
+    public AutabeeManagedOpcClient Client { get; set; }
     [Parameter]
     public Dictionary<string, object> Value { get; set; }
     [Parameter]

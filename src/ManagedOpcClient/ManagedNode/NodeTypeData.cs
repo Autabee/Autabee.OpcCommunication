@@ -2,6 +2,7 @@
 using Opc.Ua;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -40,10 +41,52 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
     public class NodeTypeData
 #endif
     {
+        public Type systemType = null;
+        public PropertyInfo propertyInfo = null;
         private string typeName = "";
 
         public NodeTypeData()
         {
+        }
+
+        public NodeTypeData(Type type)
+        {
+            Name = type.Name;
+            TypeName = type.FullName;
+            systemType = type;
+            ChildData = ChilderenFromProperties(type.GetProperties(), new Type[] { type });
+
+        }
+
+
+        public NodeTypeData(PropertyInfo property, Type[] types)
+        {
+            propertyInfo = property;
+            Name = property.Name;
+            TypeName = property.PropertyType.Name;
+            systemType = property.PropertyType;
+
+
+            var tmpTypes = new Type[types.Length + 1];
+            types.CopyTo(tmpTypes, 0);
+            tmpTypes[types.Length] = property.PropertyType;
+            ChildData = ChilderenFromProperties(property.PropertyType.GetProperties(), tmpTypes);
+        }
+
+        private List<NodeTypeData> ChilderenFromProperties(PropertyInfo[] propertyInfos, Type[] types)
+        {
+            var result = new List<NodeTypeData>();
+            foreach (var item in propertyInfos)
+            {
+                if (item.Name == "TypeId") continue;
+                if (item.Name == "BinaryEncodingId") continue;
+                if (item.Name == "XmlEncodingId") continue;
+                if (item.Name == "JsonEncodingId") continue;
+                if (types.Contains(item.PropertyType)) continue;
+
+                result.Add(new NodeTypeData(item, types));
+            }
+            return result;
         }
 
         public NodeTypeData(NodeTypeData nodeTypeData)
@@ -59,10 +102,9 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             get => typeName; set
             {
                 typeName = value;
-                Primitive = value.Contains("opc:");
             }
         }
-        public bool Primitive { get; private set; }
+        public bool Primitive { get => ChildData.Count() == 0; }
         //public int index = 0;
         public List<NodeTypeData> ChildData { get; set; } = new List<NodeTypeData>();
 
@@ -80,9 +122,44 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
                 if (ChildData[i].Primitive)
                     dict.Add(child.Name, new NodeDataRecord<object>(ChildData[i], decoder.Read(child.TypeName, child.Name)));
                 else
-                    dict.Add(child.Name,  child.Decode(decoder));
+                    dict.Add(child.Name, child.Decode(decoder));
             }
             return dict;
+        }
+
+
+        public Dictionary<string, object> Decode(object encodedItem)
+        {
+            var dict = new Dictionary<string, object>();
+            for (int i = 0; i < ChildData.Count; i++)
+            {
+                var child = ChildData[i];
+                if (ChildData[i].Primitive)
+                    dict.Add(child.Name, new NodeDataRecord<object>(ChildData[i], ChildData[i].propertyInfo.GetValue(encodedItem)));
+                else
+                    dict.Add(child.Name, ChildData[i].propertyInfo.GetValue(encodedItem));
+            }
+            return dict;
+        }
+
+
+
+    }
+
+    public static class NodeTypeDataExtension
+    {
+        public static List<NodeTypeData> ToFlattened(this NodeTypeData nodeDataRecord)
+        {
+            var list = new List<NodeTypeData>();
+            if (nodeDataRecord.Primitive) list.Add(nodeDataRecord);
+            if (nodeDataRecord.ChildData != null)
+            {
+                foreach (var item in nodeDataRecord.ChildData)
+                {
+                    list.AddRange(ToFlattened(item));
+                }
+            }
+            return list;
         }
     }
 }

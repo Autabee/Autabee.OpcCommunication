@@ -15,6 +15,16 @@ html, body {
     background-color: $color-main-background;
 }
 
+
+#blazor-error-ui {
+    background-color: $color-main-background;
+    color: white;
+}
+
+.InActiveAtribute {
+    color: adjust-color($color-main-text,$lightness: -30);
+}
+
 button {
     color: $color-main-text;
 }
@@ -53,6 +63,8 @@ button {
 .Node > .node-actions > button:hover {
     background-color: adjust-color($color-secendary,$lightness: -10);
 }
+
+
 
 .ABnavitem > a {
     text-decoration: none;
@@ -144,4 +156,7 @@ dialog, .blazor-context-menu--default {
     color: white;
     background: adjust-color($color-main-background,$lightness: -5);
     border-color: adjust-color($color-main-background,$lightness: 10);
+}
+th.node-actions  > button{
+    color: black;
 }

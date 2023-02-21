@@ -11,7 +11,7 @@
     {
         @foreach (var client in Model.Clients)
         {
-            <RootScannedNodeItem Browser="Model" Client=client.Item1 ScannedNodes=client.Item2 />
+            <RootScannedNodeItem Browser="Model" Client=client.client ScannedNodes=client.scannedNodes />
         }
     }
     else

@@ -163,8 +163,8 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var arguments = communicator.CallMethods(values);
 
-            Assert.Equal((uint)50, (arguments[0] as Object[])[0]);
-            Assert.Equal((uint)100, (arguments[0] as Object[])[1]);
+            Assert.Equal((uint)50, (arguments[0] as object[])[0]);
+            Assert.Equal((uint)100, (arguments[0] as object[])[1]);
             Assert.Equal(StatusCodes.BadArgumentsMissing, ((StatusCode)arguments[1]).Code);
             Assert.Equal(StatusCodes.BadInvalidArgument, ((StatusCode)arguments[2]).Code);
             Assert.Equal(StatusCodes.BadTooManyArguments, ((StatusCode)arguments[3]).Code);

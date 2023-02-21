@@ -8,12 +8,18 @@ using System.Threading.Tasks;
 
 namespace Autabee.OpcScout.RazorControl
 {
+
+    
     public class SubscriptionViewModel
     {
         public readonly List<SubscriptionNodeModel> subscriptionNodeModels = new List<SubscriptionNodeModel>();
         public SubscriptionViewModel(List<SubscriptionNodeModel> subscriptionNodeModels)
         {
             this.subscriptionNodeModels = subscriptionNodeModels;
+            foreach (var model in subscriptionNodeModels)
+            {
+                model.RemoveMonitoredItem += RemoveSubscription;
+            }
         }
 
         public event EventHandler OnListChanged;
@@ -38,7 +44,7 @@ namespace Autabee.OpcScout.RazorControl
                 subscriptionNodeModels.Remove(item);
             }
             OnListChanged?.Invoke(this, null);
-            return items.Select(o => o.nodeItem.Reference.NodeId.ToString());
+            return items.Select(o => o.nodeItem.Node.NodeId.ToString());
         }
     }
 }

@@ -10,7 +10,7 @@
     {
         <td class="subscription-actions" style="float:left"><button @onclick="SubscriptionViewModel.ShowSubscription" class="@showButtonClass" /></td>
     }
-    else if (SubscriptionViewModel.nodeItem.Node.HasCurrentWriteAcces())
+    else if (SubscriptionViewModel.nodeItem.Node.HasCurrentWriteAccess())
     {
         <td>
             @if (SubscriptionViewModel.error != string.Empty)
@@ -31,11 +31,14 @@
         <td>@SubscriptionViewModel.MonitoredValueString</td>
     }
     <td>@SubscriptionViewModel.NodeType.TypeName</td>
-    <td class="subscription-actions"><button class="mdi mdi-close-thick" @onclick=SubscriptionViewModel.Remove /></td>
+    <td class="subscription-actions"><button class="mdi mdi-close-thick" style="float:right" @onclick=SubscriptionViewModel.Remove /></td>
 </tr>
 @if (SubscriptionViewModel.complex && SubscriptionViewModel.show)
 {
-    <ComplexSubscriptionNode Value="@SubscriptionViewModel.DictMonitoredValue" NodeId="@SubscriptionViewModel.monitoredItem.StartNodeId.ToString()" />
+    <ComplexSubscriptionNode 
+        Value="@SubscriptionViewModel.DictMonitoredValue" 
+        NodeId="@SubscriptionViewModel.monitoredItem.StartNodeId.ToString()"
+        Client="@SubscriptionViewModel.nodeItem.Client"/>
 }
 
 @code {

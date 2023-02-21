@@ -14,7 +14,10 @@ $color-navmenu: #cccccc;
 
 html, body {
     background-color: $color-main-background;
+    color:black;
 }
+
+
 
 .node-img > img {
     height: 12px;
@@ -23,9 +26,7 @@ html, body {
 th {
     background: $color-primary;
 }
-
-
-.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even) {
+.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .node-set > *:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
     background: adjust-color($color-main-background,$lightness: 5);
 }
 /*
@@ -141,7 +142,10 @@ button.Info:hover, button.Danger:hover {
 }
 
 dialog, .blazor-context-menu--default {
-    border-width:thick;
     background: adjust-color($color-main-background,$lightness: -5);
-    border-color: adjust-color($color-main-background,$lightness: 10);
+    border-color: adjust-color(black,$lightness: 5);
+}
+
+select {
+    border-color: adjust-color($color-main-background,$lightness: -10);
 }

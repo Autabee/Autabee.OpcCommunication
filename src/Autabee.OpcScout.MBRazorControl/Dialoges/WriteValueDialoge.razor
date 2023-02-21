@@ -1,0 +1,74 @@
+﻿@using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScout.RazorControl;
+@using Autabee.OpcScoutApp;
+@using Opc.Ua;
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <icon class="mdi mdi-square-edit-outline" />
+            Call Function
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @for (var index = 0; index < typeData.Count; index++)
+        {
+            var t = index;
+            <OptimalInput Type="typeData[index].systemType" Label="@typeData[index].Name" Value="@strValues[t]" 
+                ValueChanged="(string str) =>{ ValueChangedEvent(t, str);}" />
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Success" OnClick="Call">call</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public NodeTypeData record { get; set; } = new NodeTypeData();
+    public string[] strValues = new string[0];
+    List<NodeTypeData> typeData = new List<NodeTypeData>();
+
+    protected override void OnInitialized()
+    {
+        typeData = record.ToFlattened();
+        strValues = new string[typeData.Count];
+        for (int i = 0; i < typeData.Count(); i++)
+        {
+            strValues[i] = string.Empty;
+        }
+
+        base.OnInitialized();
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+
+    private void ValueChangedEvent(int index,string value )
+    {
+        strValues[index] = value;
+    }
+
+    private void Call()
+    {
+        try
+        {
+            for (int i = 0; i < strValues.Length; i++)
+            {
+                new NodeDataRecord<object>(typeData[i], ConvertOpc.StringToObject(typeData[i].systemType, strValues[i]));
+            }
+
+            MudDialog.Close(DialogResult.Ok(record));
+        }
+        catch (Exception e)
+        {
+            Snackbar.Add(e.Message, Severity.Error);
+        }
+    }
+}

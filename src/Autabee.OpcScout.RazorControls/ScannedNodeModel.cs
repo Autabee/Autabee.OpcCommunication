@@ -10,16 +10,23 @@ namespace Autabee.OpcScout.RazorControl
 {
     public class ScannedNodeModel
     {
-        private readonly ScannedNodeModel parent;
+        public readonly ScannedNodeModel parent;
 
         public ScannedNodeModel[] Children = new ScannedNodeModel[0];
         public bool open = false;
+        public string NodeClassType { get; set; } = "Node";
+        public AutabeeManagedOpcClient Client { get; }
+        public Node Node { get; }
+        public NodeImageId NodeImage { get; private set; }
+        public ReferenceDescription Reference { get; }
+        public bool RetrievedChildren { get; private set; }
+        public bool RetrievingChildren { get; private set; }
 
-        public ScannedNodeModel(ReferenceDescription referenceDescription, AutabeeManagedOpcClient client, Node node, ScannedNodeModel parent = null)
+        public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel parent = null)
         {
-            Reference = referenceDescription;
             Client = client;
             Node = node;
+            this.Reference = Reference;
             if (node is MethodNode mnode)
             {
                 arguments = client.GetMethodArguments(mnode.NodeId);
@@ -31,7 +38,7 @@ namespace Autabee.OpcScout.RazorControl
 
         public MethodArguments arguments;
 
-        public event EventHandler deSelect;
+        public event EventHandler DeSelectEvent;
         public event EventHandler DoneGettingChildren;
         public event EventHandler StateUpdated;
 
@@ -41,7 +48,7 @@ namespace Autabee.OpcScout.RazorControl
         }
         public void DeSelect()
         {
-            deSelect?.Invoke(this, new EventArgs());
+            DeSelectEvent?.Invoke(this, new EventArgs());
         }
 
         public void GetChildren()
@@ -50,8 +57,10 @@ namespace Autabee.OpcScout.RazorControl
             RetrievingChildren = true;
             try
             {
+                NodeImage = NodeImageId.Loading;
+                StateUpdated?.Invoke(this, new EventArgs());
                 var token = CancellationToken.None;
-                var descriptions = Client.BrowseNode(Reference);
+                var descriptions = Client.BrowseNode(Node.NodeId);
 
                 var splitted = SplitList(descriptions);
                 NodeCollection childNodes = new NodeCollection();
@@ -63,7 +72,7 @@ namespace Autabee.OpcScout.RazorControl
                 Children = new ScannedNodeModel[count];
                 for (int i = 0; i < count; i++)
                 {
-                    Children[i] = new ScannedNodeModel(descriptions[i], Client, childNodes[i], this);
+                    Children[i] = new ScannedNodeModel(Client, descriptions[i], childNodes[i], this);
                 }
                 NodeImage = Reference.GetNodeImage();
                 RetrievedChildren = true;
@@ -92,14 +101,6 @@ namespace Autabee.OpcScout.RazorControl
             }
             return list;
         }
-        public NodeClass GetNodeClass() => Reference.NodeClass;
-
-        public string NodeClassType { get; set; } = "Node";
-        public AutabeeManagedOpcClient Client { get; }
-        public Node Node { get; }
-        public NodeImageId NodeImage { get; private set; }
-        public ReferenceDescription Reference { get; }
-        public bool RetrievedChildren { get; private set; }
-        public bool RetrievingChildren { get; private set; }
+        
     }
 }

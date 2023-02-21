@@ -36,7 +36,7 @@
         }
         <Item OnClick="@ClearCache"><icon class="mdi mdi-cached" /> Clear cache</Item>
         <Seperator />
-        <Item OnClick="@Remove">Remove</Item>
+        <Item OnClick="@Remove"><icon class="mdi mdi-delete" />Remove</Item>
     }
     else
     {
@@ -71,7 +71,6 @@
     {
         if (e.Data is AutabeeManagedOpcClient client)
         {
-
             client.Reconnect();
             Browser.StateHasChanged();
         }
@@ -80,8 +79,6 @@
     {
         if (e.Data is AutabeeManagedOpcClient client)
         {
-
-            
             Browser.ClearClientCash(client);
         }
     }
@@ -92,7 +89,7 @@
         {
             try
             {
-                var data = model.Client.ReadValue(model.Reference.NodeId);
+                var data = model.Client.ReadValue(model.Node.NodeId);
                 Message message = GetValueMessage(data);
                 Browser.ReadNodeValue(message);
             }

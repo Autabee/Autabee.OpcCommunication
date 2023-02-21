@@ -43,7 +43,7 @@ namespace Autabee.OpcScout.RazorControl.Subscription
             var client = nodeItem.Client;
             NodeType = client.GetNodeTypeEncoding(nodeItem.Node);
             subscription = client.GetSubscription(timeSpan);
-            monitoredItem = client.CreateMonitoredItem((NodeId)nodeItem.Reference.NodeId, handler: MonitoredNodeValueEventHandler);
+            monitoredItem = client.CreateMonitoredItem(nodeItem.Node.NodeId, handler: MonitoredNodeValueEventHandler);
             client.AddMonitoredItem(subscription, monitoredItem);
         }
         public async void MonitoredNodeValueEventHandler(object sender, object record)
@@ -58,7 +58,7 @@ namespace Autabee.OpcScout.RazorControl.Subscription
                 var convertedValue = ConvertOpc.StringToObject(NodeTypeId, value);
                 var node = nodeItem;
                 var converter = TypeDescriptor.GetConverter(MonitoredValue.GetType());
-                node.Client.WriteValue((NodeId)node.Reference.NodeId, convertedValue);
+                node.Client.WriteValue((NodeId)node.Node.NodeId, convertedValue);
                 error = string.Empty;
                 UpdateView?.Invoke(this, null);
             }
@@ -87,13 +87,39 @@ namespace Autabee.OpcScout.RazorControl.Subscription
 
         }
 
+        public void UpdateMonitoredValue(Dictionary<string, object> dict)
+        {
+            UpdateTime = DateTime.Now;
+            complex = true;
+            MonitoredValue = dict;
+        }
+
+
+
         public void UpdateMonitoredValue(object value)
         {
+
             if (value is Dictionary<string, object> dict)
+            {
+                UpdateMonitoredValue(dict);
+            }
+            else if (value is object[] avalue)
             {
                 UpdateTime = DateTime.Now;
                 complex = true;
-                MonitoredValue = dict;
+                var tmp = new Dictionary<string, object>();
+                for (int i = 0; i < avalue.Length; i++)
+                {
+                    tmp.Add(nodeItem.Node.NodeId + $"[{i}]", avalue[i]);
+                }
+                MonitoredValue = tmp;
+            }
+            else if (value is IEncodeable encodeable)
+            {
+                UpdateTime = DateTime.Now;
+                complex = true;
+                var type = new NodeTypeData(value.GetType());
+                UpdateMonitoredValue(type.Decode(encodeable));
             }
             else
             {

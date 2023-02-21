@@ -11,7 +11,7 @@ namespace Autabee.OpcScoutApp.Data
         public OpcScoutPersistentData()
         {
         }
-        public readonly List<(AutabeeManagedOpcClient, List<ScannedNodeModel>)> clients = new List<(AutabeeManagedOpcClient, List<ScannedNodeModel>)>();
+        public readonly List<ClientCache> clients = new List<ClientCache>();
         public ScannedNodeModel observing = null;
         public readonly List<SubscriptionNodeModel> subscriptionNodes = new List<SubscriptionNodeModel>();
 
