@@ -117,7 +117,7 @@
             {
                 var func = delegate (string str, bool value)
                 {
-                    values.Add(new NodeDetail("Readable", value.ToString(), value));
+                    values.Add(new NodeDetail(str, value.ToString(), value));
                 };
                 func("Readable", nodeAccess.Readable);
                 func("Writeable", nodeAccess.Writable);
