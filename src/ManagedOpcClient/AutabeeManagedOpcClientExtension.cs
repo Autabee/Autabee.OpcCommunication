@@ -107,7 +107,10 @@ namespace Autabee.Communication.ManagedOpcClient
                 try
                 {
                     var type2 = Opc.Ua.TypeInfo.GetSystemType(varNode1.DataType, client.Session.Factory);
-                    return new NodeTypeData(type2);
+                    if (type2 != null)
+                    {
+                        return new NodeTypeData(type2);
+                    }
                 }
                 catch
                 {
