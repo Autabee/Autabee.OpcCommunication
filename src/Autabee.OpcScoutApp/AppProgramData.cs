@@ -1,11 +1,11 @@
-﻿using Autabee.OpcScout;
-using System.Text.Json;
+﻿using System.Text.Json;
+using Autabee.OpcScout;
 
 #if ANDROID
 using Android.App;
 using Android.Content.PM;
 #endif
-namespace Autabee.OpcScoutApp
+namespace Autabee.OpcScout
 {
   public class AppProgramData<T> : IPersistentProgramData<T>
     {

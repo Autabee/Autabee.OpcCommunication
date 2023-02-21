@@ -1,4 +1,5 @@
-﻿namespace Autabee.OpcScoutApp
+﻿
+namespace Autabee.OpcScout
 {
     public partial class App : Application
     {
@@ -6,7 +7,7 @@
         {
             InitializeComponent();
 
-            MainPage = new MainPage();
+            MainPage = new OpcScout.MainPage();
         }
     }
 }

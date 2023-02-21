@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcScout.MBRazorCon
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcScout.BlazorView", "Autabee.OpcScout\Autabee.OpcScout.BlazorView.csproj", "{2847C902-3A7A-482C-9DF8-9BFC39128E65}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Autabee.OpcScoutWeb", "Autabee.OpcScoutWeb\Autabee.OpcScoutWeb.csproj", "{7EC16C1E-75CD-414F-B3ED-A1D3A2418192}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcScoutWeb", "Autabee.OpcScoutWeb\Autabee.OpcScoutWeb.csproj", "{7EC16C1E-75CD-414F-B3ED-A1D3A2418192}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,5 +1,4 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
-using Autabee.OpcScout;
 using Autabee.OpcScout.Data;
 using Autabee.OpcScout.RazorControl;
 using Autabee.Utility.Logger;
@@ -19,9 +18,10 @@ using Android.Content.PM;
 using Microsoft.Win32;
 using System.Management;
 using MudBlazor;
+using Autabee.OpcScout;
 #endif
 
-namespace Autabee.OpcScoutApp
+namespace Autabee.OpcScout
 {
     
 
