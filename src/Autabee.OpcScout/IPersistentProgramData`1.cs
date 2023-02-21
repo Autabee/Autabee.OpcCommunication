@@ -2,7 +2,7 @@
 using Android.App;
 using Android.Content.PM;
 #endif
-namespace Autabee.OpcScoutApp
+namespace Autabee.OpcScout
 {
   public interface IPersistentProgramData<T>
   {

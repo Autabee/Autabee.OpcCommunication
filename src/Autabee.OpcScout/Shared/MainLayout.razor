@@ -1,6 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @inject IJSRuntime _jsRuntime;
-@inject UserTheme theme;
+@inject             UserTheme theme;
 @inject NavigationManager Navigation
 <MudThemeProvider Theme="new MudTheme()" @bind-IsDarkMode="@theme.Dark" />
 <div class="page">

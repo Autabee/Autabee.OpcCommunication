@@ -4,7 +4,7 @@ using Autabee.OpcScout.RazorControl.Subscription;
 using System;
 using System.Linq;
 
-namespace Autabee.OpcScoutApp.Data
+namespace Autabee.OpcScout.Data
 {
     public class OpcScoutPersistentData
     {

@@ -1,4 +1,4 @@
-﻿namespace Autabee.OpcScoutApp
+﻿namespace Autabee.OpcScout
 {
     public class UserTheme
     {

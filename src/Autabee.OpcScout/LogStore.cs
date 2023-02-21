@@ -1,7 +1,7 @@
 ﻿using Autabee.Utility.Logger;
 using Autabee.Utility.Messaging;
 
-namespace Autabee.OpcScoutApp
+namespace Autabee.OpcScout
 {
     public class InMemoryLog : IAutabeeLogger
     {

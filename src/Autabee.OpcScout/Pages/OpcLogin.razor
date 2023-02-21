@@ -1,17 +1,17 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScout.Data;
 @using Autabee.OpcScout.MBRazorControl.Dialoges;
 @using Autabee.OpcScout.RazorControl;
-@using Autabee.OpcScoutApp.Data;
 @using Autabee.Utility.Logger;
 @using Opc.Ua;
 @using System.Security.Cryptography.X509Certificates
 @using System.Text.RegularExpressions;
 
 @inject IAutabeeLogger logger
-@inject OpcScoutPersistentData backend
+@inject             OpcScoutPersistentData backend
 @inject NavigationManager Navigation
 @inject ApplicationConfiguration config
-@inject IPersistentProgramData<List<EndpointRecord>> EndpointsConnection
+@inject             IPersistentProgramData<List<EndpointRecord>> EndpointsConnection
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @page "/Opc/Login"

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Autabee.OpcScout;
+using System.Text.Json;
 
 #if ANDROID
 using Android.App;
@@ -7,7 +8,7 @@ using Android.Content.PM;
 namespace Autabee.OpcScoutApp
 {
   public class AppProgramData<T> : IPersistentProgramData<T>
-  {
+    {
     string fileName;
 
     public AppProgramData(string fileName)

@@ -1,10 +1,10 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
 @using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Autabee.OpcScout.Data;
 @using Autabee.OpcScout.MBRazorControl.Dialoges;
 @using Autabee.OpcScout.RazorControl
 @using Opc.Ua;
 @using Autabee.Utility.Messaging;
-@using Autabee.OpcScoutApp.Data;
 @using System.Text.Json;
 @using System.Linq;
 
@@ -95,10 +95,11 @@
 
     protected override void OnInitialized()
     {
-        nodeBrowser = new NodeBrowserModel(){ 
-            Clients = controlBackend.clients,
-            Selected = controlBackend.observing
-        };
+        nodeBrowser = new NodeBrowserModel()
+            {
+                Clients = controlBackend.clients,
+                Selected = controlBackend.observing
+            };
         subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes);
         if (controlBackend.observing != null) nodeViewerModel.UpdateSelected(this, controlBackend.observing);
         logger.Information("Open Manipulator");
@@ -171,7 +172,7 @@
         }
         catch (Exception e)
         {
-            logger.Log(new Message(text: "Failed to complete write dialoge: {}",parameters: e.Message),e);
+            logger.Log(new Message(text: "Failed to complete write dialoge: {}", parameters: e.Message), e);
             return;
         }
     }

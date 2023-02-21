@@ -1,5 +1,4 @@
 ﻿@using Autabee.OpcScout.RazorControl;
-@using Autabee.OpcScoutApp;
 @using Opc.Ua;
 @inject ISnackbar Snackbar
 
@@ -47,11 +46,11 @@
     }
     private void EditRecord()
     {
-        MudDialog.Close(DialogResult.Ok(new Tuple<DialogAction, EndpointRecord>(DialogAction.Save, record)));
+        MudDialog.Close(DialogResult.Ok(new Tuple<DialogAction, Autabee.OpcScout.RazorControl.EndpointRecord>(DialogAction.Save, record)));
     }
 
     private void DeleteRecord()
     {
-        MudDialog.Close(DialogResult.Ok(new Tuple<DialogAction, EndpointRecord>(DialogAction.Delete, record)));
+        MudDialog.Close(DialogResult.Ok(new Tuple<DialogAction, Autabee.OpcScout.RazorControl.EndpointRecord>(DialogAction.Delete, record)));
     }
 }

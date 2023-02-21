@@ -1,5 +1,7 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
-using Autabee.OpcScoutApp.Data;
+using Autabee.OpcScout;
+using Autabee.OpcScout.Data;
+using Autabee.OpcScout.RazorControl;
 using Autabee.Utility.Logger;
 using Opc.Ua;
 using System.Net;
@@ -21,13 +23,7 @@ using MudBlazor;
 
 namespace Autabee.OpcScoutApp
 {
-    public static class AutabeeDictionaryExtension
-    {
-        public static void Add<T, D>(this Dictionary<T, D> dict, KeyValuePair<T, D> keyValuePair)
-        {
-            dict.Add(keyValuePair.Key, keyValuePair.Value);
-        }
-    }
+    
 
     public static class MauiProgram
     {
@@ -108,7 +104,7 @@ namespace Autabee.OpcScoutApp
 #endif
             
 
-            builder.Services.AddScoped<UserTheme>(o => new UserTheme() { Theme = "app"
+            builder.Services.AddScoped(o => new UserTheme() { Theme = "app"
 #if WINDOWS
                 , NavDark = res==0
                 , Dark = res==0

@@ -50,23 +50,24 @@
     grid-area: macro;
 }
 
-.logitem{
+.logitem {
     padding: 0px 0px 0px 1em;
-    display:flex;
-    flex-direction:row;
+    display: flex;
+    flex-direction: row;
 }
 
     .logitem > span {
-        margin:1px 5px;
-        display:block;
-    }
-    .logitem > button {
-        flex:1;
-        max-height:100%;
-        border:none;
+        margin: 1px 5px;
+        display: block;
     }
 
-    
+    .logitem > button {
+        flex: 1;
+        max-height: 100%;
+        border: none;
+    }
+
+
 
 .log-message-short {
     flex: 1000;
@@ -74,6 +75,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .log-message {
     flex: 1000;
     overflow: hidden;
