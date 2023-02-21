@@ -17,7 +17,7 @@
         @for (var index = 0; index < record.InputArguments.Count; index++)
         {
             var t = index;
-            <OptimalInput Type="record.InputArgumentTypes[index] " Label="@(record.InputArguments[t].Name)" Value="strValues[t]"
+            <OptimalInput Type="record.InputArgumentTypes[index] " Label="@(record.InputArguments[t].Name)" Value=@strValues[t]
                       ValueChanged="(string str) =>{ ValueChangedEvent(t, str);}" />
         }
     </DialogContent>
