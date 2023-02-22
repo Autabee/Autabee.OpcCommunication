@@ -143,12 +143,15 @@ input, select {
     color:white
 }
 
-.Root-Node {
+.Root-Node > thead {
     background: $color-primary;
-    color:black;
+    color: black;
+}
+.Root-Node{
+    
 }
 
-.Root-Node button {
+.Root-Node > thead button {
     color: black;
 }
 

@@ -23,6 +23,10 @@ $bold: 700;
     width: 20px;
 }
 
+.Node .node-text {
+    font-weight: normal;
+}
+
 
 
 .Theme {
@@ -62,6 +66,7 @@ $bold: 700;
 .loginform > tr > td > input, .loginform > tr > td > select {
     height: 25px;
     border-radius: 0px;
+    padding-left:5px;
 }
 .SelectEnpoint > p {
     text-align:center

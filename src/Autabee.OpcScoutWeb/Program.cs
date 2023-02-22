@@ -2,7 +2,6 @@ using Autabee.Communication.ManagedOpcClient;
 using Autabee.OpcScout;
 using Autabee.OpcScout.Data;
 using Autabee.OpcScout.RazorControl;
-using Autabee.OpcScoutWeb.Data;
 using Autabee.Utility.Logger;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;

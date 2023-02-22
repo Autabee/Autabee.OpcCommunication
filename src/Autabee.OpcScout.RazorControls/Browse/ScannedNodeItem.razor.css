@@ -16,7 +16,6 @@
 
 }
      .node-text {
-         text-decoration-style:wavy;
         text-overflow: ellipsis;
         overflow:hidden;
     }

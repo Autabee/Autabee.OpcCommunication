@@ -10,7 +10,7 @@ $color-main-background: #e6e6e6;
 $color-navmenu: #cccccc;
 
 
-
+$color-main-text:black;
 
 html, body {
     background-color: $color-main-background;
@@ -27,7 +27,7 @@ th {
     background: $color-primary;
 }
 .SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .node-set > *:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
-    background: adjust-color($color-main-background,$lightness: 6);
+    background: adjust-color($color-main-background,$lightness: 5);
 }
 
 
@@ -83,7 +83,9 @@ input {
     background: $color-primary;
 }
 
-
+.InActiveAtribute {
+    color: adjust-color($color-main-text,$lightness: 30);
+}
 
 .OpcNodeViewer button:hover {
     background-color: adjust-color($color-secendary,$lightness: -10);

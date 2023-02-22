@@ -1,13 +1,12 @@
-﻿
-namespace Autabee.OpcScout
+﻿namespace Autabee.OpcScoutApp
 {
-    public partial class App : Application
-    {
-        public App()
-        {
-            InitializeComponent();
+	public partial class App : Application
+	{
+		public App()
+		{
+			InitializeComponent();
 
-            MainPage = new OpcScout.MainPage();
-        }
-    }
+			MainPage = new MainPage();
+		}
+	}
 }

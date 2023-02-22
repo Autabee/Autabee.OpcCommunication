@@ -1,1 +1,0 @@
-[{"Id":0,"Server":"opc.tcp://laptop131:62548/Quickstarts/DataAccessServer","EndpointUrl":"opc.tcp://laptop131:62548/Quickstarts/DataAccessServer","SecurityMode":1,"SecurityPolicyUri":"http://opcfoundation.org/UA/SecurityPolicy#None","Name":"Data Access Server","Description":null}]
