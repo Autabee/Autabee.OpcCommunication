@@ -1,0 +1,103 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime _jsRuntime;
+@inject             UserTheme theme;
+@inject NavigationManager Navigation
+<MudThemeProvider Theme="new MudTheme()" @bind-IsDarkMode="@theme.Dark" />
+<div class="page">
+
+    <main>
+        <nav class="top-row">
+            <!--<button title="Navigation menu" @onclick="ToggleNavMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>-->
+            @if (theme.NavDark)
+            {
+                <img class="HomeItem" src="_content/Autabee.OpcScout.BlazorView/images/autabee_dark_transparent.svg" style="height: 40px" />
+            }
+            else
+            {
+                <img class="HomeItem" src="_content/Autabee.OpcScout.BlazorView/images/autabee_light_transparent.svg" style="height: 40px" />
+            }
+            <button class="ABnavitem HomeItem" @onclick=NavigateTo >
+                Opc Scout
+            </button>
+            <!--<nav class="@NavMenuCssClass">-->
+            <!--<div class="ABnavitem">
+                <NavLink href="" Match="NavLinkMatch.All">
+                    <span class="mdi mdi-home" /> Home
+                </NavLink>
+            </div>-->
+            <!--
+               <div class="ABnavitem">
+                <NavLink href="Counter">
+                    <span class="oi oi-plus" aria-hidden="true"></span><span>  Counter</span>
+                </NavLink>
+            </div>-->
+
+            <button class="ABnavitem" @onclick=NavigateToLogin >
+                <span class="mdi mdi-lan-connect" />  Connect
+            </button>
+
+            <button class="ABnavitem" @onclick=NavigateToController >
+                <span class="mdi mdi-state-machine" />  Manipulator
+            </button>
+
+
+            <button class="Theme" @onclick="()=>ToggleTheme()">
+                <icon class="mdi mdi-@mdiTheme" />
+            </button>
+            <!--</nav>-->
+
+        </nav>
+
+
+        <article>
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+    //private bool collapseNavMenu = true;
+
+
+
+    private string mdiTheme { get => !theme.Dark ? "weather-sunny" : "weather-night"; }
+
+    protected override void OnInitialized()
+    {
+        if (theme.NavDark)
+        _jsRuntime.InvokeVoidAsync("SetNavTheme", theme.NavThemeCss);
+        if (theme.Dark)
+        _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
+    }
+
+
+    //private string NavMenuCssClass => collapseNavMenu ? "nav-content-hidden" : "nav-content-visable";
+
+    //private void ToggleNavMenu()
+    //{
+    //    collapseNavMenu = !collapseNavMenu;
+    //}
+
+    private void ToggleTheme()
+    {
+        theme.Dark = !theme.Dark;
+        _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
+        _jsRuntime.InvokeVoidAsync("SetNavTheme", theme.NavThemeCss);
+    }
+
+    private void NavigateTo()
+    {
+        Navigation.NavigateTo("");
+    }
+
+    private void NavigateToLogin()
+    {
+        Navigation.NavigateTo("Opc/Login");
+    }
+    private void NavigateToController()
+    {
+        Navigation.NavigateTo("Opc/Manipulation");
+    }
+}

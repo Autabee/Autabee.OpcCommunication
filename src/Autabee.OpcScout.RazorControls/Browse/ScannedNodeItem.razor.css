@@ -12,9 +12,8 @@
 
 
 
-.Node {
-    display: grid;
-    grid: "node-charet node-img node-text node-actions" / 15px 15px auto 80px;
+.Node > td:nth-child(1) {
+
 }
      .node-text {
         text-overflow: ellipsis;

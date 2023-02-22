@@ -1,0 +1,146 @@
+﻿$color-error: #FF2200;
+$color-warning: #FF6600;
+$color-info: #009CCC;
+
+$bold: 700;
+
+.OpcNodeBrowser, .Node, .Root-Node, .SubscriptionView {
+    font-size: 12px;
+}
+
+.Node button {
+    font-size: 12px;
+    height:100%;
+    padding: 1px;
+    margin: 0px;
+    border: 0px;
+    background-color: transparent;
+}
+
+.node-actions button {
+    float: right;
+    padding: 0px 1px 0px 1px;
+    width: 20px;
+}
+
+.Node .node-text {
+    font-weight: normal;
+}
+
+
+
+.Theme {
+    font-size: 20px;
+    margin-left: auto;
+    border: none;
+}
+.loginform{
+    margin: 20px auto 20px auto
+}
+
+.loginform > tr > td:nth-child(1) {
+    padding-right: 5px;
+    text-align:end;
+    width: 120px;
+}
+.loginform > tr > td:nth-child(3) {
+    float: left;
+    width: 120px;
+}
+
+.loginform > tr > td:nth-child(2) {
+    width: 300px;
+}
+.loginform > tr > td:nth-child(2) > * {
+    width:300px;
+    border-top-width: 0px;
+    border-right-width:2px;
+    border-left-width:2px;
+    border-bottom-width:2px;
+}
+
+.loginform > tr:nth-child(1) > td:nth-child(2) > * {
+    border-top-width: 2px;
+}
+
+.loginform > tr > td > input, .loginform > tr > td > select {
+    height: 25px;
+    border-radius: 0px;
+    padding-left:5px;
+}
+.SelectEnpoint > p {
+    text-align:center
+}
+
+
+.SubscriptionView input {
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+    height: 100%;
+    width: 100%;
+    text-decoration: underline;
+}
+
+.SubscriptionView {
+    max-width: 100%;
+    font-size: 12px;
+}
+
+.SubscriptionView table {
+    width: 100%;
+    max-width: 100%;
+    word-wrap: break-word;
+    word-break: break-word;
+    border-spacing: 0px;
+}
+.SubscriptionView td {
+    padding:0px 5px 0px 5px
+}
+
+td.subscription-actions {
+    padding: 0px;
+}
+td.subscription-actions > button {
+    padding: 1px;
+    margin: 0px;
+    display: block;
+    height: 100%;
+    width: 20px;
+} 
+
+.Viewportheader {
+    height: 28px;
+}
+
+.Viewport h3 {
+    height: 28px;
+}
+
+.Viewportheader > button {
+    border: 0px;
+    height: 24px;
+    font-weight: $bold;
+    padding: 0px 10px 0px 10px;
+}
+
+.Viewportheader > button {
+    background-color: transparent;
+    border: 0px;
+    height: 100%;
+    font-weight: $bold;
+    padding: 0px 10px 0px 10px;
+}
+
+.Root-Node {
+    font-weight: $bold;
+}
+
+dialog {
+    position: absolute;
+    z-index: 1; /* Sit on top */
+    top: 50%;
+    overflow: auto; /* Enable scroll if needed */
+    text-align: left;
+    margin: auto;
+}

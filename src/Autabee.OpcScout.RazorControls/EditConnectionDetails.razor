@@ -1,5 +1,4 @@
-﻿@using Autabee.OpcScoutApp;
-@using Autabee.Utility.Logger;
+﻿@using Autabee.Utility.Logger;
 @using Microsoft.AspNetCore.Components.Forms
 @using Opc.Ua;
 @inject IAutabeeLogger logger
@@ -70,12 +69,12 @@
         {
             logger.Information("Cancel called");
 
-            EndpointEditResult.InvokeAsync(new Tuple<bool, EndpointRecord>(false, null));
+            EndpointEditResult.InvokeAsync(new Tuple<bool, Autabee.OpcScout.RazorControl.EndpointRecord>(false, null));
         }
         else
         {
             logger.Information("Save called");
-            EndpointEditResult.InvokeAsync(new Tuple<bool, EndpointRecord>(true, endpointRecord));
+            EndpointEditResult.InvokeAsync(new Tuple<bool, Autabee.OpcScout.RazorControl.EndpointRecord>(true, endpointRecord));
         }
     }
 }

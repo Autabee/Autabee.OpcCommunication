@@ -1,6 +1,6 @@
 ﻿.Root-Node {
-    display: grid;
-    grid: "node-text node-actions" / auto 60px;
+    padding-left: 0px;
+    width:100%;
 }
 
 .node-text {
@@ -10,7 +10,8 @@
 }
 
 .node-actions {
-    grid-area: node-actions;
+    width:80px;
+
 }
 
 .node-actions button {

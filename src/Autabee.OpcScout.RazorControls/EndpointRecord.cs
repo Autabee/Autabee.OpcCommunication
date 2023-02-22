@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
-namespace Autabee.OpcScoutApp
+namespace Autabee.OpcScout.RazorControl
 {
     public class EndpointRecord
     {

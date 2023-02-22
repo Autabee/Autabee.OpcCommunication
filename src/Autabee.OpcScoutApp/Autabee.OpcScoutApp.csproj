@@ -1,9 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
     <PropertyGroup>
-		<!--<TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>-->
+        <!-- <TargetFrameworks>net6.0-android;net6.0-ios;net6.0-maccatalyst</TargetFrameworks>-->
         <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net6.0-windows10.0.19041.0</TargetFrameworks>
-        <!--<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">net7.0-windows10.0.19041.0</TargetFrameworks>-->
         <!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
         <!-- <TargetFrameworks>$(TargetFrameworks);net6.0-tizen</TargetFrameworks> -->
         <OutputType>Exe</OutputType>
@@ -18,7 +17,7 @@
 
         <!-- App Identifier -->
         <ApplicationId>com.companyname.autabee.opcscoutapp</ApplicationId>
-        <ApplicationIdGuid>EB0A2C39-AB33-42EB-8D14-C3021FA6016B</ApplicationIdGuid>
+        <ApplicationIdGuid>4864F782-BBD2-4D85-96F8-ED2AC852F25F</ApplicationIdGuid>
 
         <!-- Versions -->
         <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -52,16 +51,6 @@
 
     <ItemGroup>
       <None Remove="autabeeopcscout.Config.xml" />
-      <None Remove="Pages\Index.razor.css" />
-      <None Remove="Pages\OpcLogin - Copy.razor.css" />
-      <None Remove="Pages\OpcLogin.razor.css" />
-      <None Remove="Pages\OpcManipulator.razor.css" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Content Include="Pages\Index.razor.css" />
-      <Content Include="Pages\OpcLogin.razor.css" />
-      <Content Include="Pages\OpcManipulator.razor.css" />
     </ItemGroup>
 
     <ItemGroup>
@@ -71,31 +60,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Blazor.ContextMenu" Version="1.15.0" />
-      <PackageReference Include="BuildWebCompiler" Version="1.12.405" />
-      <PackageReference Include="MudBlazor" Version="6.1.8" />
-      <PackageReference Include="System.Management" Version="7.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Autabee.OpcScout.MBRazorControl\Autabee.OpcScout.MBRazorControl.csproj" />
-      <ProjectReference Include="..\Autabee.OpcScout.RazorControls\Autabee.OpcScout.RazorControl.csproj" />
-      <ProjectReference Include="..\ManagedOpcClient\Autabee.Communication.ManagedOpcClient.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Compile Update="Properties\Resources.Designer.cs">
-        <DesignTime>True</DesignTime>
-        <AutoGen>True</AutoGen>
-        <DependentUpon>Resources.resx</DependentUpon>
-      </Compile>
-    </ItemGroup>
-
-    <ItemGroup>
-      <EmbeddedResource Update="Properties\Resources.resx">
-        <Generator>ResXFileCodeGenerator</Generator>
-        <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      </EmbeddedResource>
+      <ProjectReference Include="..\Autabee.OpcScout\Autabee.OpcScout.BlazorView.csproj" />
     </ItemGroup>
 
 </Project>
