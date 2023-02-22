@@ -15,6 +15,16 @@ h1:focus {
     outline: none;
 }
 
+.HomePage {
+    text-align: center;
+}
+.HomePage>img{
+    height:400px;
+    margin: 20px auto 10px auto;
+}
+.HomePage > h1 {
+    font-size:48px;
+}
 
 .btn-primary {
     color: #fff;

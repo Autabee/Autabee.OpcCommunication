@@ -1,15 +1,15 @@
 ﻿@page "/"
 @using Opc.Ua;
-@inject             UserTheme theme
-
-<img src="/images/autabee_@(theme.DarkString)_transparent.svg" alt="Autabee" />
-<h1>Autabee Opc Scout</h1>
-
+@inject UserTheme theme
+<div class="HomePage">
+    <img src="_content/Autabee.OpcScout.BlazorView/images/autabee_@(theme.DarkString)_transparent.svg" alt="Autabee" />
+    <h1>Autabee Opc Scout</h1>
+</div>
 @code {
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        theme.ThemeChanged += ThemeChanged; 
+        theme.ThemeChanged += ThemeChanged;
     }
     void ThemeChanged(object sender, EventArgs e)
     {

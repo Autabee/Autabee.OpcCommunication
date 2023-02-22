@@ -8,10 +8,10 @@
 @using System.Text.RegularExpressions;
 
 @inject IAutabeeLogger logger
-@inject             OpcScoutPersistentData backend
+@inject OpcScoutPersistentData backend
 @inject NavigationManager Navigation
 @inject ApplicationConfiguration config
-@inject             IPersistentProgramData<List<EndpointRecord>> EndpointsConnection
+@inject IPersistentProgramData<List<EndpointRecord>> EndpointsConnection
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @page "/Opc/Login"
@@ -75,7 +75,9 @@
 
 @if (endpoints == null)
 {
-    <p class="SelectEnpoint"><em>Request server for endpoints</em></p>
+    <div class="SelectEnpoint">
+    <p ><em>Request server for endpoints</em></p>
+    </div>
 }
 @*else if (editingEndpoint)
 {
@@ -100,7 +102,7 @@ else
                     <td>@endpoint.EndpointUrl</td>
                     <td>@endpoint.SecurityPolicyUri.Substring(43)</td>
                     <td>@endpoint.SecurityMode</td>
-                    <td class="actions">
+                    <td class="node-actions">
                         <button @onclick="()=> SaveAndConnect(endpoint)" class="mdi mdi-content-save Info" title="Connect & Save" />
                         <button @onclick="()=> Connect(endpoint)" class="mdi mdi-connection Info" title="Try Connect" />
                         @if (!@CertAccepted[endpoints.IndexOf(endpoint)])

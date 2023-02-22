@@ -1,43 +1,58 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
 
 
-<ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="Client">
-    <div class="Root-Node">
-        @if(Client.Connected){
-            <span class="node-text">@Client.GetConnectedServer()?.ApplicationName</span>
+
+<table class="Root-Node">
+   
+    
+        <thead>
+            <tr>
+        @if (Client.Connected)
+        {
+            
+            <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="Client" WrapperTag="td" CssClass="node-text">
+                @Client.GetConnectedServer()?.ApplicationName
+            </ContextMenuTrigger>
+
         }
         else
         {
-            <span class="node-text">@Client.ApplicationDescription.ApplicationName</span>
+            <td class="node-text">
+            <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="Client">@Client.ApplicationDescription.ApplicationName</ContextMenuTrigger>
+        </td>
         }
-        <div class="node-actions">
+        <td class="node-actions">
             <button class="mdi mdi-delete Danger" @onclick=Remove />
             @if (Client.Connected)
             {
                 <button class="mdi mdi-lan-disconnect" @onclick=Disconnect />
-            } 
+            }
             else
             {
-                <button class="mdi mdi-connection" @onclick=Reconnect  />
+                <button class="mdi mdi-connection" @onclick=Reconnect />
             }
-        </div>
-    </div>
-</ContextMenuTrigger>
-
-@if (Client.Connected)
-{
-    <div class="node-set">
-    @if (ScannedNodes != null && ScannedNodes.Count >= 0)
+        </td>
+        </tr>
+        </thead>
+    
+    @if (Client.Connected)
     {
-        @foreach (var node in ScannedNodes)
-        {
-            
-            <ScannedNodeItem ScannedNodeModel="@node" depth="0" Browser="Browser" />
-            
-        }
+        <tbody class="node-set">
+            @if (ScannedNodes != null && ScannedNodes.Count >= 0)
+            {
+                @foreach (var node in ScannedNodes)
+                {
+
+                    <ScannedNodeItem ScannedNodeModel="@node" depth="0" Browser="Browser" />
+
+                }
+            }
+        </tbody>
     }
-    </div>
-}
+</table>
+
+
+
 @code {
     [Parameter]
     public NodeBrowserModel Browser { get; set; }
@@ -63,7 +78,7 @@
             InvokeAsync(StateHasChanged);
             for (var i = 0; i < scans.Count; i++)
             {
-                var result = new ScannedNodeModel(Client,scans[i], nodes[i]);
+                var result = new ScannedNodeModel(Client, scans[i], nodes[i]);
                 result.GetChildren();
                 ScannedNodes.Add(result);
             }
@@ -71,7 +86,7 @@
         }
     }
 
-    private  void UpdateRoot(object sender, AutabeeManagedOpcClient client)
+    private void UpdateRoot(object sender, AutabeeManagedOpcClient client)
     {
         if (client == Client)
         {

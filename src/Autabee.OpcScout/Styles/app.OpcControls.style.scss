@@ -8,10 +8,6 @@ $bold: 700;
     font-size: 12px;
 }
 
-.Root-Node{
-    padding-left:1em;
-}
-
 .Node button {
     font-size: 12px;
     height:100%;
@@ -27,16 +23,36 @@ $bold: 700;
     width: 20px;
 }
 
+
+
 .Theme {
     font-size: 20px;
     margin-left: auto;
     border: none;
 }
-.loginform > tr > td:nth-child(1){
-    padding-right: 5px
+.loginform{
+    margin: 20px auto 20px auto
+}
+
+.loginform > tr > td:nth-child(1) {
+    padding-right: 5px;
+    text-align:end;
+    width: 120px;
+}
+.loginform > tr > td:nth-child(3) {
+    float: left;
+    width: 120px;
+}
+
+.loginform > tr > td:nth-child(2) {
+    width: 300px;
 }
 .loginform > tr > td:nth-child(2) > * {
-    border-top-width:0px;
+    width:300px;
+    border-top-width: 0px;
+    border-right-width:2px;
+    border-left-width:2px;
+    border-bottom-width:2px;
 }
 
 .loginform > tr:nth-child(1) > td:nth-child(2) > * {
@@ -46,6 +62,9 @@ $bold: 700;
 .loginform > tr > td > input, .loginform > tr > td > select {
     height: 25px;
     border-radius: 0px;
+}
+.SelectEnpoint > p {
+    text-align:center
 }
 
 

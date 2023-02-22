@@ -82,6 +82,7 @@
     {
         theme.Dark = !theme.Dark;
         _jsRuntime.InvokeVoidAsync("SetTheme", theme.ThemeCss);
+        _jsRuntime.InvokeVoidAsync("SetNavTheme", theme.NavThemeCss);
     }
 
     private void NavigateTo()

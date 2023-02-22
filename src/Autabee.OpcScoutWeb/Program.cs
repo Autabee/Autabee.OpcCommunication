@@ -21,6 +21,7 @@ namespace Autabee.OpcScoutWeb
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
 
+            builder.Services.AddBlazorContextMenu();
             builder.Services.AddMudServices(
                 config =>
                 {
@@ -64,18 +65,17 @@ namespace Autabee.OpcScoutWeb
 #endif
             builder.Services.AddSingleton(o =>
             {
-                return AutabeeManagedOpcClientExtension.CreateDefaultClientConfiguration(Assembly.GetExecutingAssembly()
-                    .GetManifestResourceStream("Autabee.OpcScoutApp.autabeeopcscout.Config.xml"));
+                //var ass = Assembly.GetExecutingAssembly();
+                //var manifest = ass.GetManifestResourceStream("Autabee.OpcScoutWeb.autabeeopcscout.Config.xml");
+                return AutabeeManagedOpcClientExtension.GetClientConfiguration("autabee", "opc_scout", "/opc_certs/", null);
             }
             );
 
             builder.Services.AddScoped(o => new UserTheme()
             {
-                Theme = "app"
-#if WINDOWS
-                , NavDark = res==0
-                , Dark = res==0
-#endif
+                Theme = "app",
+                NavLinked = true
+
             });
             builder.Services.AddScoped<InMemoryLog>();
             builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));

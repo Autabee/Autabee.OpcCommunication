@@ -185,7 +185,7 @@
     {
         client.Disconnect();
         subscriptionViewModel.RemoveSubscriptions(client);
-        controlBackend.clients.Remove(controlBackend.clients.First(o => o.client == client));
+        //controlBackend.clients.Remove(controlBackend.clients.First(o => o.client == client));
         StateHasChanged();
     }
 

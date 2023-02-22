@@ -10,6 +10,11 @@
                 if (dark != value)
                 {
                     dark = value;
+                    if (NavLinked)
+                    {
+                        navdark = value;
+                    }
+                    
                     ThemeChanged?.Invoke(this, null);
                 }
             }
@@ -32,7 +37,22 @@
         public string ThemeCss { get => $"{Theme}.{DarkString}.css"; }
         public string NavThemeCss { get => $"nav.{NavDarkString}.css"; }
         bool navdark;
-        public bool NavDark { get => navdark; set => navdark = value; }
+        public bool NavDark { get => navdark; set
+            {
+                if (navdark != value)
+                {
+                    navdark = value;
+                    if (NavLinked)
+                    {
+                        dark = value;
+                    }
+
+                    ThemeChanged?.Invoke(this, null);
+                }
+            }
+        }
+
+        public bool NavLinked { get; set; } = false;
         public UserTheme()
         {
         }

@@ -27,8 +27,14 @@ th {
     background: $color-primary;
 }
 .SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .node-set > *:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
-    background: adjust-color($color-main-background,$lightness: 5);
+    background: adjust-color($color-main-background,$lightness: 6);
 }
+
+
+
+/*.SubscriptionView tr:nth-child(odd), .data-item:nth-child(odd), .node-set > *:nth-child(odd), .logitem:nth-child(odd), .OpcNodeViewer tr:nth-child(odd) {
+    background: adjust-color($color-main-background,$lightness: 3);
+}*/
 /*
 .SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even) {
     background: adjust-color($color-main-background,$lightness: 8);
@@ -73,7 +79,7 @@ input {
     background: $color-secendary;
 }
 
-.Root-Node {
+.Root-Node > thead{
     background: $color-primary;
 }
 

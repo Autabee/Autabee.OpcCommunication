@@ -17,7 +17,7 @@ namespace Autabee.OpcScout
 
     public T Load()
     {
-      var path = Path.Combine("data", fileName + ".json");
+      var path = Path.Combine("wwwroot/data", fileName + ".json");
 
       if (File.Exists(path))
       {
