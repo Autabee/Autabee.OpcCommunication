@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <PackageReference Include="Blazor.ContextMenu" Version="1.15.0" />
-    <PackageReference Include="BuildWebCompiler" Version="1.12.405" />
     <PackageReference Include="MudBlazor" Version="6.1.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.11" />
   </ItemGroup>
@@ -32,5 +31,22 @@
     <ProjectReference Include="..\Autabee.OpcScout.RazorControls\Autabee.OpcScout.RazorControl.csproj" />
     <ProjectReference Include="..\ManagedOpcClient\Autabee.Communication.ManagedOpcClient.csproj" />
   </ItemGroup>
+
+    <ItemGroup>
+        <Watch Include="**\*.scss" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Watch Remove="Styles\_app.OpcControls.style.scss" />
+      <Watch Remove="Styles\_app.style.scss" />
+      <Watch Remove="Styles\_app.var.scss" />
+    </ItemGroup>
+
+    <Target Name="ToolRestore" BeforeTargets="PreBuildEvent">
+        <Exec Command="dotnet tool restore" StandardOutputImportance="high" />
+    </Target>
+    <Target Name="PreBuild" AfterTargets="ToolRestore">
+        <Exec Command="dotnet tool run webcompiler -r Styles -o wwwroot/css -z disable" StandardOutputImportance="high" />
+    </Target>
 
 </Project>

@@ -34,8 +34,8 @@
                 }
             }
         }
-        public string ThemeCss { get => $"{Theme}.{DarkString}.css"; }
-        public string NavThemeCss { get => $"nav.{NavDarkString}.css"; }
+        public string ThemeCss { get => $"{Theme}.{DarkString}.min.css"; }
+        public string NavThemeCss { get => $"nav.{NavDarkString}.min.css"; }
         bool navdark;
         public bool NavDark { get => navdark; set
             {
