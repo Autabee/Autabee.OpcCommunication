@@ -373,3 +373,4 @@ src/.cr
 
 wwwroot/css/app.*.css
 wwwroot/css/nav.*.css
+/src/Autabee.OpcScoutWeb/wwwroot/data/*
