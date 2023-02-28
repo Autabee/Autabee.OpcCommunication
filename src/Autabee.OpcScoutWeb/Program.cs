@@ -35,8 +35,8 @@ namespace Autabee.OpcScoutWeb
                     config.SnackbarConfiguration.SnackbarVariant = MudBlazor.Variant.Filled;
                 });
 
-            
 
+            
 #if WINDOWS
             int res = 0;
             try
@@ -66,7 +66,7 @@ namespace Autabee.OpcScoutWeb
             {
                 //var ass = Assembly.GetExecutingAssembly();
                 //var manifest = ass.GetManifestResourceStream("Autabee.OpcScoutWeb.autabeeopcscout.Config.xml");
-                return AutabeeManagedOpcClientExtension.GetClientConfiguration("autabee", "opc_scout", "/opc_certs/", null);
+                return AutabeeManagedOpcClientExtension.GetClientConfiguration("autabee", "opc_scout", "wwwroot/opc_certs/", null);
             }
             );
 
@@ -74,7 +74,7 @@ namespace Autabee.OpcScoutWeb
             {
                 Theme = "app",
                 NavLinked = true
-
+                
             });
             builder.Services.AddScoped<InMemoryLog>();
             builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));
