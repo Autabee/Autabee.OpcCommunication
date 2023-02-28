@@ -17,7 +17,7 @@ namespace Autabee.OpcScout
 
 		public T Load()
 		{
-			var path = Path.Combine("wwwroot/data", fileName + ".json");
+			var path = Path.Combine("data", fileName + ".json");
 
 			if (File.Exists(path))
 			{
@@ -29,11 +29,11 @@ namespace Autabee.OpcScout
 		public void Save(T data)
 		{
 			//generate path if not exists
-			if (!Directory.Exists("wwwroot/data"))
+			if (!Directory.Exists("data"))
 			{
-				Directory.CreateDirectory("wwwroot/data");
+				Directory.CreateDirectory("data");
 			}
-			var path = Path.Combine("wwwroot/data", fileName + ".json");
+			var path = Path.Combine("data", fileName + ".json");
 			var json = JsonSerializer.Serialize(data);
 			File.WriteAllText(path, json, System.Text.Encoding.UTF8);
 		}

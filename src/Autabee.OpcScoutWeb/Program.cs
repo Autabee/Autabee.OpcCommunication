@@ -66,7 +66,7 @@ namespace Autabee.OpcScoutWeb
             {
                 //var ass = Assembly.GetExecutingAssembly();
                 //var manifest = ass.GetManifestResourceStream("Autabee.OpcScoutWeb.autabeeopcscout.Config.xml");
-                return AutabeeManagedOpcClientExtension.GetClientConfiguration("autabee", "opc_scout", "wwwroot/opc_certs/", null);
+                return AutabeeManagedOpcClientExtension.GetClientConfiguration("autabee", "opc_scout", "data/opc_certs/", null);
             }
             );
 
