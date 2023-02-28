@@ -8,6 +8,10 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 COPY ["Autabee.OpcScoutWeb/Autabee.OpcScoutWeb.csproj", "Autabee.OpcScoutWeb/"]
+COPY ["Autabee.OpcScout/Autabee.OpcScout.BlazorView.csproj", "Autabee.OpcScout/"]
+COPY ["Autabee.OpcScout.MBRazorControl/Autabee.OpcScout.MBRazorControl.csproj", "Autabee.OpcScout.MBRazorControl/"]
+COPY ["Autabee.OpcScout.RazorControls/Autabee.OpcScout.RazorControl.csproj", "Autabee.OpcScout.RazorControls/"]
+COPY ["ManagedOpcClient/Autabee.Communication.ManagedOpcClient.csproj", "ManagedOpcClient/"]
 RUN dotnet restore "Autabee.OpcScoutWeb/Autabee.OpcScoutWeb.csproj"
 COPY . .
 WORKDIR "/src/Autabee.OpcScoutWeb"
@@ -19,4 +23,4 @@ RUN dotnet publish "Autabee.OpcScoutWeb.csproj" -c Release -o /app/publish /p:Us
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Autabee.OpcScoutWeb.dll"]
+ENTRYPOINT ["dotnet", "opcscout.dll"]
