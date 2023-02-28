@@ -1,8 +1,4 @@
-﻿$color-error: #FF2200;
-$color-warning: #FF6600;
-$color-info: #009CCC;
-
-$bold: 700;
+﻿@import "app.var.scss";
 
 .OpcNodeBrowser, .Node, .Root-Node, .SubscriptionView {
     font-size: 12px;
