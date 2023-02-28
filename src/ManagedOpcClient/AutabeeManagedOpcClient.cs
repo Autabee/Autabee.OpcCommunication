@@ -461,7 +461,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 if (session != null && !closing)
                 {
                     closing = true;
-                    var status = session.Close(10000);
+                    var status = session.Close(10000,true);
                     if (session != null)
                     {
                         session.KeepAlive -= Notification_KeepAlive;
