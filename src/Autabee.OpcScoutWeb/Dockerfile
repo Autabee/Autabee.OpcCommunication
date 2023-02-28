@@ -6,6 +6,7 @@ EXPOSE 80
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+COPY ["common.props", "common.props"]
 WORKDIR /src
 COPY ["Autabee.OpcScoutWeb/Autabee.OpcScoutWeb.csproj", "Autabee.OpcScoutWeb/"]
 COPY ["Autabee.OpcScout/Autabee.OpcScout.BlazorView.csproj", "Autabee.OpcScout/"]
