@@ -374,3 +374,5 @@ src/.cr
 wwwroot/css/app.*.css
 wwwroot/css/nav.*.css
 /src/Autabee.OpcScoutWeb/wwwroot/data/*
+/src/Autabee.OpcScoutWeb/wwwroot/opc_certs/*
+/src/Autabee.OpcScout/wwwroot/css/app.dark.min.css
