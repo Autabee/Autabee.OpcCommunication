@@ -371,10 +371,8 @@ FodyWeavers.xsd
 [Ss]ecrets.json
 src/.cr
 
-wwwroot/css/app.*.css
-wwwroot/css/nav.*.css
-/src/Autabee.OpcScoutWeb/wwwroot/data/
-/src/Autabee.OpcScoutWeb/wwwroot/opc_certs/
-/src/Autabee.OpcScout/wwwroot/css/
-/src/Autabee.OpcScout/wwwroot/css/nav.light.css
-/src/Autabee.OpcScout/wwwroot/css/nav.light.min.css
+/src/Autabee.OpcScout/wwwroot/css/*.css
+/src/Autabee.OpcScout/wwwroot/css/*.css.*
+/src/Autabee.OpcScout/Styles/*.css
+/src/Autabee.OpcScout/Styles/*.css.*
+/src/Autabee.OpcScoutWeb/data/
