@@ -23,20 +23,7 @@ jobs:
         run: dotnet build ./src --configuration Release --no-restore
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal ./src
-      # - uses: actions/upload-artifact@master
-      #   with:
-      #     name: src-artifacts
-      #     path: src
 
-      # publish-packages:
-      #   needs:
-      #     - build
-      #   runs-on: windows-latest
-      #   steps:
-      #   - uses: actions/download-artifact@master
-      #     with:
-      #       name: src-artifacts
-      #       path: src
       - name: Publish opc client to NuGet
         continue-on-error: true
         uses: alirezanet/publish-nuget@v3.0.4
@@ -56,22 +43,10 @@ jobs:
             INCLUDE_SYMBOLS: true
             NO_BUILD: true
 
-  
-          
-      # push_to_github:
-      #   needs:
-      #     - build
-      #   name: Push release
-      #   runs-on: windows-latest
-      #   steps:
-      #     - uses: actions/download-artifact@master
-      #       with:
-      #         name: src-artifacts
-      #         path: src
-      - name: zip 
-        run: | 
-          powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64 ./opcscout-windowsx64-app.zip
-          powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/Release/net6.0 ./opcscout-web.zip
+      - name: zip windowsx64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64 ./opcscout-windowsx64-app.zip
+      - name: zip web
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/Release/net6.0 ./opcscout-web.zip
       - name: publish git
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -83,17 +58,15 @@ jobs:
             LICENSE.txt
             opcscout-windowsx64-app.zip
             opcscout-web.zip
+
+
   push_to_registry:
-    #needs:
-    #  - build
+    needs:
+     - build
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     steps:      
       - uses: actions/checkout@v3
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v2
-      - name: Build
-        run: dotnet build ./src/Autabee.OpcScoutWeb --configuration Release 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
