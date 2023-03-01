@@ -37,8 +37,6 @@ jobs:
       #     with:
       #       name: src-artifacts
       #       path: src
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
       - name: Publish opc client to NuGet
         continue-on-error: true
         uses: alirezanet/publish-nuget@v3.0.4
@@ -68,6 +66,10 @@ jobs:
       #       with:
       #         name: src-artifacts
       #         path: src
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       - name: Log in to Docker Hub
         uses: docker/login-action@v2.1.0
         with:
@@ -85,7 +87,7 @@ jobs:
           file: ./src/Autabee.OpcScoutWeb/Dockerfile
           push: true
           #tags: ${{ steps.meta.outputs.tags }} branch
-          tags: beta
+          tags: autabee/opcscout:beta
           labels: ${{ steps.meta.outputs.labels }}
           
       # push_to_github:
