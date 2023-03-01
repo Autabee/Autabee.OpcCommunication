@@ -53,10 +53,7 @@ jobs:
     needs: build
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v3
-      
+    steps:      
       - name: Log in to Docker Hub
         uses: docker/login-action@v2.1.0
         with:
@@ -77,3 +74,20 @@ jobs:
           push: true
           tags: beta
           labels: ${{ steps.meta.outputs.labels }}
+          
+  push_to_github:
+    needs: build
+    name: Push release
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt install zip unzip
+      - run: zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            LICENSE.txt
+            opcscout-windowsx64-app.zip
