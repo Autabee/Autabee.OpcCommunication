@@ -21,6 +21,10 @@ jobs:
         run: dotnet restore ./src
       - name: Build
         run: dotnet build ./src --configuration Release --no-restore
+      - name: publish web
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release
+      # - name: publish app
+      #   run: dotnet publish ./src/Autabee.OpcScoutApp -f net6.0-windows10.0.19041.0 -c Release /p:RuntimeIdentifierOverride=win10-x64
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal ./src
 
@@ -43,10 +47,10 @@ jobs:
             INCLUDE_SYMBOLS: true
             NO_BUILD: true
 
-      - name: zip windowsx64
-        run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0/win10-x64 ./opcscout-windowsx64-app.zip
+      # - name: zip windowsx64
+      #   run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0/win10-x64 ./opcscout-windowsx64-app.zip
       - name: zip web
-        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/Release/net6.0 ./opcscout-web.zip
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/Release/net6.0/publish ./opcscout-web.zip
       - name: publish git
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
@@ -56,8 +60,8 @@ jobs:
           title: "Development Build"
           files: |
             LICENSE.txt
-            opcscout-windowsx64-app.zip
             opcscout-web.zip
+        #    opcscout-windowsx64-app.zip
 
 
   push_to_registry:
