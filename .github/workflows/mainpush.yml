@@ -44,7 +44,7 @@ jobs:
             NO_BUILD: true
 
       - name: zip windowsx64
-        run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64 ./opcscout-windowsx64-app.zip
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0/win10-x64 ./opcscout-windowsx64-app.zip
       - name: zip web
         run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/Release/net6.0 ./opcscout-web.zip
       - name: publish git
