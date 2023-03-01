@@ -3,7 +3,10 @@ name: Main push
 on:
   push:
     branches: [ main ]
-
+env:
+  DOTNET_NOLOGO: true                     
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true 
+  DOTNET_CLI_TELEMETRY_OPTOUT: true     
 jobs:
   build:
 
@@ -20,7 +23,7 @@ jobs:
     - name: Build
       run: dotnet build ./src --configuration Release --no-restore
     - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal ./src
+      run: dotnet test ./src --configuration Release --no-build --verbosity normal ./src
       # You may pin to the exact commit or the version.
       # uses: brandedoutcast/publish-nuget@c12b8546b67672ee38ac87bea491ac94a587f7cc
       
@@ -81,12 +84,10 @@ jobs:
     name: Push release
     runs-on: windows-latest
     steps:
-      - name: Install zip
-        run: sudo apt install zip unzip
-      - name: zip windows maui
-        run: zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
-      - name: zip web
-        run: zip opcscout-web.zip ./src/Autabee.OpcScoutWeb/bin/Release/net6.0
+      - name: zip 
+        run: | 
+          zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
+          zip opcscout-web.zip ./src/Autabee.OpcScoutWeb/bin/Release/net6.0
       - name: publish git
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
