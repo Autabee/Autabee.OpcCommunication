@@ -14,7 +14,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
     - name: restore workloads
-      run: dotnet workload restore 
+      run: dotnet workload ./src/Autabee.OpcScoutApp restore 
     - name: Restore dependencies
       run: dotnet restore ./src
     - name: Build
