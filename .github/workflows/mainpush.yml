@@ -23,10 +23,10 @@ jobs:
         run: dotnet build ./src --configuration Release --no-restore
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal ./src
-      - uses: actions/upload-artifact@master
-        with:
-          name: src-artifacts
-          path: src
+      # - uses: actions/upload-artifact@master
+      #   with:
+      #     name: src-artifacts
+      #     path: src
 
       # publish-packages:
       #   needs:
