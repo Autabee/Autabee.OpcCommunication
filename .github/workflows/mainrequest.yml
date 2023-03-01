@@ -14,7 +14,9 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v2
     - name: restore workloads
-      run: dotnet workload restore ./src/Autabee.OpcScoutApp/Autabee.OpcScoutApp.csproj
+      run: | 
+        dotnet workload install maui --ignore-failed-sources
+        
     - name: Restore dependencies
       run: dotnet restore ./src
     - name: Build
