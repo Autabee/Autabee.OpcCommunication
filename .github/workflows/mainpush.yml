@@ -82,6 +82,7 @@ jobs:
     steps:
       - run: sudo apt install zip unzip
       - run: zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
+      - run: zip opcscout-web.zip ./src/Autabee.OpcScoutWeb/bin/Release/net6.0
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -91,3 +92,4 @@ jobs:
           files: |
             LICENSE.txt
             opcscout-windowsx64-app.zip
+            opcscout-web.zip
