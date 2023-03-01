@@ -1,0 +1,104 @@
+﻿@using System.Xml;
+@using Opc.Ua;
+
+@if (Type == typeof(short))
+{
+    <MudNumericField Label=@Label T="short"
+                 Value=@(Value == string.Empty ? (short)0 : Convert.ToInt16(Value))
+                 ValueChanged="(short value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(ushort))
+{
+    <MudNumericField Label=@Label T="ushort"
+                 Value="@((ushort)(Value == string.Empty ? (ushort)0 : Convert.ToUInt16(Value)))"
+                 ValueChanged="(ushort value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(int))
+{
+    <MudNumericField Label=@Label T="int"
+                 Value=@(Value == string.Empty ? (int)0 : Convert.ToInt32(Value))
+                 ValueChanged="(int value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(uint))
+{
+    <MudNumericField Label=@Label T="uint"
+                 Value=@(Value == string.Empty ? (uint)0 : Convert.ToUInt32(Value))
+                 ValueChanged="(uint value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(Int64))
+{
+    <MudNumericField Label=@Label T="Int64"
+                 Value=@(Value == string.Empty ? (Int64)0 : Convert.ToInt64(Value))
+                 ValueChanged="(Int64 value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(UInt64))
+{
+    <MudNumericField Label=@Label T="UInt64"
+                 Value=@(Value == string.Empty ? (UInt64)0 : Convert.ToUInt64(Value))
+                 ValueChanged="(UInt64 value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(float))
+{
+    <MudNumericField Label=@Label T="float"
+                 Value="@(Value == string.Empty? (float)0.0:Convert.ToSingle(Value))"
+                 ValueChanged="(float value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(double))
+{
+    <MudNumericField Label=@Label T="double"
+                 Value="@(Value == string.Empty? 0.0:Convert.ToDouble(Value))"
+                 ValueChanged="(double value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(DateTime))
+{
+    <MudDatePicker Label=@Label
+               Date=@(Value == string.Empty ? DateTime.Now : Convert.ToDateTime(Value))
+               DateChanged="(DateTime? value)=>{ ValueChanged.InvokeAsync( value != null ? value.ToString():  DateTime.MinValue.ToString());}" />
+}
+else if (Type == typeof(byte))
+{
+    <MudNumericField Label=@Label T="byte"
+                 Value=@(Value == string.Empty ? (byte)0 :Convert.ToByte(Value))
+                 ValueChanged="(byte value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(sbyte))
+{
+    <MudNumericField Label=@Label T="sbyte"
+                 Value=@(Value == string.Empty ? (sbyte)0 :Convert.ToSByte(Value))
+                 ValueChanged="(sbyte value) =>{ ValueChanged.InvokeAsync( value.ToString());}" />
+}
+else if (Type == typeof(Guid))
+{
+    <MudTextField Label=@Label T="string" 
+              Value=@(Value)
+              ValueChanged="(string str) =>{ ValueChanged.InvokeAsync(str);}" />
+}
+else if (Type == typeof(XmlElement))
+{
+    <MudTextField Label=@Label T="string" 
+              Value="Value"
+              ValueChanged="(string str) =>{ ValueChanged.InvokeAsync(str);}" />
+}
+else if (Type == typeof(NodeId))
+{
+    <MudTextField Label=@Label T="string" 
+              Value="Value"
+              ValueChanged="(string str) =>{ ValueChanged.InvokeAsync(str);}" />
+}
+else
+{
+    <MudTextField Label=@Label T="string" 
+              Value="Value"
+              ValueChanged="(string str) =>{ ValueChanged.InvokeAsync(str);}" />
+}
+
+@code {
+    [Parameter]
+    public Type Type { get; set; }
+    [Parameter]
+    public string Label { get; set; }
+    [Parameter]
+    public string Value { get; set; }
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+}

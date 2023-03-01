@@ -11,7 +11,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 {
     public class OpcBoilerSampleTest : IClassFixture<OpcUaBoilerSampleFixture>
     {
-        private readonly OpcUaClientHelperApi communicator;
+        private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
         private readonly IAutabeeLogger logger;
 

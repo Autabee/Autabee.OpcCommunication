@@ -1,0 +1,126 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.Utility.Messaging;
+@using Opc.Ua;
+@using System.Text.Json;
+
+<ContextMenu Id="OpcBrowserNodeContext">
+    @if (context.Data is ScannedNodeModel currentItem)
+    {
+        <Item OnClick="@ReadNode"><icon class="mdi mdi-tag-text" /> Node Settings</Item>
+        @if (currentItem.Node is VariableNode)
+        {
+            <Item OnClick="@ReadValue"><icon class="mdi mdi-tag-arrow-left" /> Read Node Value</Item>
+            <Item OnClick="@SubscribeValue"><icon class="mdi mdi-tag-plus" /> Subscribe to Node Value</Item>
+        }
+
+        @*<Item OnClick="@OnClick" Enabled="false">Item 3 (disabled)</Item>
+    <Seperator />
+    <Item>
+    Submenu
+    <SubMenu>
+    <Item OnClick="@OnClick">Submenu Item 1</Item>
+    <Item OnClick="@OnClick">Submenu Item 2</Item>
+    </SubMenu>
+    </Item>*@
+    }
+    else if (context.Data is AutabeeManagedOpcClient client)
+    {
+
+        if (client.Connected)
+        {
+            <Item OnClick="@Disconnect"><icon class="mdi mdi-close-network" /> Disconnect</Item>
+        }
+        else
+        {
+            <Item OnClick="@Reconnect"><icon class="mdi mdi-connection" /> Reconnect</Item>
+        }
+        <Item OnClick="@ClearCache"><icon class="mdi mdi-cached" /> Clear cache</Item>
+        <Seperator />
+        <Item OnClick="@Remove"><icon class="mdi mdi-delete" />Remove</Item>
+    }
+    else
+    {
+        <Item>Nothing Selected</Item>
+    }
+</ContextMenu>
+@code {
+    [Parameter]
+    public NodeBrowserModel Browser { get; set; }
+
+    void OnClick(ItemClickEventArgs e)
+    {
+        Console.WriteLine($"Item Clicked => Menu: {e.ContextMenuId}, MenuTarget: {e.ContextMenuTargetId}, IsCanceled: {e.IsCanceled}, MenuItem: {e.MenuItemElement}, MouseEvent: {e.MouseEvent}");
+    }
+    void Remove(ItemClickEventArgs e)
+    {
+        if (e.Data is AutabeeManagedOpcClient client)
+        {
+            Browser.RemoveConnection(client);
+        }
+    }
+
+    void Disconnect(ItemClickEventArgs e)
+    {
+        if (e.Data is AutabeeManagedOpcClient client)
+        {
+            Browser.Disconnect(client);
+        }
+    }
+
+    async void Reconnect(ItemClickEventArgs e)
+    {
+        if (e.Data is AutabeeManagedOpcClient client)
+        {
+            client.Reconnect();
+            Browser.StateHasChanged();
+        }
+    }
+    async void ClearCache(ItemClickEventArgs e)
+    {
+        if (e.Data is AutabeeManagedOpcClient client)
+        {
+            Browser.ClearClientCash(client);
+        }
+    }
+
+    private async void ReadValue(ItemClickEventArgs e)
+    {
+        if (e.Data is ScannedNodeModel model)
+        {
+            try
+            {
+                var data = model.Client.ReadValue(model.Node.NodeId);
+                Message message = GetValueMessage(data);
+                Browser.ReadNodeValue(message);
+            }
+            catch (Exception ex)
+            {
+                Browser.ReadNodeValue(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", model.Node, ex.Message, ex));
+            }
+        }
+    }
+    private async void ReadNode(ItemClickEventArgs e)
+    {
+        if (e.Data is ScannedNodeModel model)
+        {
+            Browser.UpdateSelectedNode(model);
+            model.NodeClassType = "Node-Selected Node";
+            StateHasChanged();
+        }
+    }
+    private Message GetValueMessage(object value)
+    {
+        if (value == null) return new Message(level: MessageLevel.Info, text: "NULL");
+        else if (value is Dictionary<string, object> dic) return new Message(level: MessageLevel.Info, text: "{0}", JsonSerializer.Serialize(dic));
+        else if (value is object[] list) return new Message(level: MessageLevel.Info, text: string.Join("\n", list));
+        else return new Message(level: MessageLevel.Info, text: value?.ToString());
+    }
+
+    private async void SubscribeValue(ItemClickEventArgs e)
+    {
+        if (e.Data is ScannedNodeModel model)
+        {
+            Browser.SubscriptionRequest(model);
+        }
+    }
+}

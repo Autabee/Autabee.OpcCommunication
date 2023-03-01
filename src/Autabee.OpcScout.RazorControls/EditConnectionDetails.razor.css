@@ -1,0 +1,8 @@
+﻿input, select {
+    display: inline-block;
+    width: 100%;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 4px;
+    margin: 0px 1em 0px 0em;
+}

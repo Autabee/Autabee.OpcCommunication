@@ -1,0 +1,56 @@
+﻿@using Autabee.OpcScout.RazorControl;
+@using Opc.Ua;
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <icon class="mdi mdi-square-edit-outline" />
+            Edit Endpoint
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="@record.Name" Label="Endpoint Name" />
+        <MudTextField @bind-Value="@record.Description" Label="Description" />
+        <MudTextField @bind-Value="@record.Server" Label="Server" />
+        <MudTextField @bind-Value="@record.SecurityPolicyUri" Label="Policy" />
+        <MudSelect T="MessageSecurityMode" @bind-Value="@record.SecurityMode" Label="Security">
+            <MudSelectItem Value="@MessageSecurityMode.None"/>
+            <MudSelectItem Value="@MessageSecurityMode.Sign" />
+            <MudSelectItem Value="@MessageSecurityMode.SignAndEncrypt" />
+        </MudSelect>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Success" OnClick="EditRecord">Save Edit</MudButton>
+        <MudButton Color="Color.Error" OnClick="DeleteRecord">Delete Record</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public EndpointRecord record { get; set; } = new EndpointRecord();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        if (record == null)
+        {
+            record = new EndpointRecord();
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    private void EditRecord()
+    {
+        MudDialog.Close(DialogResult.Ok(new Tuple<DialogAction, Autabee.OpcScout.RazorControl.EndpointRecord>(DialogAction.Save, record)));
+    }
+
+    private void DeleteRecord()
+    {
+        MudDialog.Close(DialogResult.Ok(new Tuple<DialogAction, Autabee.OpcScout.RazorControl.EndpointRecord>(DialogAction.Delete, record)));
+    }
+}

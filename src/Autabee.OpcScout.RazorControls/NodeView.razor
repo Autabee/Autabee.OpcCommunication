@@ -1,0 +1,187 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Opc.Ua;
+
+@using Microsoft.JSInterop;
+@using static Autabee.Communication.ManagedOpcClient.NodeExtension;
+@inject IJSRuntime _jsRuntime
+
+<div class="OpcNodeViewer">
+    <div class="OpcNodeController">
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>
+                    <span>Value</span>
+
+                    
+                </th>
+                <th class="node-actions">
+                    <button class="mdi mdi-@(detailed?"eye":"eye-off")" @onclick=SwitchDetail></button>
+                </th>
+                </tr>
+        </thead>
+        @if (values.Count > 0)
+        {
+            <tbody>
+                @foreach (var item in values)
+                {
+
+                    <tr class="@(item.Active?"AciveAtribute":"InActiveAtribute")">
+                        <td>@item.Key</td>
+                        <td>
+                            <span title="@item.Detail">@item.Value</span>
+                        </td>
+                        <td class="node-actions">
+                            @if (item.Active)
+                            {
+                                <button class="mdi mdi-content-copy" @onclick="()=>Copy(item)" />
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        }
+        else
+        {
+
+            <tbody>
+                <tr><td colspan="3" style="text-align:center">Non-selected</td></tr>
+
+            </tbody>
+
+        }
+    </table>
+</div>
+
+@code {
+    [Parameter]
+    public NodeViewModel Model { get; set; }
+    //private ScannedNodeModel value { get; set; }
+    public bool detailed { get; set; }
+
+    List<NodeDetail> values = new List<NodeDetail>();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Model.OnSelectedChanged += NewOpcNodeSelected;
+        if (Model.Selected != null)
+        {
+            NewOpcNodeSelected(this, Model.Selected);
+        }
+    }
+
+    public void NewOpcNodeSelected(object sender, ScannedNodeModel value)
+    {
+        if (!value.Client.Connected) {
+            values.Clear(); 
+            InvokeAsync(StateHasChanged);
+            return;
+        }
+        try
+        {
+            ReferenceDescription refD = value.Reference;
+            Node node = value.Node;
+
+
+
+
+            values.Clear();
+            values.Add(new NodeDetail("Node Id", node.NodeId.ToString()));
+            if (detailed)
+            {
+                values.Add(new NodeDetail("Namespace Index", node.NodeId.NamespaceIndex.ToString()));
+                values.Add(new NodeDetail("Identifier Type", node.NodeId.IdType.ToString()));
+                values.Add(new NodeDetail("Identifier", node.NodeId.Identifier.ToString()));
+            }
+            values.Add(new NodeDetail("Browse Name", node.BrowseName.ToString()));
+            values.Add(new NodeDetail("Display Name", node.DisplayName.ToString()));
+            values.Add(new NodeDetail("Node Class", node.NodeClass.ToString()));
+            try
+            {
+                Node refTypeNode = value.Client.ReadNode((NodeId)refD.TypeDefinition);
+                values.Add(new NodeDetail("Node Refrence Definition", refTypeNode.DisplayName.ToString()));
+                //values.Add( "Description", (node?.Description ?).ToString() });
+            }
+            catch
+            {
+                values.Add(new NodeDetail("Node Refrence Definition", string.Empty,false));
+            }
+            var nodeAccess = new NodeAccess(node);
+
+            values.Add(new NodeDetail("Node Access", nodeAccess.AccessString(), detail: nodeAccess.DetailedAccessString()));
+            if (detailed)
+            {
+                var func = delegate (string str, bool value)
+                {
+                    values.Add(new NodeDetail(str, value.ToString(), value));
+                };
+                func("Readable", nodeAccess.Readable);
+                func("Writeable", nodeAccess.Writable);
+                func("Executable", nodeAccess.Executable);
+
+                func("Read Acces", nodeAccess.CurrentReadable);
+                func("Write Acces", nodeAccess.CurrentWritable);
+                func("Executable Acces", nodeAccess.CurrentExecutable);
+            }
+            if (node is VariableNode variableNode)
+            {
+                Node typeNode = value.Client.ReadNode(variableNode.DataType);
+                values.Add(new NodeDetail("Value Type", typeNode.DisplayName.ToString()));
+            }
+            else
+            {
+                values.Add(new NodeDetail("Value Type", string.Empty, false));
+            }
+            
+            if (node is MethodNode methodeNode)
+            {
+                var arguments = value.Client.GetMethodArguments(node.NodeId);
+
+                values.Add(new NodeDetail("Inputarguments", arguments.InputArguments.Count().ToString()));
+                for (int i = 0; i < arguments.InputArguments.Count; i++)
+                {
+                    values.Add(new NodeDetail(
+                        string.Format("Inputarguments[{0}]",i), 
+                        arguments.InputArgumentTypes[i].Name + ": " + arguments.InputArguments[0].Name.ToString()
+                    ));
+                }
+                
+                values.Add(new NodeDetail("OutputArguments", arguments.OutputArguments.Count().ToString()));
+                for (int i = 0; i < arguments.OutputArguments.Count; i++)
+                {
+                    values.Add(new NodeDetail(
+                        string.Format("OutputArguments[{0}]", i), 
+                        arguments.OutputArgumentTypes[i].Name + ": " + arguments.OutputArguments[0].Name.ToString()
+                    ));
+                }
+            }
+            else
+            {
+                values.Add(new NodeDetail("Inputarguments", string.Empty, false));
+                values.Add(new NodeDetail("OutputArguments", string.Empty, false));
+            }
+            InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+
+        }
+    }
+    public void Copy(NodeDetail
+    value)
+    {
+        _jsRuntime.InvokeVoidAsync("navigator.clipboard.writeText", value.Value);
+    }
+    public void SwitchDetail()
+    {
+        detailed = !detailed;
+        if (Model.Selected != null)
+        {
+            this.NewOpcNodeSelected(this, Model.Selected);
+        }
+    }
+}

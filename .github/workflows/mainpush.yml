@@ -3,9 +3,12 @@ name: Main push
 on:
   push:
     branches: [ main ]
-
+env:
+  DOTNET_NOLOGO: true                     
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true 
+  DOTNET_CLI_TELEMETRY_OPTOUT: true     
 jobs:
-  buildAndDeploy:
+  build:
 
     runs-on: windows-latest
 
@@ -20,9 +23,16 @@ jobs:
     - name: Build
       run: dotnet build ./src --configuration Release --no-restore
     - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal ./src
+      run: dotnet test ./src --configuration Release --no-build --verbosity normal ./src
       # You may pin to the exact commit or the version.
       # uses: brandedoutcast/publish-nuget@c12b8546b67672ee38ac87bea491ac94a587f7cc
+      
+  publish-packages:
+    needs: build
+    runs-on: windows-latest
+    env:
+      TF_BUILD: true
+    steps:
     - name: Publish opc client to NuGet
       continue-on-error: true
       uses: alirezanet/publish-nuget@v3.0.4
@@ -41,3 +51,51 @@ jobs:
           VERSION_FILE_PATH: src/OpcSharper/Autabee.OpcSharper.csproj
           INCLUDE_SYMBOLS: true
           NO_BUILD: true
+
+  push_to_registry:
+    needs: build
+    name: Push Docker image to Docker Hub
+    runs-on: windows-latest
+    steps:      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2.1.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+      
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4.3.0
+        with:
+          images: autabee/opcscout
+      - name: echo tags
+        run: echo ${{ steps.meta.outputs.tags }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4.0.0
+        with:
+          context: ./src
+          file: ./src/Autabee.OpcScoutWeb/Dockerfile
+          push: true
+          tags: beta
+          labels: ${{ steps.meta.outputs.labels }}
+          
+  push_to_github:
+    needs: build
+    name: Push release
+    runs-on: windows-latest
+    steps:
+      - name: zip 
+        run: | 
+          zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
+          zip opcscout-web.zip ./src/Autabee.OpcScoutWeb/bin/Release/net6.0
+      - name: publish git
+        uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            LICENSE.txt
+            opcscout-windowsx64-app.zip
+            opcscout-web.zip

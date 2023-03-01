@@ -1,0 +1,74 @@
+﻿@using System.Text.Json;
+@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Opc.Ua;
+<tr>
+    <td class="subscription-nodeid">@SubscriptionViewModel.monitoredItem.StartNodeId</td>
+    <td>@SubscriptionViewModel.UpdateTime.ToString()</td>
+
+    @if (SubscriptionViewModel.complex)
+    {
+        <td class="subscription-actions" style="float:left"><button @onclick="SubscriptionViewModel.ShowSubscription" class="@showButtonClass" /></td>
+    }
+    else if (SubscriptionViewModel.nodeItem.Node.HasCurrentWriteAccess())
+    {
+        <td>
+            @if (SubscriptionViewModel.error != string.Empty)
+            {
+                <icon class="mdi mdi-alert" style="float:left;padding-right:5px" title="@SubscriptionViewModel.error" />
+            }
+
+            <input value=@SubscriptionViewModel.MonitoredValueString
+               @onkeydown=keycheck
+               @onfocusin=SubscriptionViewModel.FocusIn
+               @onfocusout=SubscriptionViewModel.FocusOut
+               @onchange=OnChanged />
+
+        </td>
+    }
+    else
+    {
+        <td>@SubscriptionViewModel.MonitoredValueString</td>
+    }
+    <td>@SubscriptionViewModel.NodeType.TypeName</td>
+    <td class="subscription-actions"><button class="mdi mdi-close-thick" style="float:right" @onclick=SubscriptionViewModel.Remove /></td>
+</tr>
+@if (SubscriptionViewModel.complex && SubscriptionViewModel.show)
+{
+    <ComplexSubscriptionNode 
+        Value="@SubscriptionViewModel.DictMonitoredValue" 
+        NodeId="@SubscriptionViewModel.monitoredItem.StartNodeId.ToString()"
+        Client="@SubscriptionViewModel.nodeItem.Client"/>
+}
+
+@code {
+    [Parameter]
+    public SubscriptionNodeModel SubscriptionViewModel { get; set; }
+
+
+    //public string jsonMonitoredValue { get; set; }
+
+    public string showButtonClass => SubscriptionViewModel.show ? "mdi mdi-eye-off" : "mdi mdi-eye";
+
+    protected override void OnInitialized()
+    {
+        SubscriptionViewModel.UpdateView += SubscriptionViewModel_ValueUpdated;
+        SubscriptionViewModel.editing = false;
+    }
+    private async void SubscriptionViewModel_ValueUpdated(object sender, object e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+    private async void OnChanged(ChangeEventArgs args)
+    {
+        SubscriptionViewModel.UpdateValue(args.Value.ToString());
+    }
+    public void keycheck(KeyboardEventArgs e)
+    {
+
+        if (e.Code == "Enter" || e.Code == "NumpadEnter" || e.Code == "Tab")
+        {
+            StateHasChanged();
+        }
+    }
+}

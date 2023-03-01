@@ -1,0 +1,35 @@
+﻿@using Autabee.OpcScout.RazorControl.Subscription
+@using Opc.Ua.Client;
+
+<div class="SubscriptionView">
+    <table>
+        <tr>
+            <th>NodeId</th>
+            <th>Time</th>
+            <th>Value</th>
+            <th>Type</th>
+            <th></th>
+
+        </tr>
+        @foreach (var item in SubscriptionViewModel.subscriptionNodeModels)
+        {
+            <SubscriptionNode SubscriptionViewModel="@item" />
+        }
+    </table>
+</div>
+
+
+@code {
+    [Parameter]
+    public SubscriptionViewModel SubscriptionViewModel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        SubscriptionViewModel.OnListChanged += (sender, obj) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+    }
+
+
+}

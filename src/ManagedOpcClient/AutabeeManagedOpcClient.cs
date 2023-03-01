@@ -1,39 +1,36 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Utility.Logger;
-using Microsoft.Extensions.Logging;
 using Opc.Ua;
 using Opc.Ua.Client;
-using Opc.Ua.Configuration;
-using Opc.Ua.Security.Certificates;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using System.Xml;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
-    public delegate void MonitoredNodeValueEventHandler(OpcUaClientHelperApi sender, NodeValueRecord e);
+    public delegate void MonitoredNodeValueRecordEventHandler(object sender, NodeValueRecord e);
+    public delegate void MonitoredNodeValueEventHandler(MonitoredItem nodeId, object e);
 
-    public class OpcUaClientHelperApi
+    public class AutabeeManagedOpcClient
     {
         private bool closing;
         private readonly IAutabeeLogger logger;
+        private IUserIdentity mUserIdentity;
         private ApplicationConfiguration mApplicationConfig;
         private ConfiguredEndpoint mEndpoint;
 
         private Session session;
         private string sessionName;
         private List<Subscription> subscriptions = new List<Subscription>();
+
+        public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
+        public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
+        public Dictionary<string, NodeTypeData> PreparedTypes { get; private set; } = new Dictionary<string, NodeTypeData>();
 
         private Dictionary<string, NodeId> nodeIdCache = new Dictionary<string, NodeId>();
 
@@ -55,66 +52,8 @@ namespace Autabee.Communication.ManagedOpcClient
         /// Provides the event for KeepAliveNotifications.
         /// </summary>
         public event KeepAliveEventHandler KeepAliveNotification;
-        public event MonitoredNodeValueEventHandler NodeChangedNotification;
+        public event MonitoredNodeValueRecordEventHandler NodeChangedNotification;
         internal event EventHandler ReInstateNodeEntries;
-
-        #region xml
-        public string[] GetServerTypeSchema(bool all = false)
-        {
-            ReferenceDescriptionCollection refDescColBin;
-            ReferenceDescriptionCollection refDescColXml;
-            byte[] continuationPoint;
-
-            ResponseHeader BinaryNodes = session.Browse(
-                null,
-                null,
-                ObjectIds.OPCBinarySchema_TypeSystem,
-                0u,
-                BrowseDirection.Forward,
-                ReferenceTypeIds.HierarchicalReferences,
-                true,
-                0,
-                out continuationPoint,
-                out refDescColBin);
-            ResponseHeader XMLNodes = session.Browse(
-                null,
-                null,
-                ObjectIds.XmlSchema_TypeSystem,
-                0u,
-                BrowseDirection.Forward,
-                ReferenceTypeIds.HierarchicalReferences,
-                true,
-                0,
-                out continuationPoint,
-                out refDescColXml);
-
-            //ReferenceDescriptionCollection refDescCol = new ReferenceDescriptionCollection();
-            //refDescCol.AddRange(refDescColBin);
-            NodeIdCollection nodeIds = new NodeIdCollection();
-            foreach (var item in refDescColBin)
-            {
-                if (!item.DisplayName.Text.StartsWith("Opc.Ua") || all) nodeIds.Add((NodeId)item.NodeId);
-            }
-
-            foreach (var xmlItem in refDescColXml)
-            {
-                if (refDescColBin.FirstOrDefault(o => o.DisplayName.Text == xmlItem.DisplayName.Text) == null)
-                {
-                    nodeIds.Add((NodeId)xmlItem.NodeId);
-                }
-            }
-
-            var result = new List<string>();
-            var values = ReadValues(nodeIds, null);
-            for (int i = 0; i < values.Count; i++)
-            {
-                if (values[i] != null) { result.Add(Encoding.ASCII.GetString((byte[])values[i].Value)); }
-            }
-            //result.RemoveAll(o => string.IsNullOrEmpty(o));
-
-            return result.ToArray();
-        }
-        #endregion xml
 
         public ApplicationDescription ApplicationDescription { get; set; }
         public bool Connected
@@ -135,20 +74,24 @@ namespace Autabee.Communication.ManagedOpcClient
         public Session Session { get => session; }
 
         #region Construction
-        public OpcUaClientHelperApi(string company, string product, string directory, IAutabeeLogger logger = null)
+        public AutabeeManagedOpcClient(string company, string product, string directory, IAutabeeLogger logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
-            mApplicationConfig = GetClientConfiguration(company, product, directory, logger);
+            mApplicationConfig = AutabeeManagedOpcClientExtension.GetClientConfiguration(
+                                     company,
+                                     product,
+                                     directory,
+                                     logger);
         }
-        public OpcUaClientHelperApi(Stream stream, IAutabeeLogger logger = null)
+        public AutabeeManagedOpcClient(Stream stream, IAutabeeLogger logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
-            mApplicationConfig = CreateDefaultClientConfiguration(stream);
+            mApplicationConfig = AutabeeManagedOpcClientExtension.CreateDefaultClientConfiguration(stream);
         }
 
-        public OpcUaClientHelperApi(ApplicationConfiguration opcAppConfig, IAutabeeLogger logger = null)
+        public AutabeeManagedOpcClient(ApplicationConfiguration opcAppConfig, IAutabeeLogger logger = null)
         {
             this.logger = logger;
             mApplicationConfig = opcAppConfig;
@@ -247,7 +190,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 //responce.ServiceResult;
                 return registeredNodes;
             }
-            catch (AggregateException ex)
+            catch (AggregateException _)
             {
                 throw;
             }
@@ -284,7 +227,7 @@ namespace Autabee.Communication.ManagedOpcClient
         public void UnregisterNodeIds(NodeIdCollection nodesToUnregister)
          => session.UnregisterNodes(null, nodesToUnregister);
 
-        # endregion Registration
+        #endregion Registration
 
         #region Discovery
         public ApplicationDescription GetConnectedServer()
@@ -324,7 +267,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             Uri uri = new Uri(serverUrl);
             DiscoveryClient client = DiscoveryClient.Create(uri);
-            var endpoints = await client.GetEndpointsAsync(null, "", null, null, token);
+            var endpoints = await client.GetEndpointsAsync(null, string.Empty, null, null, token);
 
             return endpoints.Endpoints;
         }
@@ -339,7 +282,7 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <param name="userName">The user name</param>
         /// <param name="password">The password</param>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public async Task Connect(EndpointDescription endpointDescription, UserIdentity userIdentity = null)
+        public async Task Connect(EndpointDescription endpointDescription, IUserIdentity userIdentity = null)
         {
             try
             {
@@ -351,7 +294,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     userIdentity = new UserIdentity(new AnonymousIdentityToken());
                 }
-
+                mUserIdentity = userIdentity;
                 var endpointConfiguration = EndpointConfiguration.Create(mApplicationConfig);
                 mEndpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
                 mApplicationConfig.CertificateValidator.CertificateValidation += Notification_CertificateValidation;
@@ -386,6 +329,8 @@ namespace Autabee.Communication.ManagedOpcClient
                 ReInstateNodeEntries?.Invoke(this, null);
                 wasConnected = true;
                 subscriptions.Clear();
+
+                UpdateTypeData();
             }
             catch (Exception e)
             {
@@ -516,7 +461,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 if (session != null && !closing)
                 {
                     closing = true;
-                    var status = session.Close(10000);
+                    var status = session.Close(10000,true);
                     if (session != null)
                     {
                         session.KeepAlive -= Notification_KeepAlive;
@@ -537,110 +482,56 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 
 
+        public async void Reconnect()
+        {
+            if (Connected) return;
+
+            try
+            {
+                if (mApplicationConfig == null
+                    || mEndpoint == null
+                    || mUserIdentity == null)
+                {
+                    throw new Exception("No connection information available");
+                }
+
+                //Creat a session name
+                sessionName =
+                mApplicationConfig.ApplicationName +
+                "_" +
+                Guid.NewGuid().GetHashCode().ToString().Substring(0, 4);
+
+                //Create and connect session
+                session = await Session.Create(
+                    mApplicationConfig,
+                    mEndpoint,
+                    false,
+                    true,
+                    sessionName,
+                    //5_000,
+                    60_000,
+                    mUserIdentity,
+                    null);
+
+                ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
+                session.KeepAlive += Notification_KeepAlive;
+                ConnectionUpdated?.Invoke(this, null);
+                session.SessionClosing += Session_SessionClosing;
+                ReInstateNodeEntries?.Invoke(this, null);
+                wasConnected = true;
+                subscriptions.Clear();
+
+                UpdateTypeData();
+            }
+            catch (Exception e)
+            {
+                //handle Exception here
+                throw;
+            }
+        }
+
+
         #endregion Connect/Disconnect
-
-        #region Defaults
-        public static ApplicationConfiguration GetClientConfiguration(string company, string product, string directory, IAutabeeLogger logger = null)
-        {
-            var error = new System.Collections.Generic.List<Exception>();
-            if (string.IsNullOrWhiteSpace(company)) error.Add(new ArgumentNullException(nameof(company)));
-            if (string.IsNullOrWhiteSpace(product)) error.Add(new ArgumentNullException(nameof(product)));
-            if (string.IsNullOrWhiteSpace(directory)) error.Add(new ArgumentNullException(nameof(directory)));
-            if (error.Count() != 0) { throw new AggregateException(error); }
-
-            ApplicationInstance configuration = new ApplicationInstance();
-            configuration.ApplicationType = ApplicationType.Client;
-            configuration.ConfigSectionName = product;
-
-            var combined = Path.Combine(directory, product + ".Config.xml");
-
-            if (!File.Exists(combined))
-            {
-                CreateDefaultConfiguration(company, product, directory, logger, combined);
-            }
-
-            configuration.LoadApplicationConfiguration(combined, false).Wait();
-            configuration.CheckApplicationInstanceCertificate(false, 0).Wait();
-
-            return configuration.ApplicationConfiguration;
-        }
-
-        private static void CreateDefaultConfiguration(string company, string product, string directory, IAutabeeLogger logger, string combined)
-        {
-            logger?.Warning("File {0} not found. recreating it using embedded default.", null, combined);
-            using (Stream resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("Autabee.Communication.ManagedOpcClient.DefaultOpcClient.Config.xml"))
-            {
-                using (StreamReader reader = new StreamReader(resource))
-                {
-                    string result = reader.ReadToEnd();
-                    result = result.Replace("productref", product);
-                    result = result.Replace("companyref", company);
-                    Directory.CreateDirectory(directory);
-                    File.WriteAllText(combined, result);
-                    logger?.Warning("File {0} Created and updated with ({1}, {2}).", null, combined, product, company);
-                }
-            }
-        }
-
-        public static ApplicationConfiguration CreateDefaultClientConfiguration(Stream configStream)
-        {
-
-            ApplicationInstance configuration = new ApplicationInstance();
-            configuration.ApplicationType = ApplicationType.Client;
-            configuration.LoadApplicationConfiguration(configStream, false).Wait();
-            configuration.CheckApplicationInstanceCertificate(false, 2048).Wait();
-
-            return configuration.ApplicationConfiguration;
-        }
-
-        public static X509Certificate2 CreateDefaultClientCertificate(ApplicationConfiguration configuration)
-        {
-            // X509Certificate2 clientCertificate;
-            ICertificateBuilder builder = CertificateBuilder.Create($"cn={configuration.ApplicationName}");
-            builder = builder.SetHashAlgorithm(System.Security.Cryptography.HashAlgorithmName.SHA256);
-            builder = (ICertificateBuilder)builder.SetRSAKeySize(2048);
-            builder = builder.SetLifeTime(24);
-            builder = builder.CreateSerialNumber();
-            builder = builder.SetNotBefore(DateTime.Now);
-
-#if NET48_OR_GREATER || NET5_0_OR_GREATER
-            builder = builder.AddExtension(GetLocalIpData(configuration.ApplicationUri));
-#endif
-            var clientCertificate = builder.CreateForRSA();
-
-            clientCertificate.AddToStore(
-                configuration.SecurityConfiguration.ApplicationCertificate.StoreType,
-                configuration.SecurityConfiguration.ApplicationCertificate.StorePath);
-            return clientCertificate;
-        }
-        #endregion Defaults
-
-#if NET48_OR_GREATER || NET5_0_OR_GREATER
-        private static X509Extension GetLocalIpData(string applicationUri)
-        {
-            var abuilder = new SubjectAlternativeNameBuilder();
-            List<string> localIps = new List<string>();
-            abuilder.AddUri(new Uri(applicationUri));
-            abuilder.AddDnsName(Dns.GetHostName());
-            var host = Dns.GetHostEntry(Dns.GetHostName());
-            bool found = false;
-            foreach (var ip in host.AddressList)
-            {
-                if (ip.AddressFamily == AddressFamily.InterNetwork)
-                {
-                    abuilder.AddIpAddress(ip);
-                    found = true;
-                }
-            }
-            if (!found)
-            {
-                throw new Exception("Local IP Address Not Found!");
-            }
-
-
-            return abuilder.Build();
-        }
-#endif
 
         #region EventHandling
 
@@ -789,8 +680,10 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <param name="refDesc">The ReferenceDescription</param>
         /// <returns>ReferenceDescriptionCollection of found nodes</returns>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) => BrowseNode(
-            ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris));
+        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) =>
+            session != null
+            ? BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris))
+            : throw new Exception("BadNotConnected");
 
         public ReferenceDescriptionCollection BrowseNode(NodeId node) => BrowseNode(
             new BrowseDescriptionCollection() { GetNodeHierarchalBrowseDescription(node) });
@@ -841,6 +734,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw e;
             }
         }
+
 
         public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(NodeId node, CancellationToken token)
         {
@@ -980,6 +874,59 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 logger.Error(e.Message, e);
                 throw e;
+            }
+        }
+
+        public ReferenceDescription GetParent(NodeId nodeId)
+        {
+            try
+            {
+                //We need to browse for property (input and output arguments)
+                //Create a collection for the browse results
+                ReferenceDescriptionCollection referenceDescriptionCollection;
+                ReferenceDescriptionCollection nextreferenceDescriptionCollection;
+                //Create a continuationPoint
+                byte[] continuationPoint;
+                byte[] revisedContinuationPoint;
+
+                session.Browse(
+                    null,
+                    null,
+                    nodeId,
+                    0u,
+                    BrowseDirection.Inverse,
+                    null,
+                    true,
+                    0,
+                    out continuationPoint,
+                    out referenceDescriptionCollection);
+
+                while (continuationPoint != null)
+                {
+                    session.BrowseNext(
+                        null,
+                        false,
+                        continuationPoint,
+                        out revisedContinuationPoint,
+                        out nextreferenceDescriptionCollection);
+                    referenceDescriptionCollection.AddRange(nextreferenceDescriptionCollection);
+                    continuationPoint = revisedContinuationPoint;
+                }
+
+                //Gaurd Clause
+                if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
+                {
+                    throw new Exception("No Parent Id Found");
+                }
+                if (referenceDescriptionCollection.Count > 1)
+                {
+                    throw new Exception("Multiple Parent Id Found");
+                }
+                return referenceDescriptionCollection[0];
+            }
+            catch (Exception e)
+            {
+                throw;
             }
         }
 
@@ -1163,113 +1110,249 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Typing
 
-        //public object GetNodeTypeEncoding(string nodeIdString)
-        //{
-        //    return GetNodeTypeEncoding(new NodeId(nodeIdString));
-        //}
 
-        //public object GetNodeTypeEncoding(NodeId nodeIdString)
-        //{
-        //    // string xmlString
-        //    return GetTypeDictionary(nodeIdString, session, out string parseString);
-        //    //PreparedNodeTypes.Add(nodeIdString, parseString);
-        //    //return GetTypeEncoding(parseString, xmlString);
-        //}
 
-        //public KeyValuePair<string, List<NodeTypeData>> GetTypeEncoding(string parseString, string xmlString)
-        //{
-        //    if (PreparedTypes.ContainsKey(parseString))
-        //    {
-        //        return new KeyValuePair<string, List<NodeTypeData>>(parseString, PreparedTypes[parseString]);
-        //    }
-        //    else
-        //    {
-        //        var varList = ParseTypeDictionary(xmlString, parseString);
-        //        var item = new KeyValuePair<string, List<NodeTypeData>>(parseString, varList);
-        //        PreparedTypes.Add(item.Key, item.Value);
-        //        return item;
-        //    }
-        //}
+        public NodeTypeData GetNodeTypeEncoding(string nodeIdString)
+        {
+            if (PreparedNodeTypes.TryGetValue(nodeIdString, out string parseString))
+            {
+                return PreparedTypes[parseString];
+            }
 
-        //private static string GetTypeDictionary(NodeId nodeIdString, Session theSessionToBrowseIn, out string parseString)
-        //{
-        //    //Read the desired node first and chekc if it's a variable
-        //    Node node = theSessionToBrowseIn.ReadNode(nodeIdString);
-        //    if (node.NodeClass == NodeClass.Variable)
-        //    {
-        //        //Get the node id of node's data type
-        //        VariableNode variableNode = (VariableNode)node.DataLock;
-        //        NodeId nodeId = new NodeId(variableNode.DataType.Identifier, variableNode.DataType.NamespaceIndex);
+            parseString = GetTypeDictionary(nodeIdString, session);
+            PreparedNodeTypes.Add(nodeIdString, parseString);
+            return GetTypeEncoding(parseString);
+        }
 
-        //        //Browse for HasEncoding
-        //        ReferenceDescriptionCollection refDescCol;
-        //        byte[] continuationPoint;
-        //        theSessionToBrowseIn.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasEncoding, true, 0, out continuationPoint, out refDescCol);
+        public NodeTypeData GetTypeEncoding(string parseString)
+        {
+            NodeTypeData value;
+            if (PreparedTypes.TryGetValue(parseString, out value))
+            {
+                return value;
+            }
 
-        //        //Check For found reference
-        //        if (refDescCol.Count == 0)
-        //        {
-        //            Exception ex = new Exception("No data type to encode. Could be a build-in data type you want to read.");
-        //            throw ex;
-        //        }
+            //trying updating the type data
 
-        //        //Check for HasEncoding reference with name "Default Binary"
-        //        foreach (ReferenceDescription refDesc in refDescCol)
-        //        {
-        //            if (refDesc.DisplayName.Text == "Default Binary")
-        //            {
-        //                nodeId = new NodeId(refDesc.NodeId.Identifier, refDesc.NodeId.NamespaceIndex);
-        //            }
-        //            else
-        //            {
-        //                Exception ex = new Exception("No default binary data type found.");
-        //                throw ex;
-        //            }
-        //        }
+            UpdateTypeData();
 
-        //        //Browse for HasDescription
-        //        refDescCol = null;
-        //        theSessionToBrowseIn.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasDescription, true, 0, out continuationPoint, out refDescCol);
+            if (PreparedTypes.TryGetValue(parseString, out value))
+            {
+                return value;
+            }
 
-        //        //Check For found reference
-        //        if (refDescCol.Count == 0)
-        //        {
-        //            Exception ex = new Exception("No data type description found in address space.");
-        //            throw ex;
-        //        }
+            throw new Exception("Type not found");
+        }
 
-        //        //Read from node id of the found description to get a value to parse for later on
-        //        nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
-        //        DataValue resultValue = theSessionToBrowseIn.ReadValue(nodeId);
-        //        parseString = resultValue.Value.ToString();
+        private void UpdateTypeData()
+        {
+            Xmls.Clear();
+            Xmls.AddRange(this.GetServerTypeSchema().Select(o => { var temp = new XmlDocument(); temp.LoadXml(o); return temp; }));
+            var dict = UpdateNodeType(Xmls);
+            foreach (var o in dict)
+            {
+                if (PreparedTypes.ContainsKey(o.Key)) PreparedTypes.Remove(o.Key);
+                PreparedTypes.Add(o.Key, o.Value);
+            }
+        }
 
-        //        //Browse for ComponentOf from last browsing result inversly
-        //        refDescCol = null;
-        //        theSessionToBrowseIn.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out continuationPoint, out refDescCol);
+        private static string GetTypeDictionary(string nodeIdString, Session session)
+        {
+            
 
-        //        //Check if reference was found
-        //        if (refDescCol.Count == 0)
-        //        {
-        //            Exception ex = new Exception("Data type isn't a component of parent type in address space. Can't continue decoding.");
-        //            throw ex;
-        //        }
 
-        //        //Read from node id of the found HasCompoment reference to get a XML file (as HEX string) containing struct/UDT information
+            //Read the desired node first and chekc if it's a variable
+            Node node = session.ReadNode(nodeIdString);
+            if (node.NodeClass != NodeClass.Variable)
+            {
+                Exception ex = new Exception("No variable data type found");
+                throw ex;
+            }
+            //Get the node id of node's data type
+            VariableNode variableNode = (VariableNode)node.DataLock;
+            NodeId nodeId = (NodeId)variableNode.DataType;
 
-        //        nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
-        //        resultValue = theSessionToBrowseIn.ReadValue(nodeId);
+            //Browse for HasEncoding
+            ReferenceDescriptionCollection refDescCol;
+            byte[] continuationPoint;
+            session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasEncoding, true, 0, out _, out refDescCol);
 
-        //        //Convert the HEX string to ASCII string
-        //        string xmlString = Encoding.ASCII.GetString((byte[])resultValue.Value);
+            //Check For found reference
+            if (refDescCol.Count == 0)
+            {
+                Exception ex = new Exception("No data type to encode. Could be a build-in data type you want to read.");
+                throw ex;
+            }
 
-        //        //Return the dictionary as ASCII string
-        //        return xmlString;
-        //    }
-        //    {
-        //        Exception ex = new Exception("No variable data type found");
-        //        throw ex;
-        //    }
-        //}
+            //Check for HasEncoding reference with name "Default Binary"
+
+            var tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default Binary");
+            if (tmp == null)
+                tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default XML");
+            if (tmp == null)
+                tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default JSON");
+            
+            if (tmp == null)
+                throw new Exception("No encoding found.");
+            nodeId = (NodeId)tmp.NodeId;
+
+            //Browse for HasDescription
+
+            
+
+
+            ReferenceDescriptionCollection refDescCol2;
+            session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasDescription, true, 0, out _, out refDescCol2);
+
+            //Check For found reference
+            if (refDescCol2.Count > 0)
+            {
+                //Read from node id of the found description to get a value to parse for later on
+                nodeId = new NodeId(refDescCol2[0].NodeId.Identifier, refDescCol2[0].NodeId.NamespaceIndex);
+                DataValue resultValue = session.ReadValue(nodeId);
+                return resultValue.Value.ToString();
+                //parseString;
+                //Browse for ComponentOf from last browsing result inversly
+                //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
+
+            }
+            else
+            {
+                //var resultValue = session.ReadValue();
+                return nodeId.ToString();
+                //parseString;
+                //Browse for ComponentOf from last browsing result inversly
+                //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
+            }
+
+
+
+            //
+            //Check if reference was found
+            //if (refDescCol.Count == 0)
+            //{
+            //  Exception ex = new Exception("Data type isn't a component of parent type in address space. Can't continue decoding.");
+            //  throw ex;
+            //}
+
+            //Read from node id of the found HasCompoment reference to get a XML file (as HEX string) containing struct/UDT information
+
+            //nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
+            //resultValue = session.ReadValue(nodeId);
+
+            //Convert the HEX string to ASCII string
+            //string xmlString = Encoding.ASCII.GetString((byte[])resultValue.Value);
+
+            //Return the dictionary as ASCII string
+
+        }
+        public object GetCorrectValue(object value)
+        {
+            if (value is ExtensionObject eoValue)
+            {
+                return FormatObject(eoValue);
+            }
+            else if (value is ExtensionObject[] eoValues)
+            {
+                return eoValues.Select(FormatObject).ToArray();
+            }
+            return value;
+        }
+
+        public object FormatObject(ExtensionObject eoValue)
+        {
+            if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
+                || eoValue.Encoding == ExtensionObjectEncoding.None)
+                return eoValue.Body;
+
+            var type = GetTypeEncoding(GetCorrectedTypeName(eoValue));
+            return eoValue.Encoding switch
+            {
+                ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext)),
+                ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext)),
+                ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext)),
+                _ => throw new Exception("Unkown encoding"),
+            };
+        }
+
+        private static Dictionary<string, NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
+        {
+            var dict = new Dictionary<string, NodeTypeData>();
+
+            foreach (var item in xmls)
+            {
+                foreach (XmlNode child in item.GetElementsByTagName("opc:StructuredType"))
+                {
+                    var nodetype = new NodeTypeData();
+                    nodetype.Name = GetCorrectedName(child);
+                    nodetype.TypeName = GetCorrectedName(child);
+                    nodetype.ChildData = new List<NodeTypeData>();
+                    foreach (XmlNode child2 in child.ChildNodes)
+                    {
+                        if (child2.Name == "opc:Field")
+                        {
+                            var childNode = new NodeTypeData();
+                            childNode.Name = GetCorrectedName(child2);
+                            childNode.TypeName = GetCorrectedTypeName(child2);
+                            childNode.ChildData = new List<NodeTypeData>();
+                            nodetype.ChildData.Add(childNode);
+                        }
+                    }
+                    dict.Add(nodetype.Name, nodetype);
+                }
+            }
+
+            foreach (var item in dict)
+            {
+                var type = item.Value;
+                AddChilderen(dict, type);
+            }
+            return dict;
+        }
+
+        private static void AddChilderen(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
+        {
+            for (int i = 0; i < type.ChildData.Count; i++)
+            {
+                var child = type.ChildData[i];
+                if (dict.ContainsKey(child.TypeName))
+                {
+                    type.ChildData[i].ChildData = dict[child.TypeName].ChildData;
+                    foreach (var item in type.ChildData[i].ChildData)
+                    {
+                        AddChilderen(dict, item);
+                    }
+                }
+            }
+        }
+
+        static string GetCorrectedName(XmlNode value)
+        {
+            return value.Attributes["Name"].Value.Replace("&quot;", string.Empty)
+                    .Replace("\"", string.Empty);
+        }
+        static string GetCorrectedTypeName(XmlNode value)
+        {
+            return GetCorrectedTypeName(value.Attributes["TypeName"].Value);
+        }
+
+        static string GetCorrectedTypeName(ExtensionObject eoValue)
+        {
+            return eoValue.TypeId.Identifier.ToString().Replace("\"", string.Empty).Replace("TE_", string.Empty);
+        }
+
+        static string GetCorrectedTypeName(string value)
+        {
+            if (value.Contains("tns:"))
+            {
+                return value
+                    .Replace("&quot;", string.Empty)
+                    .Replace("\"", string.Empty)
+                    .Substring(4);
+            }
+
+            return value;
+        }
         #endregion Typing
 
         #region Entry Read
@@ -1486,39 +1569,46 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion Entry Read
 
         #region Read
-        public object ReadValue(string nodeIdString) => ReadValue(new NodeId(nodeIdString));
-        public object ReadValue(ExpandedNodeId nodeId, Type type = null) => ReadValue((NodeId)nodeId, null);
-        public object ReadValue(NodeId nodeId, Type type = null) => type == null
-            ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
 
-        public T ReadValue<T>(string nodeIdString) => ReadValue<T>(new NodeId(nodeIdString));
-
+        public object ReadValue(NodeId nodeId, Type type = null)
+        {
+            var value = type == null ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
+            return GetCorrectValue(value);
+        }
         public T ReadValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
-
-        public Node ReadNode(string nodeIdString) => ReadNode(new NodeId(nodeIdString));
-        public Node ReadNode(ExpandedNodeId nodeId) => ReadNode(((NodeId)nodeId));
         public Node ReadNode(NodeId nodeId) => session.ReadNode(nodeId);
 
-        public Node ReadNode(ReferenceDescription reference) => session.ReadNode(
-            ExpandedNodeId.ToNodeId(reference.NodeId, session.NamespaceUris));
 
-        public NodeCollection ReadNodes(ReferenceDescriptionCollection referenceDescriptions)
+
+
+        public NodeCollection ReadNodes(NodeIdCollection nodeIdCollection)
         {
-            if (referenceDescriptions is null || referenceDescriptions.Count == 0) return new NodeCollection();
+            if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new NodeCollection();
             Func<NodeCollection> task = delegate ()
             {
-                NodeIdCollection nodeIds = new NodeIdCollection();
-                nodeIds.AddRange(
-                    referenceDescriptions.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, session.NamespaceUris)));
-                session.ReadNodes(nodeIds, out var nodes, out IList<ServiceResult> statusResults);
+                session.ReadNodes(nodeIdCollection, out var nodes, out IList<ServiceResult> statusResults);
                 ValidateResponse(statusResults.Select(o => o.StatusCode));
                 var nodes2 = new NodeCollection();
                 nodes2.AddRange(nodes);
                 return nodes2;
             };
-
-            return (NodeCollection)HandleTask(task);
+            return HandleTask(task);
         }
+
+        public async Task<NodeCollection> AsyncReadNodes(NodeIdCollection nodeIdCollection, CancellationToken token)
+        {
+            if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new NodeCollection();
+            Func<Task<NodeCollection>> task = async delegate ()
+            {
+                var (nodes, statusResults) = await session.ReadNodesAsync(nodeIdCollection, true, token).ConfigureAwait(false);
+                ValidateResponse(statusResults.Select(o => o.StatusCode));
+                var nodes2 = new NodeCollection();
+                nodes2.AddRange(nodes);
+                return nodes2;
+            };
+            return await HandleTask(task);
+        }
+
 
         public async Task<NodeCollection> AsyncReadNodes(
             ReferenceDescriptionCollection referenceDescriptions,
@@ -1536,54 +1626,9 @@ namespace Autabee.Communication.ManagedOpcClient
                 nodes2.AddRange(nodes);
                 return nodes2;
             };
-            return (NodeCollection)await HandleTask(task);
+            return await HandleTask(task);
         }
         #endregion Read
-
-        #region UDT Read/Write
-        private static T CreateDefaultInstance<T>()
-        {
-            //Get the Parameterless Constructor
-            var constructor = typeof(T).GetConstructors().FirstOrDefault(o => o.GetParameters().Length == 0);
-            if (constructor == null) throw new TypeInitializationException(
-                                          typeof(T).FullName,
-                                          new Exception("No parameterless constructor"));
-
-            return (T)constructor.Invoke(new object[0]);
-        }
-
-        public T ReadStructUdt<T>(string nodeIdString) where T : IEncodeable => ReadStructUdt<T>(
-            new NodeId(nodeIdString));
-
-        public T ReadStructUdt<T>(ValueNodeEntry nodeId) where T : IEncodeable => (T)ReadValues(new ValueNodeEntryCollection() { nodeId })[0].Value;
-
-        public T ReadStructUdt<T>(NodeId nodeId) where T : IEncodeable
-        {
-            try
-            {
-                T result = CreateDefaultInstance<T>();
-                var buffer = (byte[])session.ReadValue(nodeId, typeof(byte[]));
-                result.Decode(new BinaryDecoder(buffer, session.MessageContext));
-                return result;
-            }
-            catch (Exception e)
-            {
-                throw;
-            }
-        }
-
-        public ExtensionObject ReadStructUdt(string nodeId) => ReadStructUdt(new NodeId(nodeId));
-
-        public ExtensionObject ReadStructUdt(NodeId nodeId) => (ExtensionObject)session.ReadValue(nodeId).Value;
-
-        public ExtensionObject[] ReadArrayStructUdt(string nodeId) => ReadArrayStructUdt(new NodeId(nodeId));
-
-        public ExtensionObject[] ReadArrayStructUdt(NodeId nodeId) => (ExtensionObject[])session.ReadValue(nodeId).Value;
-
-        public async Task<object> ReadStructUdtAsync(NodeId nodeId) => (await session.ReadValueAsync(nodeId)).Value;
-
-        public void WriteStructUdt(NodeId nodeId, ExtensionObject dataToWrite) { WriteValue(nodeId, dataToWrite); }
-        #endregion UDT Read/Write
 
         #region NodeCollection Read / Write
         public DataValueCollection ReadValues(NodeIdCollection nodeCollection, List<Type> types = null)
@@ -1650,7 +1695,6 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
         public MethodArguments GetMethodArguments(string nodeIdString)
             => GetMethodArguments(new NodeId(nodeIdString));
-
 
         public MethodArguments GetMethodArguments(NodeId nodeId)
         {
@@ -1765,42 +1809,14 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, object[] inputArguments)
+        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, params object[] inputArguments)
             => Session.Call(
             objectNodeId,
             methodNodeId,
             inputArguments ?? new object[0]);
 
-        public IList<object> CallMethod(string objectNodeString, string methodNodeString, object[] inputArguments)
-            => CallMethod(
-           new NodeId(objectNodeString),
-           new NodeId(methodNodeString),
-           inputArguments);
 
-        public IList<object> CallMethod(NodeEntry objectEntry, MethodNodeEntry methodEntry, object[] inputArguments)
-            => CallMethod(
-            objectEntry.GetNodeId(),
-            methodEntry.GetNodeId(),
-            inputArguments);
 
-        public IList<object> CallMethods(IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
-        {
-            var methodRequests = new CallMethodRequestCollection();
-            methodRequests.AddRange(
-                data.Select(
-                    o =>
-                    {
-                        var collection = new VariantCollection();
-                        collection.AddRange(o.Item3.Select(k => new Variant(k)));
-                        return new CallMethodRequest()
-                        {
-                            ObjectId = o.Item1.GetNodeId(),
-                            MethodId = o.Item2.GetNodeId(),
-                            InputArguments = collection
-                        };
-                    }));
-            return CallMethods(methodRequests);
-        }
 
         public IList<object> CallMethods(CallMethodRequestCollection methodRequests)
         {
@@ -1871,10 +1887,10 @@ namespace Autabee.Communication.ManagedOpcClient
         /// </summary>
         /// <param name="subscription">The subscription</param>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public void AddMonitoredItem(
+        public MonitoredItem AddMonitoredItem(
             Subscription subscription,
             ValueNodeEntry nodeEntry,
-            MonitoredNodeValueEventHandler handler = null)
+            MonitoredNodeValueRecordEventHandler handler = null)
         {
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, handler: handler);
             try
@@ -1886,28 +1902,89 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 throw e;
             }
+            return monitoredItem;
+        }
+        public MonitoredItem AddMonitoredItem(
+                Subscription subscription,
+                NodeId nodeEntry,
+                MonitoredNodeValueEventHandler handler = null)
+        {
+            MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, handler: handler);
+            try
+            {
+                subscription.AddItem(monitoredItem);
+                subscription.ApplyChanges();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+            return monitoredItem;
+        }
+        public void AddMonitoredItem(
+                Subscription subscription,
+                MonitoredItem item)
+        {
+            try
+            {
+                subscription.AddItem(item);
+                subscription.ApplyChanges();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
         }
 
-        public void AddMonitoredItem(
-            int publishingInterval,
-            ValueNodeEntry nodeEntry,
-            MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
-            GetSubscription(publishingInterval),
-            nodeEntry,
-            handler);
+        public MonitoredItem AddMonitoredItem(
+                TimeSpan publishingInterval,
+                ValueNodeEntry nodeEntry,
+                MonitoredNodeValueRecordEventHandler handler = null) => AddMonitoredItem(
+                GetSubscription(publishingInterval),
+                nodeEntry,
+                handler);
 
-        public void AddMonitoredItems(int publishingInterval, ValueNodeEntryCollection nodeEntrys)
+        public MonitoredItem AddMonitoredItem(
+                TimeSpan publishingInterval,
+                NodeId nodeId,
+                MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
+                GetSubscription(publishingInterval),
+                nodeId,
+                handler);
+        public MonitoredItem AddMonitoredItem(
+                int publishingIntervalMilliSec,
+                ValueNodeEntry nodeEntry,
+                MonitoredNodeValueRecordEventHandler handler = null) => AddMonitoredItem(
+                GetSubscription(publishingIntervalMilliSec),
+                nodeEntry,
+                handler);
+        public MonitoredItem AddMonitoredItem(
+                int publishingIntervalMilliSec,
+                NodeId nodeId,
+                MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
+                GetSubscription(publishingIntervalMilliSec),
+                nodeId,
+                handler);
+
+        public IEnumerable<MonitoredItem> AddMonitoredItems(TimeSpan publishingInterval, ValueNodeEntryCollection nodeEntrys)
             => AddMonitoredItems(
                 GetSubscription(publishingInterval),
                 nodeEntrys);
 
-        private Subscription GetSubscription(int publishingInterval)
+        public IEnumerable<MonitoredItem> AddMonitoredItems(int publishingIntervalMilliSec, ValueNodeEntryCollection nodeEntrys)
+            => AddMonitoredItems(
+                GetSubscription(publishingIntervalMilliSec),
+                nodeEntrys);
+        public Subscription GetSubscription(TimeSpan publishingInterval) => GetSubscription(publishingInterval.Milliseconds);
+
+
+        public Subscription GetSubscription(int publishingIntervalMilliSec)
         {
-            var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingInterval);
-            return subscription != null ? subscription : CreateSubscription(publishingInterval);
+            var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingIntervalMilliSec);
+            return subscription != null ? subscription : CreateSubscription(publishingIntervalMilliSec);
         }
 
-        public void AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
+        public IEnumerable<MonitoredItem> AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
         {
             IEnumerable<MonitoredItem> items = nodeEntrys.NodeEntries.Select(o => CreateMonitoredItem(o));
             try
@@ -1919,14 +1996,50 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 throw e;
             }
+            return items;
         }
 
-        private MonitoredItem CreateMonitoredItem(
+        public MonitoredItem CreateMonitoredItem(
             ValueNodeEntry nodeEntry,
             int samplingInterval = 1,
             uint queueSize = 1,
             bool discardOldest = true,
-            MonitoredNodeValueEventHandler handler = null)
+            bool globalCall = false,
+            MonitoredNodeValueRecordEventHandler handler = null)
+        {
+            MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, samplingInterval, queueSize, discardOldest);
+            if (handler != null)
+            {
+                monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, handler);
+            }
+            if (globalCall)
+            {
+                monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, NodeChangedNotification);
+            }
+
+            return monitoredItem;
+        }
+        public MonitoredItem CreateMonitoredItem(
+                NodeId nodeId,
+                int samplingInterval = 1,
+                uint queueSize = 1,
+                bool discardOldest = true,
+                bool globalCall = false,
+                MonitoredNodeValueEventHandler handler = null)
+        {
+            MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, samplingInterval, queueSize, discardOldest);
+            if (handler != null)
+            {
+                monitoredItem.Notification += (sender, arg) => MoniteredNode(sender, arg, handler);
+            }
+            if (globalCall)
+            {
+                monitoredItem.Notification += (sender, arg) => MoniteredNode(sender, arg, NodeChangedNotification);
+            }
+
+            return monitoredItem;
+        }
+        public static MonitoredItem CreateMonitoredItem(ValueNodeEntry nodeEntry, int samplingInterval, uint queueSize, bool discardOldest)
         {
             MonitoredItem monitoredItem = new MonitoredItem();
             monitoredItem.DisplayName = nodeEntry.NodeString;
@@ -1936,17 +2049,44 @@ namespace Autabee.Communication.ManagedOpcClient
             monitoredItem.SamplingInterval = samplingInterval;
             monitoredItem.QueueSize = queueSize;
             monitoredItem.DiscardOldest = discardOldest;
-            if (handler == null)
-                monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, NodeChangedNotification);
-            else
-                monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, handler);
             return monitoredItem;
         }
 
-        private void MoniteredNode(
+        static public MonitoredItem CreateMonitoredItem(NodeId nodeId, int samplingInterval, uint queueSize, bool discardOldest)
+        {
+            MonitoredItem monitoredItem = new MonitoredItem();
+            monitoredItem.DisplayName = nodeId.ToString();
+            monitoredItem.StartNodeId = nodeId;
+            monitoredItem.AttributeId = Attributes.Value;
+            monitoredItem.MonitoringMode = MonitoringMode.Reporting;
+            monitoredItem.SamplingInterval = samplingInterval;
+            monitoredItem.QueueSize = queueSize;
+            monitoredItem.DiscardOldest = discardOldest;
+            return monitoredItem;
+        }
+
+        public void MoniteredNode(
+                MonitoredItem monitorItem,
+                MonitoredItemNotificationEventArgs arg,
+                MonitoredNodeValueEventHandler handeler)
+        {
+            var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
+            handeler.Invoke(monitorItem, value);
+        }
+
+        public void MoniteredNode(
+                MonitoredItem monitorItem,
+                MonitoredItemNotificationEventArgs arg,
+                MonitoredNodeValueRecordEventHandler handeler)
+        {
+            var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
+            handeler.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
+        }
+
+        public void MoniteredNode(
             ValueNodeEntry entry,
             MonitoredItemNotificationEventArgs arg,
-            MonitoredNodeValueEventHandler handler)
+            MonitoredNodeValueRecordEventHandler handler)
         {
             if (!entry.IsUDT)
             {
@@ -1979,15 +2119,8 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             if (subscription.MonitoredItems.Contains(monitoredItem))
             {
-                try
-                {
-                    subscription.RemoveItem(monitoredItem);
-                    subscription.ApplyChanges();
-                }
-                catch (Exception e)
-                {
-                    throw e;
-                }
+                subscription.RemoveItem(monitoredItem);
+                subscription.ApplyChanges();
             }
         }
 
@@ -2077,6 +2210,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
+
         private T HandleTask<T>(Func<T> task)
         {
             try
@@ -2086,13 +2220,13 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (ServiceResultException se)
             {
                 HandleServiceResultException(se);
-                logger?.Error("Failed reading values", se, null);
+                logger?.Error("Failed executing task", se, null);
                 throw;
             }
             catch (Exception e)
             {
                 if (e is ServiceResultException se) HandleServiceResultException(se);
-                logger?.Error("Failed reading values", e, null);
+                logger?.Error("Failed executing task", e, null);
                 throw;
             }
         }
@@ -2105,13 +2239,13 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (ServiceResultException se)
             {
                 HandleServiceResultException(se);
-                logger?.Error("Failed reading values", se, null);
+                logger?.Error("Failed executing task", se, null);
                 throw;
             }
             catch (Exception e)
             {
                 if (e is ServiceResultException se) HandleServiceResultException(se);
-                logger?.Error("Failed reading values", e, null);
+                logger?.Error("Failed executing task", e, null);
                 throw;
             }
         }

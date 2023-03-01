@@ -206,7 +206,7 @@ namespace Autabee.OpcToClass
 
             // generate cs libary project file in generate folder with the basetype name
             var fileContent =
-@"<Project Sdk=""Microsoft.NET.Sdk"">
+      @"<Project Sdk=""Microsoft.NET.Sdk"">
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
@@ -221,97 +221,159 @@ namespace Autabee.OpcToClass
             CreateFile(Path.Combine(settings.baseLocation, settings.baseNamespace + ".csproj"), fileContent);
         }
 
-        public static void GenerateTypes(XmlDocument xmlDocument, GeneratorSettings settings)
+        public static void GenerateTypeFiles(XmlDocument xmlDocument, GeneratorSettings settings)
         {
             Directory.CreateDirectory(settings.baseLocation);
-            foreach (XmlNode value in xmlDocument.GetElementsByTagName("opc:StructuredType"))
+            foreach (var item in GenerateClassFileConents(xmlDocument, settings))
             {
-                var name = GetCorrectedName(value);
+                var (name, scriptContent) = (item.Key, item.Value);
                 var split = name.Split('.');
-                //join all split items exept for the last
-                var namespaceName = string.Join('.' + settings.nsPrefix, split.Take(split.Length - 1));
 
+                var namespaceName = string.Join('.' + settings.nsPrefix, split.Take(split.Length - 1));
                 var className = split.Last();
                 var fileName = className + ".cs";
 
                 string filePath;
                 if (string.IsNullOrWhiteSpace(namespaceName))
                 {
-                    namespaceName = settings.baseNamespace;
                     filePath = Path.Combine(settings.baseLocation, fileName);
                 }
                 else
                 {
-                    namespaceName = settings.baseNamespace + '.' + settings.nsPrefix + namespaceName;
-                    filePath = Path.Combine(settings.baseLocation, settings.nsPrefix + string.Join($"\\{settings.nsPrefix}", split.Take(split.Length - 1)), fileName);
                     Directory.CreateDirectory(Path.Combine(settings.baseLocation, settings.nsPrefix + string.Join($"\\{settings.nsPrefix}", split.Take(split.Length - 1))));
+                    filePath = Path.Combine(settings.baseLocation, settings.nsPrefix + string.Join($"\\{settings.nsPrefix}", split.Take(split.Length - 1)), fileName);
                 }
 
-                var fileContents = "using Opc.Ua;\n\n"
-                    + "namespace " + namespaceName + "\n{"
-                    + "\n\tpublic class " + split.Last() + " : EncodeableObject"
-                    + "\n\t{";
-                foreach (XmlNode field in value.ChildNodes)
-                {
-                    if (field.Name == "opc:Field")
-                    {
-                        var fieldName = GetCorrectedName(field);
-                        var fieldType = GetCorrectedTypeName(field, settings.nsPrefix);
-                        fileContents += "\n\t\tpublic " + fieldType + " " + fieldName + " { get; set;}";
-                    }
-                }
-
-                fileContents += $"\n\t\tpublic override ExpandedNodeId TypeId => ExpandedNodeId.Parse(\"{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\");";
-
-                if (value.NamespaceURI == "http://opcfoundation.org/BinarySchema/")
-                {
-                    fileContents += $"\n\t\tpublic override ExpandedNodeId BinaryEncodingId => ExpandedNodeId.Parse(\"s=TD_{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\");";
-                }
-                else
-                {
-                    fileContents += $"\n\t\tpublic override ExpandedNodeId BinaryEncodingId => NodeId.Null;";
-                }
-
-                if (value.NamespaceURI == "http://opcfoundation.org/XmlSchema/")
-                {
-                    fileContents += $"\n\t\tpublic override ExpandedNodeId  XmlEncodingId => ExpandedNodeId.Parse(\"s=TD_{value.Attributes["Name"]}\");";
-                }
-                else
-                {
-                    fileContents += $"\n\t\tpublic override ExpandedNodeId XmlEncodingId => NodeId.Null;";
-                }
-
-                //fileContents += $"\n\t\tExpandedNodeId override TypeId => ExpandedNodeId.Parse(@\"{xmlDocument}\");";
-
-                //Encoder function
-                fileContents += "\n\n\t\tpublic override void Encode(IEncoder encoder)\n\t\t{";
-                foreach (XmlNode field in value.ChildNodes)
-                {
-                    if (field.Name == "opc:Field")
-                    {
-                        fileContents += "\n\t\t\tencoder."
-                            + GetEncoder(field, settings.nsPrefix) + ";";
-                    }
-                }
-                fileContents += "\n\t\t}";
-
-
-                //decoder function
-                fileContents += "\n\n\t\tpublic override void Decode(IDecoder decoder)\n\t\t{";
-                foreach (XmlNode field in value.ChildNodes)
-                {
-                    if (field.Name == "opc:Field")
-                    {
-                        fileContents += $"\n\t\t\tthis.{GetCorrectedName(field)} = decoder."
-                            + GetDecoder(field, settings.nsPrefix) + ";";
-                    }
-                }
-                fileContents += "\n\t\t}";
-
-                fileContents += "\n\t}";
-                fileContents += "\n}";
-                CreateFile(filePath, fileContents);
+                CreateFile(filePath, scriptContent);
             }
+        }
+
+
+        private static Dictionary<string, string> GenerateClassFileConents(XmlDocument xmlDocument, GeneratorSettings settings)
+        {
+            Dictionary<string, string> scripts = new Dictionary<string, string>();
+            foreach (XmlNode value in xmlDocument.GetElementsByTagName("opc:StructuredType"))
+            {
+                var name = GetCorrectedName(value);
+                var split = name.Split('.');
+                var namespaceName = string.Join('.' + settings.nsPrefix, split.Take(split.Length - 1));
+                namespaceName = string.IsNullOrWhiteSpace(namespaceName)
+                  ? settings.baseNamespace
+                  : settings.baseNamespace + '.' + settings.nsPrefix + namespaceName;
+
+                var scriptContent = "using Opc.Ua;\n\n"
+                    + "namespace " + namespaceName + "\n{";
+                scriptContent += GenerateClass(settings.nsPrefix, value, split.Last()).Replace("\n", "\n\t");
+                scriptContent += "\n}";
+
+                scripts[name] = scriptContent;
+
+            }
+            return scripts;
+        }
+
+        //private static Dictionary<string, string> GenerateClassScripts(XmlDocument xmlDocument, GeneratorSettings settings)
+        //{
+        //  List<SyntaxTree> syntaxFactories = new List<SyntaxTree>();
+        //  List<Assembly> references = new List<Assembly>() {
+        //    typeof(object).GetTypeInfo().Assembly,
+        //            typeof(Opc.Ua.AccessLevels).GetTypeInfo().Assembly };
+        //  var interactiveLoader = new InteractiveAssemblyLoader();
+        //  foreach (var reference in references)
+        //  {
+        //    interactiveLoader.RegisterDependency(reference);
+        //  }
+        //  var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+        //    optimizationLevel: OptimizationLevel.Release)
+        //    .AddReferences(references)
+        //    .WithLanguageVersion(Microsoft.CodeAnalysis.CSharp.LanguageVersion.CSharp7_1)
+
+
+        //  foreach (XmlNode value in xmlDocument.GetElementsByTagName("opc:StructuredType"))
+        //  {
+        //    var name = GetCorrectedName(value);
+        //    var split = name.Split('.');
+        //    var namespaceName = string.Join('.' + "ns_", split.Take(split.Length - 1));
+        //    namespaceName = string.IsNullOrWhiteSpace(namespaceName)
+        //      ? settings.baseNamespace
+        //      : settings.baseNamespace + '.' + settings.nsPrefix + namespaceName;
+
+
+        //    var scriptContent = "namespace " + namespaceName + "\n{";
+        //    scriptContent += GenerateClass("Ns", value, split.Last()).Replace("\n", "\n\t");
+        //    scriptContent += "\n}";
+
+        //    SyntaxTree tree = SyntaxFactory.ParseSyntaxTree(scriptContent);
+        //  }
+        //  var builder = CSharpCompilation.Create(settings.baseNamespace);
+        //  string path = Path.Combine(Directory.GetCurrentDirectory() + "/Generated/" + settings.baseLocation, settings.baseLocation + ".dll");
+        //  var result = builder.Emit(path);
+        //  return scripts;
+        //}
+
+        private static string GenerateClass(string nsPrefix, XmlNode value, string className)
+        {
+            string classData = "\npublic class " + className + " : EncodeableObject"
+                        + "\n{";
+            foreach (XmlNode field in value.ChildNodes)
+            {
+                if (field.Name == "opc:Field")
+                {
+                    var fieldName = GetCorrectedName(field);
+                    var fieldType = GetCorrectedTypeName(field, nsPrefix);
+                    classData += "\n\tpublic " + fieldType + " " + fieldName + " { get; set;}";
+                }
+            }
+
+            classData += $"\n\tpublic override ExpandedNodeId TypeId => ExpandedNodeId.Parse(\"{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\");";
+
+            if (value.NamespaceURI == "http://opcfoundation.org/BinarySchema/")
+            {
+                classData += $"\n\tpublic override ExpandedNodeId BinaryEncodingId => ExpandedNodeId.Parse(\"s=TD_{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\");";
+            }
+            else
+            {
+                classData += $"\n\tpublic override ExpandedNodeId BinaryEncodingId => NodeId.Null;";
+            }
+
+            if (value.NamespaceURI == "http://opcfoundation.org/XmlSchema/")
+            {
+                classData += $"\n\tpublic override ExpandedNodeId  XmlEncodingId => ExpandedNodeId.Parse(\"s=TD_{value.Attributes["Name"]}\");";
+            }
+            else
+            {
+                classData += $"\n\tpublic override ExpandedNodeId XmlEncodingId => NodeId.Null;";
+            }
+
+            //fileContents += $"\n\tExpandedNodeId override TypeId => ExpandedNodeId.Parse(@\"{xmlDocument}\");";
+
+            //Encoder function
+            classData += "\n\n\tpublic override void Encode(IEncoder encoder)\n\t{";
+            foreach (XmlNode field in value.ChildNodes)
+            {
+                if (field.Name == "opc:Field")
+                {
+                    classData += "\n\t\tencoder."
+                        + GetEncoder(field, nsPrefix) + ";";
+                }
+            }
+            classData += "\n\t}";
+
+
+            //decoder function
+            classData += "\n\n\tpublic override void Decode(IDecoder decoder)\n\t{";
+            foreach (XmlNode field in value.ChildNodes)
+            {
+                if (field.Name == "opc:Field")
+                {
+                    classData += $"\n\t\tthis.{GetCorrectedName(field)} = decoder."
+                        + GetDecoder(field, nsPrefix) + ";";
+                }
+            }
+            classData += "\n\t}";
+
+            classData += "\n}";
+            return classData;
         }
 
         private static void CreateFile(string filePath, string fileContents)
@@ -341,7 +403,7 @@ namespace Autabee.OpcToClass
             foreach (var referenceNode in filteredList)
             {
                 if (referenceNode.NodeId.IdType != IdType.String) continue;
-                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(),true);
+                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), true);
                 fileContents += $"\n\t\tpublic static readonly NodeId {funcName} = NodeId.Parse(\"{referenceNode.NodeId.ToString().Replace("\"", "\\\"")}\");";
             }
 
@@ -414,7 +476,7 @@ namespace Autabee.OpcToClass
 
                 string[] indexItems = GetIndexItems(nodeId);
 
-                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(),false);
+                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), false);
                 string nodeName = NodeIdString(nodeId, indexItems);
 
                 var data = new FunctionDefinitions($"ValueNodeEntry<{nodetype}>", funcName, indexItems, nodeName);
@@ -478,7 +540,7 @@ namespace Autabee.OpcToClass
             {
                 funcName = Regex.Replace(funcName, "\\[[0-9]*\\]|[^0-9a-z_A-Z]|^([^a-z_A-Z]*)", "");
             }
-            
+
             var index = funcName.IndexOf('[');
             while (index >= 0)
             {

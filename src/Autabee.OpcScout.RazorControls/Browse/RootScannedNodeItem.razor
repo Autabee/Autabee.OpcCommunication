@@ -1,0 +1,114 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+
+
+
+<table class="Root-Node">
+   
+    
+        <thead>
+            <tr>
+        @if (Client.Connected)
+        {
+            
+            <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="Client" WrapperTag="td" CssClass="node-text">
+                @Client.GetConnectedServer()?.ApplicationName
+            </ContextMenuTrigger>
+
+        }
+        else
+        {
+            <td class="node-text">
+            <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="Client">@Client.ApplicationDescription.ApplicationName</ContextMenuTrigger>
+        </td>
+        }
+        <td class="node-actions">
+            <button class="mdi mdi-delete Danger" @onclick=Remove />
+            @if (Client.Connected)
+            {
+                <button class="mdi mdi-lan-disconnect" @onclick=Disconnect />
+            }
+            else
+            {
+                <button class="mdi mdi-connection" @onclick=Reconnect />
+            }
+        </td>
+        </tr>
+        </thead>
+    
+    @if (Client.Connected)
+    {
+        <tbody class="node-set">
+            @if (ScannedNodes != null && ScannedNodes.Count >= 0)
+            {
+                @foreach (var node in ScannedNodes)
+                {
+
+                    <ScannedNodeItem ScannedNodeModel="@node" depth="0" Browser="Browser" />
+
+                }
+            }
+        </tbody>
+    }
+</table>
+
+
+
+@code {
+    [Parameter]
+    public NodeBrowserModel Browser { get; set; }
+    [Parameter]
+    public AutabeeManagedOpcClient Client { get; set; }
+
+    [Parameter]
+    public List<ScannedNodeModel> ScannedNodes { get; set; } = new List<ScannedNodeModel>();
+
+    protected override async void OnInitialized()
+    {
+        base.OnInitialized();
+        InvokeAsync(Initialize);
+        Browser.OnStateUpdateRoot += UpdateRoot;
+    }
+
+    public void Initialize()
+    {
+        if (Client.Connected && ScannedNodes.Count == 0)
+        {
+            var scans = Client.BrowseRoot();
+            var nodes = Client.ReadNodes(scans);
+            InvokeAsync(StateHasChanged);
+            for (var i = 0; i < scans.Count; i++)
+            {
+                var result = new ScannedNodeModel(Client, scans[i], nodes[i]);
+                result.GetChildren();
+                ScannedNodes.Add(result);
+            }
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void UpdateRoot(object sender, AutabeeManagedOpcClient client)
+    {
+        if (client == Client)
+        {
+            ScannedNodes.Clear();
+            StateHasChanged();
+            Initialize();
+        }
+    }
+
+    private void Disconnect()
+    {
+        Browser.Disconnect(Client);
+    }
+    private void Reconnect()
+    {
+        Client.Reconnect();
+        Browser.StateHasChanged();
+    }
+    private void Remove()
+    {
+        Browser.RemoveConnection(Client);
+    }
+}
+
+

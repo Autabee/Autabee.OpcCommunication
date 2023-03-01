@@ -11,7 +11,7 @@ using System.Xml;
 
 public static class OpcSharper
 {
-    public static void GenerateProject(OpcUaClientHelperApi service, GeneratorSettings settings, IAutabeeLogger logger = null)
+    public static void GenerateProject(AutabeeManagedOpcClient service, GeneratorSettings settings, IAutabeeLogger logger = null)
     {
         List<Exception> exceptions = new List<Exception>();
         if (settings == null)
@@ -45,7 +45,7 @@ public static class OpcSharper
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml(schemas[i]);
             xmls[i] = xmlDocument;
-            OpcToCSharpGenerator.GenerateTypes(xmlDocument,settings);
+            OpcToCSharpGenerator.GenerateTypeFiles(xmlDocument,settings);
         }
         logger?.Information("Type Schema updated");
         ReferenceDescriptionCollection refdesc = new ReferenceDescriptionCollection();

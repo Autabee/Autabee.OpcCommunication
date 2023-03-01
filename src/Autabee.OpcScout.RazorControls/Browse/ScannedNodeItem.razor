@@ -1,0 +1,189 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.Utility.Logger
+@using Autabee.Utility.Messaging;
+@using Opc.Ua
+@using System.Text.Json;
+
+<tr class="@ScannedNodeModel.NodeClassType" >
+    
+        <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="ScannedNodeModel" WrapperTag="td">
+
+            @if (ScannedNodeModel.RetrievedChildren
+            && ScannedNodeModel.Children.Length == 0
+            || ScannedNodeModel.Node.NodeClass == NodeClass.Method)
+            {
+            <span class="node-caret" style="margin-left:@depthString"></span>
+            }
+            else if (ScannedNodeModel.open)
+            {
+            <span class="node-caret caret-down" style="margin-left:@depthString" @onclick="Close" />
+            }
+            else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
+            {
+            <span class="node-caret caret" style="margin-left:@depthString" @onclick="Open" />
+            }
+            else
+            {
+            <span class="node-caret caret-close" style="margin-left:@depthString" @onclick="Open" />
+            }
+            <span class="node-img" style="grid-area:node-img; height:100%">
+                <NodeImage Value="ScannedNodeModel.NodeImage" />
+            </span>
+            <span class="node-text" style="grid-area:node-text">@ScannedNodeModel.Node.DisplayName</span>
+        </ContextMenuTrigger>
+    
+
+    <td class="node-actions" style="grid-area:node-actions">
+
+        <button @onclick="ReadNode" title="read node settings"><icon class="mdi mdi-tag-text" /></button>
+        @if (ScannedNodeModel.Node.NodeClass == NodeClass.Variable)
+        {
+            @if (ScannedNodeModel.Node.HasCurrentReadAccess())
+            {
+                <button @onclick="ReadValue" title="read node value"><icon class="mdi mdi-tag-arrow-left" /></button>
+            }
+            @if (ScannedNodeModel.Node.HasCurrentWriteAccess())
+            {
+                <button @onclick="WriteValue" title="write node value"><icon class="mdi mdi-tag-arrow-right" /></button>
+            }
+
+            <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
+        }
+        @if (ScannedNodeModel.Node.NodeClass == NodeClass.Method)
+        {
+            @if (ScannedNodeModel.arguments.InputArguments.Count == 0)
+            {
+                <button @onclick="OpenDirectCall" title="Call Function"><icon class="mdi mdi-function" /></button>
+            }
+            else
+            {
+                <button @onclick="OpenCall" title="read node value"><icon class="mdi mdi-function-variant" /></button>
+            }
+        }
+    </td>
+</tr>
+
+@if (ScannedNodeModel.open)
+{
+    @for (var i = 0; i < ScannedNodeModel.Children.Length; i++)
+    {
+        <ScannedNodeItem ScannedNodeModel="@(ScannedNodeModel.Children[i])" depth="@depthNext" Browser="@Browser" />
+    }
+}
+
+@code {
+    [Parameter]
+    public ScannedNodeModel ScannedNodeModel { get; set; }
+    [Parameter]
+    public int depth { get; set; }
+    [Parameter]
+    public NodeBrowserModel Browser { get; set; }
+
+    public int depthNext { get => depth + 1; }
+
+
+    public string depthString { get => (depth * 8).ToString() + "px"; }
+    private bool openedOnce { get; set; }
+    protected override async void OnInitialized()
+    {
+        base.OnInitialized();
+        ScannedNodeModel.DoneGettingChildren += UpdateState;
+        ScannedNodeModel.DeSelectEvent += DeSelect;
+        ScannedNodeModel.StateUpdated += UpdateState;
+        if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
+        { ScannedNodeModel.GetChildren(); }
+        if (ScannedNodeModel.open) openedOnce = true;
+    }
+
+    private async void Open()
+    {
+        if (!ScannedNodeModel.RetrievedChildren && !ScannedNodeModel.RetrievingChildren)
+        { ScannedNodeModel?.GetChildren(); }
+        ScannedNodeModel.Open();
+        if (ScannedNodeModel.open) openedOnce = true;
+    }
+
+    private async void OpenDirectCall()
+    {
+        if (Browser.DirectCall)
+        {
+            try
+            {
+                var result = ScannedNodeModel.Client.CallMethod(ScannedNodeModel.parent.Node.NodeId, ScannedNodeModel.Node.NodeId);
+
+                Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call succeded, output return: {0}", parameters:
+                new string[1] { JsonSerializer.Serialize(result) }));
+
+            }
+            catch (Exception e)
+            {
+                Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call failed: {0}", parameters:
+                new string[1] { e.Message }));
+            }
+        }
+        else
+        {
+            Browser.OpenCall(ScannedNodeModel);
+        }
+
+    }
+
+    private async void OpenCall()
+    {
+        //((MethodNode)ScannedNodeModel.Node).TypeId
+        Browser.OpenCall(ScannedNodeModel);
+    }
+    private async void Close()
+    {
+        ScannedNodeModel.Close();
+    }
+
+    private async void ReadValue()
+    {
+        try
+        {
+            var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Node.NodeId);
+            Message message = GetValueMessage(data);
+            Browser.ReadNodeValue(message);
+        }
+        catch (Exception e)
+        {
+            Browser.ReadNodeValue(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
+        }
+    }
+
+    private async void WriteValue()
+    {
+        Browser.WriteNodeValue(ScannedNodeModel);
+    }
+
+    private Message GetValueMessage(object value)
+    {
+        if (value == null) return new Message(level: MessageLevel.Info, text: "NULL");
+        else if (value is Dictionary<string, object> dic) return new Message(level: MessageLevel.Info, text: "{0}", JsonSerializer.Serialize(dic));
+        else if (value is object[] list) return new Message(level: MessageLevel.Info, text: "{0}", string.Join("\n", list));
+        else return new Message(level: MessageLevel.Info, text: "{0}", value?.ToString());
+    }
+
+    private async void SubscribeValue()
+    {
+        Browser.SubscriptionRequest(ScannedNodeModel);
+    }
+
+    private async void ReadNode()
+    {
+        Browser.UpdateSelectedNode(ScannedNodeModel);
+        ScannedNodeModel.NodeClassType = "Node-Selected Node";
+        StateHasChanged();
+    }
+
+    private async void DeSelect(object sender, EventArgs data)
+    {
+        ScannedNodeModel.NodeClassType = "Node";
+        StateHasChanged();
+    }
+    private async void UpdateState(object sender, EventArgs data)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+}

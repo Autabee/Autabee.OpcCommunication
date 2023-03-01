@@ -4,7 +4,12 @@ using System.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient.ManagedNode
 {
+#if NET5_0_OR_GREATER
+    public record MethodArguments
+#else
     public class MethodArguments
+#endif
+
     {
         public Type[] InputArgumentTypes { get; internal set; }
 

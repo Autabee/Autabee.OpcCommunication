@@ -1,0 +1,33 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScout.RazorControl.Browse
+@using Opc.Ua;
+
+
+<BrowseContextMenu Browser="Model" />
+
+
+<div class="OpcBrowser">
+    @if (Model.Clients != null)
+    {
+        @foreach (var client in Model.Clients)
+        {
+            <RootScannedNodeItem Browser="Model" Client=client.client ScannedNodes=client.scannedNodes />
+        }
+    }
+    else
+    {
+        <div> No Clients </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public NodeBrowserModel Model { get; set; } = new NodeBrowserModel();
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Model.OnStateHasChanged += (_,_) => InvokeAsync(StateHasChanged);
+
+    }
+}
