@@ -16,7 +16,7 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore ./src
     - name: Install maui
-      run: dotnet workload install maui --ignore-failed-sources
+      run: dotnet workload restore 
     - name: Build
       run: dotnet build ./src --no-restore
     - name: Test
