@@ -11,11 +11,13 @@ namespace Autabee.OpcScout
 		string fileName;
 
 		public DataFolder(string fileName)
-		{
+		{	
+			if (string.IsNullOrEmpty(fileName))
+				throw new System.ArgumentException("File name cannot be empty", nameof(fileName));
 			this.fileName = fileName;
 		}
 
-		public T Load()
+		public T? Load()
 		{
 			var path = Path.Combine("data", fileName + ".json");
 

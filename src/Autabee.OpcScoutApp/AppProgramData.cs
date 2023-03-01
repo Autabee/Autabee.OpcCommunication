@@ -13,6 +13,8 @@ namespace Autabee.OpcScout
 
     public AppProgramData(string fileName)
     {
+      if (string.IsNullOrEmpty(fileName))
+        throw new System.ArgumentException("File name cannot be empty", nameof(fileName));
       this.fileName = fileName;
     }
 
