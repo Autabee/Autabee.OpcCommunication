@@ -65,7 +65,8 @@ jobs:
         uses: docker/metadata-action@v4.3.0
         with:
           images: autabee/opcscout
-      - run: echo ${{ steps.meta.outputs.tags }}
+      - name: echo tags
+        run: echo ${{ steps.meta.outputs.tags }}
       - name: Build and push Docker image
         uses: docker/build-push-action@v4.0.0
         with:
@@ -80,10 +81,14 @@ jobs:
     name: Push release
     runs-on: ubuntu-latest
     steps:
-      - run: sudo apt install zip unzip
-      - run: zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
-      - run: zip opcscout-web.zip ./src/Autabee.OpcScoutWeb/bin/Release/net6.0
-      - uses: "marvinpinto/action-automatic-releases@latest"
+      - name: Install zip
+        run: sudo apt install zip unzip
+      - name: zip windows maui
+        run: zip opcscout-windowsx64-app.zip ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0win10-x64
+      - name: zip web
+        run: zip opcscout-web.zip ./src/Autabee.OpcScoutWeb/bin/Release/net6.0
+      - name: publish git
+        uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
