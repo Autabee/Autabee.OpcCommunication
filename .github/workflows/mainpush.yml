@@ -29,6 +29,8 @@ jobs:
         path: src
 
   publish-packages:
+    needs:
+      - build
     runs-on: windows-latest
     steps:
     - uses: actions/download-artifact@master
@@ -55,6 +57,8 @@ jobs:
           NO_BUILD: true
 
   push_to_registry:
+    needs:
+      - build
     name: Push Docker image to Docker Hub
     runs-on: windows-latest
     steps:      
@@ -84,6 +88,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           
   push_to_github:
+    needs:
+      - build
     name: Push release
     runs-on: windows-latest
     steps:
