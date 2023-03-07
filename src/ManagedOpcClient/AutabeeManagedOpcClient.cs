@@ -1,8 +1,8 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
-using Autabee.Utility.Logger;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,7 +19,6 @@ namespace Autabee.Communication.ManagedOpcClient
     public class AutabeeManagedOpcClient
     {
         private bool closing;
-        private readonly IAutabeeLogger logger;
         private IUserIdentity mUserIdentity;
         private ApplicationConfiguration mApplicationConfig;
         private ConfiguredEndpoint mEndpoint;
@@ -27,6 +26,7 @@ namespace Autabee.Communication.ManagedOpcClient
         private Session session;
         private string sessionName;
         private List<Subscription> subscriptions = new List<Subscription>();
+        private Logger logger;
 
         public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
         public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
@@ -74,7 +74,7 @@ namespace Autabee.Communication.ManagedOpcClient
         public Session Session { get => session; }
 
         #region Construction
-        public AutabeeManagedOpcClient(string company, string product, string directory, IAutabeeLogger logger = null)
+        public AutabeeManagedOpcClient(string company, string product, string directory, Logger logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
@@ -84,14 +84,14 @@ namespace Autabee.Communication.ManagedOpcClient
                                      directory,
                                      logger);
         }
-        public AutabeeManagedOpcClient(Stream stream, IAutabeeLogger logger = null)
+        public AutabeeManagedOpcClient(Stream stream, Logger logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
             mApplicationConfig = AutabeeManagedOpcClientExtension.CreateDefaultClientConfiguration(stream);
         }
 
-        public AutabeeManagedOpcClient(ApplicationConfiguration opcAppConfig, IAutabeeLogger logger = null)
+        public AutabeeManagedOpcClient(ApplicationConfiguration opcAppConfig, Logger logger = null)
         {
             this.logger = logger;
             mApplicationConfig = opcAppConfig;
@@ -100,16 +100,16 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Registration
 
-        public void RegisterNodeIds(ValueNodeEntryCollection preparedCollection, bool AutoReregister = true)
+        public void RegisterNodeIds(ValueNodeEntryCollection preparedCollection, bool AutoReRegister = true)
         {
-            var nodelist = preparedCollection.RegisteredNodeIds;
-            if (nodelist.Count != 0) { UnregisterNodeIds(nodelist); }
-            nodelist.Clear();
+            var nodeList = preparedCollection.RegisteredNodeIds;
+            if (nodeList.Count != 0) { UnregisterNodeIds(nodeList); }
+            nodeList.Clear();
 
-            nodelist.AddRange(RegisterNodeIds(preparedCollection.NodeIds));
+            nodeList.AddRange(RegisterNodeIds(preparedCollection.NodeIds));
             ClearNodeEntries -= preparedCollection.SessionDisconnected;
             ClearNodeEntries += preparedCollection.SessionDisconnected;
-            if (AutoReregister)
+            if (AutoReRegister)
             {
                 ReInstateNodeEntries -= preparedCollection.NewSessionEstablished;
                 ReInstateNodeEntries += preparedCollection.NewSessionEstablished;
@@ -164,7 +164,7 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 if (NoSession()) return new NodeIdCollection();
                 //Register nodes
-                var responce = session.RegisterNodes(null, nodesToRegister, out registeredNodes);
+                var response = session.RegisterNodes(null, nodesToRegister, out registeredNodes);
                 bool failRegister = false;
                 List<Exception> exceptions = new List<Exception>();
 
@@ -187,10 +187,10 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     throw new AggregateException("Failed to register the following nodes", exceptions);
                 }
-                //responce.ServiceResult;
+                //response.ServiceResult;
                 return registeredNodes;
             }
-            catch (AggregateException _)
+            catch (AggregateException)
             {
                 throw;
             }
@@ -205,14 +205,14 @@ namespace Autabee.Communication.ManagedOpcClient
         private bool NoSession() => session == null || !session.Connected || session.Disposed;
 
 
-        public void RegisterNodeId(NodeEntry nodeToRegister, bool AutoreRegister = true)
+        public void RegisterNodeId(NodeEntry nodeToRegister, bool AutoReRegister = true)
         {
             var unregistered = new NodeIdCollection() { nodeToRegister.UnregisteredNodeId };
             nodeToRegister.RegisteredNodeId = RegisterNodeIds(unregistered)[0];
             nodeToRegister.ConnectedSessionId = session.SessionId;
             ClearNodeEntries -= nodeToRegister.SessionDisconnected;
             ClearNodeEntries += nodeToRegister.SessionDisconnected;
-            if (AutoreRegister)
+            if (AutoReRegister)
             {
                 ReInstateNodeEntries -= nodeToRegister.NewSessionEstablished;
                 ReInstateNodeEntries += nodeToRegister.NewSessionEstablished;
@@ -278,7 +278,7 @@ namespace Autabee.Communication.ManagedOpcClient
         /// Establishes the connection to an OPC UA server and creates a session using an EndpointDescription.
         /// </summary>
         /// <param name="endpointDescription">The EndpointDescription of the server's endpoint</param>
-        /// <param name="userAuth">Autheticate anonymous or with username and password</param>
+        /// <param name="userAuth">Authenticate anonymous or with username and password</param>
         /// <param name="userName">The user name</param>
         /// <param name="password">The password</param>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
@@ -299,7 +299,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 mEndpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
                 mApplicationConfig.CertificateValidator.CertificateValidation += Notification_CertificateValidation;
 
-                //Creat a session name
+                //Create a session name
                 sessionName =
                     mApplicationConfig.ApplicationName +
                     "_" +
@@ -332,7 +332,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 UpdateTypeData();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //handle Exception here
                 throw;
@@ -380,7 +380,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     }
                     if (endpoint == null)
                     {
-                        throw new Exception("Server endpoint does not know an Signin endpoint");
+                        throw new Exception("Server endpoint does not know an Sign-in endpoint");
                     }
                 }
                 if (applicationConfiguration == null)
@@ -392,7 +392,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     await Connect(applicationConfiguration, endpoint, userIdentity);
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //logger?.Error("New session creation failed", e);
                 //handle Exception here
@@ -474,7 +474,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     timer?.Dispose();
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //handle Exception here
                 throw;
@@ -495,7 +495,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     throw new Exception("No connection information available");
                 }
 
-                //Creat a session name
+                //Create a session name
                 sessionName =
                 mApplicationConfig.ApplicationName +
                 "_" +
@@ -523,7 +523,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 UpdateTypeData();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 //handle Exception here
                 throw;
@@ -594,7 +594,6 @@ namespace Autabee.Communication.ManagedOpcClient
 
         void KeepAliveStillActiveCheck(object state)
         {
-            Console.WriteLine("KeepStrillAlivePing");
             if (state is Session session)
             {
                 if (session.LastKeepAliveTime.AddMilliseconds(session.KeepAliveInterval * 2).ToUniversalTime() <= DateTime.UtcNow)
@@ -759,8 +758,8 @@ namespace Autabee.Communication.ManagedOpcClient
 
                     while (continuationPoints.Count > 0)
                     {
-                        var nextresponse = await session.BrowseNextAsync(null, false, continuationPoints, token);
-                        results = nextresponse.Results;
+                        var nextResponse = await session.BrowseNextAsync(null, false, continuationPoints, token);
+                        results = nextResponse.Results;
                         ClientBase.ValidateResponse(results, continuationPoints);
                         references.AddRange(GetDescriptions(results));
                         continuationPoints = GetNewContinuationPoints(continuationPoints, results);
@@ -833,16 +832,16 @@ namespace Autabee.Communication.ManagedOpcClient
 
                     while (continuationPoints.Count > 0)
                     {
-                        var scanpoints = new ByteStringCollection(continuationPoints.Values);
+                        var scanPoints = new ByteStringCollection(continuationPoints.Values);
 
-                        var nextresponse = await session.BrowseNextAsync(null, false, scanpoints, token);
-                        results = nextresponse.Results;
-                        ClientBase.ValidateResponse(results, scanpoints);
+                        var nextResponse = await session.BrowseNextAsync(null, false, scanPoints, token);
+                        results = nextResponse.Results;
+                        ClientBase.ValidateResponse(results, scanPoints);
                         //references.AddRange(GetDescriptions(results));
-                        Dictionary<BrowseDescription, byte[]> revisedContiuationPoints = new Dictionary<BrowseDescription, byte[]>(
+                        Dictionary<BrowseDescription, byte[]> revisedContinuationPoints = new Dictionary<BrowseDescription, byte[]>(
                             );
-                        var keyarray = continuationPoints.Keys.ToArray();
-                        for (int ii = 0; ii < keyarray.Length; ii++)
+                        var keyArray = continuationPoints.Keys.ToArray();
+                        for (int ii = 0; ii < keyArray.Length; ii++)
                         {
                             if (StatusCode.IsBad(results[ii].StatusCode))
                             {
@@ -854,13 +853,13 @@ namespace Autabee.Communication.ManagedOpcClient
                             }
                             if (results[ii].ContinuationPoint != null)
                             {
-                                revisedContiuationPoints.Add(
-                                                                            keyarray[ii],
+                                revisedContinuationPoints.Add(
+                                                                            keyArray[ii],
                                                                             results[ii].ContinuationPoint);
                             }
                         }
 
-                        continuationPoints = revisedContiuationPoints;
+                        continuationPoints = revisedContinuationPoints;
                     }
 
                     // check if unprocessed results exist.
@@ -884,7 +883,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 //We need to browse for property (input and output arguments)
                 //Create a collection for the browse results
                 ReferenceDescriptionCollection referenceDescriptionCollection;
-                ReferenceDescriptionCollection nextreferenceDescriptionCollection;
+                ReferenceDescriptionCollection nextReferenceDescriptionCollection;
                 //Create a continuationPoint
                 byte[] continuationPoint;
                 byte[] revisedContinuationPoint;
@@ -908,12 +907,12 @@ namespace Autabee.Communication.ManagedOpcClient
                         false,
                         continuationPoint,
                         out revisedContinuationPoint,
-                        out nextreferenceDescriptionCollection);
-                    referenceDescriptionCollection.AddRange(nextreferenceDescriptionCollection);
+                        out nextReferenceDescriptionCollection);
+                    referenceDescriptionCollection.AddRange(nextReferenceDescriptionCollection);
                     continuationPoint = revisedContinuationPoint;
                 }
 
-                //Gaurd Clause
+                //Guard Clause
                 if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
                 {
                     throw new Exception("No Parent Id Found");
@@ -924,7 +923,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 }
                 return referenceDescriptionCollection[0];
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }
@@ -961,11 +960,11 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 
         private static ByteStringCollection GetNewContinuationPoints(
-            ByteStringCollection continuationpoints,
+            ByteStringCollection continuationPoints,
             BrowseResultCollection results)
         {
-            var revisedContiuationPoints = new ByteStringCollection();
-            for (int ii = 0; ii < continuationpoints.Count; ii++)
+            var revisedContinuationPoints = new ByteStringCollection();
+            for (int ii = 0; ii < continuationPoints.Count; ii++)
             {
                 if (StatusCode.IsBad(results[ii].StatusCode))
                 {
@@ -975,10 +974,10 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     continue;
                 }
-                if (results[ii].ContinuationPoint != null) { revisedContiuationPoints.Add(results[ii].ContinuationPoint); }
+                if (results[ii].ContinuationPoint != null) { revisedContinuationPoints.Add(results[ii].ContinuationPoint); }
             }
 
-            return revisedContiuationPoints;
+            return revisedContinuationPoints;
         }
 
         private static IEnumerable<byte[]> GetContinuationPoints(BrowseResponse results) => GetContinuationPoints(
@@ -1161,7 +1160,7 @@ namespace Autabee.Communication.ManagedOpcClient
             
 
 
-            //Read the desired node first and chekc if it's a variable
+            //Read the desired node first and check if it's a variable
             Node node = session.ReadNode(nodeIdString);
             if (node.NodeClass != NodeClass.Variable)
             {
@@ -1174,7 +1173,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
             //Browse for HasEncoding
             ReferenceDescriptionCollection refDescCol;
-            byte[] continuationPoint;
+            //byte[] continuationPoint;
             session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasEncoding, true, 0, out _, out refDescCol);
 
             //Check For found reference
@@ -1212,7 +1211,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 DataValue resultValue = session.ReadValue(nodeId);
                 return resultValue.Value.ToString();
                 //parseString;
-                //Browse for ComponentOf from last browsing result inversly
+                //Browse for ComponentOf from last browsing result inversely
                 //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
 
             }
@@ -1221,7 +1220,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 //var resultValue = session.ReadValue();
                 return nodeId.ToString();
                 //parseString;
-                //Browse for ComponentOf from last browsing result inversly
+                //Browse for ComponentOf from last browsing result inversely
                 //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
             }
 
@@ -1235,7 +1234,7 @@ namespace Autabee.Communication.ManagedOpcClient
             //  throw ex;
             //}
 
-            //Read from node id of the found HasCompoment reference to get a XML file (as HEX string) containing struct/UDT information
+            //Read from node id of the found HasComponent reference to get a XML file (as HEX string) containing struct/UDT information
 
             //nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
             //resultValue = session.ReadValue(nodeId);
@@ -1271,7 +1270,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext)),
                 ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext)),
                 ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext)),
-                _ => throw new Exception("Unkown encoding"),
+                _ => throw new Exception("Unknown encoding"),
             };
         }
 
@@ -1283,10 +1282,10 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 foreach (XmlNode child in item.GetElementsByTagName("opc:StructuredType"))
                 {
-                    var nodetype = new NodeTypeData();
-                    nodetype.Name = GetCorrectedName(child);
-                    nodetype.TypeName = GetCorrectedName(child);
-                    nodetype.ChildData = new List<NodeTypeData>();
+                    var nodeType = new NodeTypeData();
+                    nodeType.Name = GetCorrectedName(child);
+                    nodeType.TypeName = GetCorrectedName(child);
+                    nodeType.ChildData = new List<NodeTypeData>();
                     foreach (XmlNode child2 in child.ChildNodes)
                     {
                         if (child2.Name == "opc:Field")
@@ -1295,22 +1294,22 @@ namespace Autabee.Communication.ManagedOpcClient
                             childNode.Name = GetCorrectedName(child2);
                             childNode.TypeName = GetCorrectedTypeName(child2);
                             childNode.ChildData = new List<NodeTypeData>();
-                            nodetype.ChildData.Add(childNode);
+                            nodeType.ChildData.Add(childNode);
                         }
                     }
-                    dict.Add(nodetype.Name, nodetype);
+                    dict.Add(nodeType.Name, nodeType);
                 }
             }
 
             foreach (var item in dict)
             {
                 var type = item.Value;
-                AddChilderen(dict, type);
+                AddChildren(dict, type);
             }
             return dict;
         }
 
-        private static void AddChilderen(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
+        private static void AddChildren(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
         {
             for (int i = 0; i < type.ChildData.Count; i++)
             {
@@ -1320,7 +1319,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     type.ChildData[i].ChildData = dict[child.TypeName].ChildData;
                     foreach (var item in type.ChildData[i].ChildData)
                     {
-                        AddChilderen(dict, item);
+                        AddChildren(dict, item);
                     }
                 }
             }
@@ -1397,12 +1396,12 @@ namespace Autabee.Communication.ManagedOpcClient
                 for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
                 return nodeValues;
             }
-            catch (Exception _)
+            catch (Exception)
             {
-                throw AggrigateAllRecordCreationErrors(list, tempResult);
+                throw AggregateAllRecordCreationErrors(list, tempResult);
             }
         }
-        public AggregateException AggrigateAllRecordCreationErrors(ValueNodeEntryCollection list, List<object> tempResult)
+        public AggregateException AggregateAllRecordCreationErrors(ValueNodeEntryCollection list, List<object> tempResult)
         {
             List<Exception> exps = new List<Exception>();
             for (int i = 0; i < tempResult.Count; i++)
@@ -1418,7 +1417,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             return new AggregateException(exps);
         }
-        public AggregateException AggrigateAllRecordCreationErrors(ValueNodeEntryCollection list, DataValueCollection tempResult)
+        public AggregateException AggregateAllRecordCreationErrors(ValueNodeEntryCollection list, DataValueCollection tempResult)
         {
             List<Exception> exps = new List<Exception>();
             for (int i = 0; i < tempResult.Count; i++)
@@ -1442,9 +1441,9 @@ namespace Autabee.Communication.ManagedOpcClient
                 for (int i = 0; i < tempResult.Count; i++) { nodeValues[i] = CreateNodeValue(list[i], tempResult[i]); }
                 return nodeValues;
             }
-            catch (Exception _)
+            catch (Exception)
             {
-                throw AggrigateAllRecordCreationErrors(list, tempResult);
+                throw AggregateAllRecordCreationErrors(list, tempResult);
             }
         }
 
@@ -1504,9 +1503,9 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public IEncodeable ConstructEncodable(ValueNodeEntry entry, byte[] encodedData)
         {
-            IEncodeable objresult = (IEncodeable)entry.Constructor.Invoke(new object[0]);
-            objresult.Decode(new BinaryDecoder(encodedData, session.MessageContext));
-            return objresult;
+            IEncodeable objResult = (IEncodeable)entry.Constructor.Invoke(new object[0]);
+            objResult.Decode(new BinaryDecoder(encodedData, session.MessageContext));
+            return objResult;
         }
 
         #endregion Entry Read
@@ -1691,14 +1690,14 @@ namespace Autabee.Communication.ManagedOpcClient
         /// Get information about a method's input and output arguments
         /// </summary>
         /// <param name="nodeIdString">The node Id of a method as strings</param>
-        /// <returns>Argument informations as strings</returns>
+        /// <returns>Argument information's as strings</returns>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
         public MethodArguments GetMethodArguments(string nodeIdString)
             => GetMethodArguments(new NodeId(nodeIdString));
 
         public MethodArguments GetMethodArguments(NodeId nodeId)
         {
-            var methode = new MethodArguments();
+            var method = new MethodArguments();
 
             try
             {
@@ -1709,7 +1708,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 //We need to browse for property (input and output arguments)
                 //Create a collection for the browse results
                 ReferenceDescriptionCollection referenceDescriptionCollection;
-                ReferenceDescriptionCollection nextreferenceDescriptionCollection;
+                ReferenceDescriptionCollection nextReferenceDescriptionCollection;
                 //Create a continuationPoint
                 byte[] continuationPoint;
                 byte[] revisedContinuationPoint;
@@ -1735,15 +1734,15 @@ namespace Autabee.Communication.ManagedOpcClient
                         false,
                         continuationPoint,
                         out revisedContinuationPoint,
-                        out nextreferenceDescriptionCollection);
-                    referenceDescriptionCollection.AddRange(nextreferenceDescriptionCollection);
+                        out nextReferenceDescriptionCollection);
+                    referenceDescriptionCollection.AddRange(nextReferenceDescriptionCollection);
                     continuationPoint = revisedContinuationPoint;
                 }
 
-                //Gaurd Clause
+                //Guard Clause
                 if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
                 {
-                    return methode;
+                    return method;
                 }
 
                 foreach (ReferenceDescription refDesc in referenceDescriptionCollection)
@@ -1753,9 +1752,9 @@ namespace Autabee.Communication.ManagedOpcClient
                     if (refDesc.NodeClass != NodeClass.Variable)
                         continue;
                     if (refDesc.BrowseName.Name == "InputArguments")
-                        arguments = methode.InputArguments;
+                        arguments = method.InputArguments;
                     else if (refDesc.BrowseName.Name == "OutputArguments")
-                        arguments = methode.OutputArguments;
+                        arguments = method.OutputArguments;
                     else
                         continue;
 
@@ -1785,13 +1784,13 @@ namespace Autabee.Communication.ManagedOpcClient
                     Type[] argumentTypes;
                     if (refDesc.BrowseName.Name == "InputArguments")
                     {
-                        methode.InputArgumentTypes = new Type[arguments.Count];
-                        argumentTypes = methode.InputArgumentTypes;
+                        method.InputArgumentTypes = new Type[arguments.Count];
+                        argumentTypes = method.InputArgumentTypes;
                     }
                     else
                     {
-                        methode.OutputArgumentTypes = new Type[arguments.Count];
-                        argumentTypes = methode.OutputArgumentTypes;
+                        method.OutputArgumentTypes = new Type[arguments.Count];
+                        argumentTypes = method.OutputArgumentTypes;
                     }
                     for (int i = 0; i < arguments.Count; i++)
                     {
@@ -1801,7 +1800,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     }
                 }
 
-                return methode;
+                return method;
             }
             catch (Exception e)
             {
@@ -1809,12 +1808,20 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, params object[] inputArguments)
-            => Session.Call(
+        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, ArgumentCollection inputArguments)
+            => this.CallMethod(
             objectNodeId,
             methodNodeId,
-            inputArguments ?? new object[0]);
+            inputArguments == null ? new object[0] : inputArguments.Select(o => o.Value).ToArray());
 
+        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, params object[] inputArguments)
+        {
+            if (inputArguments is null) inputArguments = new object[0];
+            return Session.Call(
+            objectNodeId,
+            methodNodeId,
+            inputArguments);
+        }
 
 
 
@@ -1823,8 +1830,8 @@ namespace Autabee.Communication.ManagedOpcClient
             Func<IList<object>> task = delegate ()
             {
                 RequestHeader requestHeader = new RequestHeader();
-                var responceHeader = Session.Call(requestHeader, methodRequests, out var results, out var diagnotics);
-                ValidateResponse(diagnotics);
+                var responseHeader = Session.Call(requestHeader, methodRequests, out var results, out var diagnostics);
+                ValidateResponse(diagnostics);
 
                 object[] output = new object[results.Count];
 
@@ -1859,7 +1866,7 @@ namespace Autabee.Communication.ManagedOpcClient
         #region Subscription
 
         /// <summary>
-        /// Creats a Subscription object to a server
+        /// Creates a Subscription object to a server
         /// </summary>
         /// <param name="publishingInterval">The publishing interval</param>
         /// <returns>Subscription</returns>
@@ -2010,11 +2017,11 @@ namespace Autabee.Communication.ManagedOpcClient
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, samplingInterval, queueSize, discardOldest);
             if (handler != null)
             {
-                monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, handler);
+                monitoredItem.Notification += (sender, arg) => MonitoredNode(nodeEntry, arg, handler);
             }
             if (globalCall)
             {
-                monitoredItem.Notification += (sender, arg) => MoniteredNode(nodeEntry, arg, NodeChangedNotification);
+                monitoredItem.Notification += (sender, arg) => MonitoredNode(nodeEntry, arg, NodeChangedNotification);
             }
 
             return monitoredItem;
@@ -2030,11 +2037,11 @@ namespace Autabee.Communication.ManagedOpcClient
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, samplingInterval, queueSize, discardOldest);
             if (handler != null)
             {
-                monitoredItem.Notification += (sender, arg) => MoniteredNode(sender, arg, handler);
+                monitoredItem.Notification += (sender, arg) => MonitoredNode(sender, arg, handler);
             }
             if (globalCall)
             {
-                monitoredItem.Notification += (sender, arg) => MoniteredNode(sender, arg, NodeChangedNotification);
+                monitoredItem.Notification += (sender, arg) => MonitoredNode(sender, arg, NodeChangedNotification);
             }
 
             return monitoredItem;
@@ -2065,25 +2072,25 @@ namespace Autabee.Communication.ManagedOpcClient
             return monitoredItem;
         }
 
-        public void MoniteredNode(
+        public void MonitoredNode(
                 MonitoredItem monitorItem,
                 MonitoredItemNotificationEventArgs arg,
-                MonitoredNodeValueEventHandler handeler)
+                MonitoredNodeValueEventHandler handler)
         {
             var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
-            handeler.Invoke(monitorItem, value);
+            handler.Invoke(monitorItem, value);
         }
 
-        public void MoniteredNode(
+        public void MonitoredNode(
                 MonitoredItem monitorItem,
                 MonitoredItemNotificationEventArgs arg,
-                MonitoredNodeValueRecordEventHandler handeler)
+                MonitoredNodeValueRecordEventHandler handler)
         {
             var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
-            handeler.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
+            handler.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
         }
 
-        public void MoniteredNode(
+        public void MonitoredNode(
             ValueNodeEntry entry,
             MonitoredItemNotificationEventArgs arg,
             MonitoredNodeValueRecordEventHandler handler)
@@ -2104,13 +2111,13 @@ namespace Autabee.Communication.ManagedOpcClient
                 }
                 else
                 {
-                    logger.Error($"No Decoding methode for monitored item {entry.NodeString}");
+                    logger.Error($"No Decoding method for monitored item {entry.NodeString}");
                 }
             }
         }
 
         /// <summary>
-        /// Removs a monitored item from an existing subscription
+        /// Removes a monitored item from an existing subscription
         /// </summary>
         /// <param name="subscription">The subscription</param>
         /// <param name="monitoredItem">The item</param>

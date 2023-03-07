@@ -1,6 +1,5 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
-using Autabee.Utility.Logger;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;
@@ -28,7 +27,7 @@ namespace Autabee.Communication.ManagedOpcClient
     {
         #region Defaults
         public static ApplicationConfiguration GetClientConfiguration(
-            string company, string product, string directory, IAutabeeLogger logger = null)
+            string company, string product, string directory, Serilog.Core.Logger logger = null)
         {
             var error = new System.Collections.Generic.List<Exception>();
             if (string.IsNullOrWhiteSpace(company)) error.Add(new ArgumentNullException(nameof(company)));
@@ -53,7 +52,7 @@ namespace Autabee.Communication.ManagedOpcClient
             return configuration.ApplicationConfiguration;
         }
 
-        internal static void CreateDefaultConfiguration(string company, string product, string directory, IAutabeeLogger logger, string combined)
+        internal static void CreateDefaultConfiguration(string company, string product, string directory, Serilog.Core.Logger logger, string combined)
         {
             logger?.Warning("File {0} not found. recreating it using embedded default.", null, combined);
             using (Stream resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("Autabee.Communication.ManagedOpcClient.DefaultOpcClient.Config.xml"))

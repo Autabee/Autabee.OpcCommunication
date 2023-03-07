@@ -2,12 +2,12 @@
 @using Autabee.OpcScout.Data;
 @using Autabee.OpcScout.MBRazorControl.Dialoges;
 @using Autabee.OpcScout.RazorControl;
-@using Autabee.Utility.Logger;
 @using Opc.Ua;
 @using System.Security.Cryptography.X509Certificates
 @using System.Text.RegularExpressions;
+@using Serilog.Core;
 
-@inject IAutabeeLogger logger
+@inject Logger logger
 @inject OpcScoutPersistentData backend
 @inject NavigationManager Navigation
 @inject ApplicationConfiguration config

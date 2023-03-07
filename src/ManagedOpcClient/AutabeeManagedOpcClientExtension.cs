@@ -1,6 +1,5 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
-using Autabee.Utility.Logger;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;

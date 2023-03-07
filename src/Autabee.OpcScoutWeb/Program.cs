@@ -2,10 +2,10 @@ using Autabee.Communication.ManagedOpcClient;
 using Autabee.OpcScout;
 using Autabee.OpcScout.Data;
 using Autabee.OpcScout.RazorControl;
-using Autabee.Utility.Logger;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Services;
+using Serilog;
 using System.Reflection;
 
 namespace Autabee.OpcScoutWeb
@@ -76,8 +76,20 @@ namespace Autabee.OpcScoutWeb
                 NavLinked = true
                 
             });
+
+            builder.Services.AddScoped(o =>
+            {
+                var logger = new Serilog.LoggerConfiguration()
+                    .MinimumLevel.Verbose()
+                    .WriteTo.Sink(o.GetRequiredService<InMemoryLog>())
+                    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+                    .WriteTo.Console()
+                    .CreateLogger();
+                return logger;
+            });
+
+
             builder.Services.AddScoped<InMemoryLog>();
-            builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));
             builder.Services.AddSingleton<OpcScoutPersistentData>();
 
             builder.Services.AddScoped<IPersistentProgramData<List<EndpointRecord>>>(o => new DataFolder<List<EndpointRecord>>("EndpointsRecord"));

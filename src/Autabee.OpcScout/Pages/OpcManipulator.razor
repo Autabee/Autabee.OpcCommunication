@@ -3,14 +3,17 @@
 @using Autabee.OpcScout.Data;
 @using Autabee.OpcScout.MBRazorControl.Dialoges;
 @using Autabee.OpcScout.RazorControl
+@using Autabee.Utility.Logger;
 @using Opc.Ua;
 @using Autabee.Utility.Messaging;
 @using System.Text.Json;
 @using System.Linq;
+@using Serilog.Core;
 
 @inject OpcScoutPersistentData controlBackend
 @inject IJSRuntime _jsRuntime
-@inject InMemoryLog logger
+@inject Logger logger
+@inject InMemoryLog messageStore;
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @page "/Opc/Manipulation"
@@ -42,12 +45,12 @@
 
         <div class="InnerItem">
             @*@if (log){*@
-            @foreach (var item in logger.Messages.Where(o => (((ushort)o.message.Level & (ushort)MessageFilter.Debug) != 0)).Reverse())
+            @foreach (var item in messageStore.Messages.AsEnumerable().Reverse())
             {
                 <div class="logitem logitem-@item.message.Level.ToString()">
-                    <span class="logitemtime">[@item.message.Time.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
-                    <span class=@item.MessageClass>@item.message.ToString()</span>
-                    @if (item.MultiLine || item.message.ToString().Length > 70)
+                    <span class="logitemtime">[@item.message.Timestamp.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
+                    <span class=@item.MessageClass>@item.message.RenderMessage()</span>
+                    @if (item.MultiLine || item.message.RenderMessage().Length > 80)
                     {
                         @if (item.ShowFullMessage)
                         {
@@ -111,7 +114,7 @@
         nodeBrowser.OnNodeRead += (sender, args) => { logger.Log(args); };
         nodeBrowser.OnOpenCall += OpenCallDialog;
         nodeBrowser.OnOpenWrite += OpenWriteDialog;
-        logger.MessageUpdate += Logger_MessageUpdate;
+        messageStore.MessageUpdate += Logger_MessageUpdate;
     }
 
     private void OpenLog()
@@ -172,7 +175,7 @@
         }
         catch (Exception e)
         {
-            logger.Log(new Message(text: "Failed to complete write dialoge: {}", parameters: e.Message), e);
+            logger.Log(new Message(exception: e , text: "Failed to complete write dialoge: {}", parameters: e.Message));
             return;
         }
     }

@@ -1,6 +1,5 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
-using Autabee.Utility.Logger;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;
@@ -33,6 +32,18 @@ namespace Autabee.Communication.ManagedOpcClient
            new NodeId(methodNodeString),
            inputArguments);
 
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, MethodNodeEntry methodEntry, params object[] inputArguments)
+            => client.CallMethod(
+           new NodeId(objectNodeString),
+           methodEntry.GetNodeId(),
+           inputArguments);
+
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeEntry objectEntry, string methodNodeString, params object[] inputArguments)
+            => client.CallMethod(
+           objectEntry.GetNodeId(),
+           new NodeId(methodNodeString),
+           inputArguments);
+
         public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeEntry objectEntry, MethodNodeEntry methodEntry, params object[] inputArguments)
             => client.CallMethod(
             objectEntry.GetNodeId(),
@@ -40,20 +51,15 @@ namespace Autabee.Communication.ManagedOpcClient
             inputArguments);
 
 
-        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeId methodNodeId, ArgumentCollection inputArguments)
-        {
-            return client.CallMethod(
-            (NodeId)client.GetParent(methodNodeId).NodeId,
-            methodNodeId,
-            inputArguments.Select(o => o.Value).ToArray());
-        }
 
+        [Obsolete("Use CallMethod with parent node and method node instead as this does not require a session browse call.")]
         public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeId methodNodeId, params object[] args)
         => client.CallMethod(
             (NodeId)client.GetParent(methodNodeId).NodeId,
             methodNodeId,
             args ?? new object[0]);
 
+        
 
         public static IList<object> CallMethods(this AutabeeManagedOpcClient client, IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
         {

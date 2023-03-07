@@ -2,11 +2,11 @@
 using Autabee.OpcScout;
 using Autabee.OpcScout.Data;
 using Autabee.OpcScout.RazorControl;
-using Autabee.Utility.Logger;
 using Microsoft.AspNetCore.Components.WebView.Maui;
 using Microsoft.Win32;
 using MudBlazor.Services;
 using System.Reflection;
+using Serilog;
 
 namespace Autabee.OpcScoutApp
 {
@@ -27,12 +27,10 @@ namespace Autabee.OpcScoutApp
 			int res = 0;
 			try
 			{
-
 				res = (int)Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "AppsUseLightTheme", -1);
 			}
-			catch (Exception e)
-			{
-				//Exception Handling     
+			catch (Exception)
+			{ 
 			}
 #endif
 			builder.Services.AddScoped(o => new UserTheme()
@@ -67,8 +65,16 @@ namespace Autabee.OpcScoutApp
 
 
 			builder.Services.AddScoped<InMemoryLog>();
-			builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));
-			builder.Services.AddSingleton<OpcScoutPersistentData>();
+            builder.Services.AddScoped(o =>
+            {
+                var logger = new Serilog.LoggerConfiguration()
+                    .MinimumLevel.Verbose()
+                    .WriteTo.Sink(o.GetRequiredService<InMemoryLog>())
+                    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+                    .CreateLogger();
+                return logger;
+            });
+            builder.Services.AddSingleton<OpcScoutPersistentData>();
 			builder.Services.AddScoped<IPersistentProgramData<List<EndpointRecord>>>(o => new AppProgramData<List<EndpointRecord>>("EndpointsRecord"));
 #if DEBUG
 			builder.Services.AddBlazorWebViewDeveloperTools();
