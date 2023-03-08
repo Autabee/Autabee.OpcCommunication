@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Autabee.Communication.ManagedOpcClient.Utilities;
+using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using System;
 using System.Collections.Generic;

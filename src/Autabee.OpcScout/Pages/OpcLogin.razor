@@ -146,7 +146,7 @@ else
             dropSelectedEndpoint = savedEndpoints.First();
         }
     }
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         Client.CertificateValidationNotification -= CertificateValidation;
     }
@@ -185,7 +185,7 @@ else
         dropSelectedEndpoint = selected;
     }
 
-    public async void SaveAndConnect(EndpointDescription endpoint)
+    public void SaveAndConnect(EndpointDescription endpoint)
     {
         var endpointRecord = new EndpointRecord()
             {
@@ -199,7 +199,7 @@ else
         Connect(endpoint);
     }
 
-    public async void Connect()
+    public void Connect()
     {
         if (dropSelectedEndpoint != null)
         {
@@ -269,7 +269,7 @@ else
         }
     }
 
-    public async void GetEnpoints()
+    public void GetEnpoints()
     {
         messageTitle = string.Empty;
         Stack<string> stackSearch = new Stack<string>();
@@ -374,12 +374,11 @@ else
                 {
                     //OpcUaClientHelperApi.ValidateCertificate(cert);
                     validator.Validate(cert);
-                    CertAccepted[i] = (true);
+                    CertAccepted[i] = true;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-
-                    CertAccepted[i] = (false);
+                    CertAccepted[i] = false;
                 }
             }
         }

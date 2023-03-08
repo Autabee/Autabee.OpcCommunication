@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;
@@ -28,6 +29,110 @@ namespace Autabee.Communication.ManagedOpcClient
 {
     public static partial class AutabeeManagedOpcClientExtension
     {
+        #region Defaults
+        public static ApplicationConfiguration GetClientConfiguration(
+            string company, string product, string directory, Serilog.Core.Logger logger = null)
+        {
+            var error = new System.Collections.Generic.List<Exception>();
+            if (string.IsNullOrWhiteSpace(company)) error.Add(new ArgumentNullException(nameof(company)));
+            if (string.IsNullOrWhiteSpace(product)) error.Add(new ArgumentNullException(nameof(product)));
+            if (string.IsNullOrWhiteSpace(directory)) error.Add(new ArgumentNullException(nameof(directory)));
+            if (error.Count() != 0) { throw new AggregateException(error); }
+
+            ApplicationInstance configuration = new ApplicationInstance();
+            configuration.ApplicationType = ApplicationType.Client;
+            configuration.ConfigSectionName = product;
+
+            var combined = Path.Combine(directory, product + ".Config.xml");
+
+            if (!File.Exists(combined))
+            {
+                CreateDefaultConfiguration(company, product, directory, logger, combined);
+            }
+
+            configuration.LoadApplicationConfiguration(combined, false).Wait();
+            configuration.CheckApplicationInstanceCertificate(false, 0).Wait();
+
+            return configuration.ApplicationConfiguration;
+        }
+
+        internal static void CreateDefaultConfiguration(string company, string product, string directory, Serilog.Core.Logger logger, string combined)
+        {
+            logger?.Warning("File {0} not found. recreating it using embedded default.", null, combined);
+            using (Stream resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("Autabee.Communication.ManagedOpcClient.DefaultOpcClient.Config.xml"))
+            {
+                using (StreamReader reader = new StreamReader(resource))
+                {
+                    string result = reader.ReadToEnd();
+                    result = result.Replace("productref", product);
+                    result = result.Replace("companyref", company);
+                    Directory.CreateDirectory(directory);
+                    File.WriteAllText(combined, result);
+                    logger?.Warning("File {0} Created and updated with ({1}, {2}).", null, combined, product, company);
+
+                }
+            }
+        }
+
+        public static ApplicationConfiguration CreateDefaultClientConfiguration(Stream configStream)
+        {
+
+            ApplicationInstance configuration = new ApplicationInstance();
+            configuration.ApplicationType = ApplicationType.Client;
+            configuration.LoadApplicationConfiguration(configStream, false).Wait();
+            configuration.CheckApplicationInstanceCertificate(false, 2048).Wait();
+
+            return configuration.ApplicationConfiguration;
+        }
+
+        public static X509Certificate2 CreateDefaultClientCertificate(ApplicationConfiguration configuration)
+        {
+            // X509Certificate2 clientCertificate;
+            ICertificateBuilder builder = CertificateBuilder.Create($"cn={configuration.ApplicationName}");
+            builder = builder.SetHashAlgorithm(System.Security.Cryptography.HashAlgorithmName.SHA256);
+            builder = (ICertificateBuilder)builder.SetRSAKeySize(2048);
+            builder = builder.SetLifeTime(24);
+            builder = builder.CreateSerialNumber();
+            builder = builder.SetNotBefore(DateTime.Now);
+
+#if NET48_OR_GREATER || NET5_0_OR_GREATER
+            builder = builder.AddExtension(GetLocalIpData(configuration.ApplicationUri));
+#endif
+            
+            var clientCertificate = builder.CreateForRSA();
+
+            clientCertificate.AddToStore(
+                configuration.SecurityConfiguration.ApplicationCertificate.StoreType,
+                configuration.SecurityConfiguration.ApplicationCertificate.StorePath);
+            return clientCertificate;
+        }
+        #endregion Defaults
+
+#if NET48_OR_GREATER || NET6_0_OR_GREATER
+        private static X509Extension GetLocalIpData(string applicationUri)
+        {
+            var abuilder = new SubjectAlternativeNameBuilder();
+            List<string> localIps = new List<string>();
+            abuilder.AddUri(new Uri(applicationUri));
+            abuilder.AddDnsName(Dns.GetHostName());
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            bool found = false;
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    abuilder.AddIpAddress(ip);
+                    found = true;
+                }
+            }
+            if (!found)
+            {
+                throw new Exception("Local IP Address Not Found!");
+            }
+            return abuilder.Build();
+        }
+#endif
+
         #region xml
         public static string[] GetServerTypeSchema(this AutabeeManagedOpcClient client, bool all = false)
         {
@@ -88,6 +193,58 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #endregion xml
 
+        #region Browsing
+        
+        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, ReferenceDescription refDesc) 
+            =>  client.Session != null
+                ? client.BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, client.Session.NamespaceUris))
+                : throw new Exception("BadNotConnected");
+
+        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, NodeId node) => client.BrowseNode(
+            new BrowseDescriptionCollection() { BrowseHelperFunctions.GetChildrenBrowseDescription(node) });
+
+        public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client,
+            ReferenceDescription node,CancellationToken token)
+            =>  client.Session != null
+                ? await client.AsyncBrowseNode(ExpandedNodeId.ToNodeId(node.NodeId, client.Session.NamespaceUris), token)
+                : throw new Exception("BadNotConnected");
+
+
+        public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client, NodeId node, CancellationToken token)
+        {
+            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection()
+            {
+                BrowseHelperFunctions.GetChildrenBrowseDescription(node)
+            };
+            return await client.AsyncBrowseNode(nodesToBrowse, token);
+        }
+        #endregion
+
+
+        #region 
+        public static ReferenceDescriptionCollection BrowseRoot(this AutabeeManagedOpcClient client)
+            => client.BrowseNode(new BrowseDescriptionCollection() { BrowseHelperFunctions.GetChildrenBrowseDescription(ObjectIds.RootFolder) });
+
+
+        public static ReferenceDescription GetParent(this AutabeeManagedOpcClient client, NodeId nodeId)
+        {
+            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection()
+            {
+                BrowseHelperFunctions.GetParentBrowseDescription(nodeId)
+            };
+            var referenceDescriptionCollection = client.BrowseNode(nodesToBrowse);
+            //Guard Clause
+            if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count == 0)
+            {
+                throw new Exception("No Parent Id Found");
+            }
+            if (referenceDescriptionCollection.Count > 1)
+            {
+                throw new Exception("Multiple Parent Id Found");
+            }
+            return referenceDescriptionCollection[0];
+        }
+        #endregion
 
         #region Typing
         public static NodeTypeData GetNodeTypeEncoding(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId)
@@ -181,6 +338,116 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         #endregion
 
+        #region Methods
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, string methodNodeString, params object[] inputArguments)
+            => client.CallMethod(
+           new NodeId(objectNodeString),
+           new NodeId(methodNodeString),
+           inputArguments);
 
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, MethodNodeEntry methodEntry, params object[] inputArguments)
+            => client.CallMethod(
+           new NodeId(objectNodeString),
+           methodEntry.GetNodeId(),
+           inputArguments);
+
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeEntry objectEntry, string methodNodeString, params object[] inputArguments)
+            => client.CallMethod(
+           objectEntry.GetNodeId(),
+           new NodeId(methodNodeString),
+           inputArguments);
+
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeEntry objectEntry, MethodNodeEntry methodEntry, params object[] inputArguments)
+            => client.CallMethod(
+            objectEntry.GetNodeId(),
+            methodEntry.GetNodeId(),
+            inputArguments);
+
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeId objectNodeId, NodeId methodNodeId, ArgumentCollection inputArguments)
+            => client.CallMethod(
+            objectNodeId,
+            methodNodeId,
+            inputArguments == null ? new object[0] : inputArguments.Select(o => o.Value).ToArray());
+
+
+
+        [Obsolete("Use CallMethod with parent node and method node instead as this does not require a session browse call.")]
+        public static IList<object> CallMethod(this AutabeeManagedOpcClient client, NodeId methodNodeId, params object[] args)
+        => client.CallMethod(
+            (NodeId)client.GetParent(methodNodeId).NodeId,
+            methodNodeId,
+            args ?? new object[0]);
+
+
+
+        public static IList<object> CallMethods(this AutabeeManagedOpcClient client, IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
+        {
+            var methodRequests = new CallMethodRequestCollection();
+            methodRequests.AddRange(
+                data.Select(
+                    o =>
+                    {
+                        var collection = new VariantCollection();
+                        collection.AddRange(o.Item3.Select(k => new Variant(k)));
+                        return new CallMethodRequest()
+                        {
+                            ObjectId = o.Item1.GetNodeId(),
+                            MethodId = o.Item2.GetNodeId(),
+                            InputArguments = collection
+                        };
+                    }));
+            return client.CallMethods(methodRequests);
+        }
+        #endregion
+
+
+
+
+        #region pupsub
+        
+        public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
+                TimeSpan publishingInterval,
+                ValueNodeEntry nodeEntry,
+                MonitoredNodeValueRecordEventHandler handler = null) => client.AddMonitoredItem(
+                client.GetSubscription(publishingInterval),
+                nodeEntry,
+                handler);
+
+        public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
+                TimeSpan publishingInterval,
+                NodeId nodeId,
+                MonitoredNodeValueEventHandler handler = null) => client.AddMonitoredItem(
+                client.GetSubscription(publishingInterval),
+                nodeId,
+                handler);
+        public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
+                int publishingIntervalMilliSec,
+                ValueNodeEntry nodeEntry,
+                MonitoredNodeValueRecordEventHandler handler = null) => client.AddMonitoredItem(
+                client.GetSubscription(publishingIntervalMilliSec),
+                nodeEntry,
+                handler);
+        public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
+                int publishingIntervalMilliSec,
+                NodeId nodeId,
+                MonitoredNodeValueEventHandler handler = null) => client.AddMonitoredItem(
+                client.GetSubscription(publishingIntervalMilliSec),
+                nodeId,
+                handler);
+
+        public static IEnumerable<MonitoredItem> AddMonitoredItems(this AutabeeManagedOpcClient client, TimeSpan publishingInterval, ValueNodeEntryCollection nodeEntrys)
+            => client.AddMonitoredItems(
+                client.GetSubscription(publishingInterval),
+                nodeEntrys);
+
+        public static IEnumerable<MonitoredItem> AddMonitoredItems(this AutabeeManagedOpcClient client, int publishingIntervalMilliSec, ValueNodeEntryCollection nodeEntrys)
+            => client.AddMonitoredItems(
+                client.GetSubscription(publishingIntervalMilliSec),
+                nodeEntrys);
+
+        public static Subscription GetSubscription(this AutabeeManagedOpcClient client, TimeSpan publishingInterval) => client.GetSubscription(publishingInterval.Milliseconds);
+
+
+        #endregion
     }
 }

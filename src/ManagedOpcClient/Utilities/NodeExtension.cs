@@ -1,7 +1,7 @@
 ﻿using Opc.Ua;
 using System.Collections.Generic;
 
-namespace Autabee.Communication.ManagedOpcClient
+namespace Autabee.Communication.ManagedOpcClient.Utilities
 {
     static public class NodeExtension
     {

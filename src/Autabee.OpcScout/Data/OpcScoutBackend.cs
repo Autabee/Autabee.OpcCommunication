@@ -1,5 +1,4 @@
-﻿using Autabee.Communication.ManagedOpcClient;
-using Autabee.OpcScout.RazorControl;
+﻿using Autabee.OpcScout.RazorControl;
 using Autabee.OpcScout.RazorControl.Subscription;
 using System;
 using System.Linq;

@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Serilog.Core;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
@@ -419,9 +421,9 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             catch (Exception e)
             {
-                //logger?.Error("New session creation failed", e);
+                logger?.Error("New session creation failed", e);
                 //handle Exception here
-                throw e;
+                throw;
             }
         }
 
@@ -461,7 +463,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 if (session != null && !closing)
                 {
                     closing = true;
-                    var status = session.Close(10000,true);
+                    var status = session.Close(10000);
                     if (session != null)
                     {
                         session.KeepAlive -= Notification_KeepAlive;
@@ -552,8 +554,6 @@ namespace Autabee.Communication.ManagedOpcClient
         private DateTime disconnectionTime;
         private bool wasConnected = false;
         private TimeSpan reconnectPeriod = TimeSpan.FromSeconds(30);
-        private bool reconnecting = false;
-        private uint reconnectFailCounter = 0;
         SessionReconnectHandler reconnectHandler;
         private OpcConnectionStatus connectionState;
         private System.Threading.Timer timer;
@@ -619,7 +619,6 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 wasConnected = false;
                 disconnectionTime = DateTime.Now;
-                reconnectFailCounter = 1;
             }
             if (reconnectPeriod <= DateTime.Now - disconnectionTime)
             {
@@ -658,7 +657,6 @@ namespace Autabee.Communication.ManagedOpcClient
             timer?.Dispose();
             connectionState = OpcConnectionStatus.Connected;
             wasConnected = true;
-            reconnectFailCounter = 0;
         }
 
 
@@ -667,26 +665,11 @@ namespace Autabee.Communication.ManagedOpcClient
         #region Browse
 
         /// <summary>
-        /// Browses the root folder of an OPC UA server.
-        /// </summary>
-        /// <returns>ReferenceDescriptionCollection of found nodes</returns>
-        /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public ReferenceDescriptionCollection BrowseRoot() => BrowseNode(ObjectIds.RootFolder);
-
-        /// <summary>
         /// Browses a node ID provided by a ReferenceDescription
         /// </summary>
         /// <param name="refDesc">The ReferenceDescription</param>
         /// <returns>ReferenceDescriptionCollection of found nodes</returns>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public ReferenceDescriptionCollection BrowseNode(ReferenceDescription refDesc) =>
-            session != null
-            ? BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, session.NamespaceUris))
-            : throw new Exception("BadNotConnected");
-
-        public ReferenceDescriptionCollection BrowseNode(NodeId node) => BrowseNode(
-            new BrowseDescriptionCollection() { GetNodeHierarchalBrowseDescription(node) });
-
         public ReferenceDescriptionCollection BrowseNode(BrowseDescriptionCollection nodesToBrowse)
         {
             try
@@ -703,25 +686,23 @@ namespace Autabee.Communication.ManagedOpcClient
                         out BrowseResultCollection results,
                         out DiagnosticInfoCollection diagnosticInfos);
 
-                    ClientBase.ValidateResponse(results, nodesToBrowse);
-                    ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToBrowse);
-                    references.AddRange(GetDescriptions(results));
-
-                    var (unprocessedOperations, continuationPoints) = GetNewContinuationPoints(nodesToBrowse, results);
+                    OpcValidation.ValidateResponse(nodesToBrowse, results, diagnosticInfos);
+                    references.AddRange(BrowseHelperFunctions.GetDescriptions(results));
+                    var (unprocessedOperations, continuationPoints) = BrowseHelperFunctions.GetContinuationPoints(nodesToBrowse, results);
 
                     while (continuationPoints.Count > 0)
                     {
                         // continue browse operation.
                         session.BrowseNext(null, false, continuationPoints, out results, out diagnosticInfos);
 
-                        ClientBase.ValidateResponse(results, continuationPoints);
-                        ClientBase.ValidateDiagnosticInfos(diagnosticInfos, continuationPoints);
-                        references.AddRange(GetDescriptions(results));
-                        continuationPoints = GetNewContinuationPoints(continuationPoints, results);
+                        OpcValidation.ValidateResponse(nodesToBrowse, results, diagnosticInfos);
+                        references.AddRange(BrowseHelperFunctions.GetDescriptions(results));
+                        continuationPoints = BrowseHelperFunctions.GetNewContinuationPoints(continuationPoints, results);
                     }
 
                     // check if unprocessed results exist.
-                    nodesToBrowse = unprocessedOperations;
+                    nodesToBrowse = new BrowseDescriptionCollection();
+                    nodesToBrowse.AddRange(unprocessedOperations);
                 }
 
                 // return complete list.
@@ -730,18 +711,14 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (Exception e)
             {
                 logger.Error(e.Message, e);
-                throw e;
+                throw;
             }
         }
-
-
-        public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(NodeId node, CancellationToken token)
+        public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(
+            BrowseDescriptionCollection nodesToBrowse,
+            CancellationToken token)
         {
-            BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection()
-            {
-                GetNodeHierarchalBrowseDescription(node)
-            };
-            BrowseResultCollection results;
+            
             try
             {
                 ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
@@ -749,24 +726,26 @@ namespace Autabee.Communication.ManagedOpcClient
                 while (nodesToBrowse.Count > 0)
                 {
                     var response = await session.BrowseAsync(null, null, 0, nodesToBrowse, token);
-                    results = response.Results;
-                    ClientBase.ValidateResponse(response.Results, nodesToBrowse);
-                    ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, nodesToBrowse);
-                    references.AddRange(GetDescriptions(response));
 
-                    var (unprocessedOperations, continuationPoints) = GetNewContinuationPoints(nodesToBrowse, results);
+                    OpcValidation.ValidateResponse(nodesToBrowse, response);
+                    
+
+                    references.AddRange(BrowseHelperFunctions.GetDescriptions(response));
+                    var (unprocessedOperations, continuationPoints) = BrowseHelperFunctions.GetContinuationPoints(nodesToBrowse, response.Results);
 
                     while (continuationPoints.Count > 0)
                     {
                         var nextResponse = await session.BrowseNextAsync(null, false, continuationPoints, token);
-                        results = nextResponse.Results;
-                        ClientBase.ValidateResponse(results, continuationPoints);
-                        references.AddRange(GetDescriptions(results));
-                        continuationPoints = GetNewContinuationPoints(continuationPoints, results);
+
+                        OpcValidation.ValidateResponse(nodesToBrowse, response);
+
+                        references.AddRange(BrowseHelperFunctions.GetDescriptions(nextResponse));
+                        continuationPoints = BrowseHelperFunctions.GetNewContinuationPoints(continuationPoints, nextResponse.Results);
                     }
 
                     // check if unprocessed results exist.
-                    nodesToBrowse = unprocessedOperations;
+                    nodesToBrowse = new BrowseDescriptionCollection(); 
+                    nodesToBrowse.AddRange(unprocessedOperations);
                 }
 
                 // return complete list.
@@ -775,255 +754,9 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (Exception e)
             {
                 logger.Error(e.Message, e);
-                throw e;
-            }
-        }
-
-        public async Task<Dictionary<BrowseDescription, ReferenceDescriptionCollection>> AsyncBrowseNode(
-            BrowseDescriptionCollection nodesToBrowse,
-            CancellationToken token)
-        {
-            BrowseResultCollection results;
-            try
-            {
-                Dictionary<BrowseDescription, ReferenceDescriptionCollection> references = new Dictionary<BrowseDescription, ReferenceDescriptionCollection>(
-                    );
-
-                while (nodesToBrowse.Count > 0)
-                {
-                    var response = await session.BrowseAsync(null, null, 0, nodesToBrowse, token);
-                    results = response.Results;
-                    ClientBase.ValidateResponse(response.Results, nodesToBrowse);
-                    ClientBase.ValidateDiagnosticInfos(response.DiagnosticInfos, nodesToBrowse);
-                    //references.AddRange(GetDescriptions(response));
-
-                    var unprocessedOperations = new BrowseDescriptionCollection();
-                    var continued = new BrowseDescriptionCollection();
-                    Dictionary<BrowseDescription, byte[]> continuationPoints = new Dictionary<BrowseDescription, byte[]>(
-                        );
-                    for (int ii = 0; ii < nodesToBrowse.Count; ii++)
-                    {
-                        // check for error.
-                        if (StatusCode.IsBad(results[ii].StatusCode))
-                        {
-                            // this error indicates that the server does not have enough simultaneously active 
-                            // continuation points. This request will need to be resent after the other operations
-                            // have been completed and their continuation points released.
-                            if (results[ii].StatusCode == StatusCodes.BadNoContinuationPoints)
-                            {
-                                unprocessedOperations.Add(nodesToBrowse[ii]);
-                            }
-
-                            continue;
-                        }
-                        references.Add(nodesToBrowse[ii], new ReferenceDescriptionCollection());
-                        if (results[ii].References.Count == 0)
-                            continue;
-                        else
-                            references[nodesToBrowse[ii]].AddRange(results[ii].References);
-
-                        if (results[ii].ContinuationPoint != null)
-                        {
-                            continuationPoints.Add(
-                                                                        nodesToBrowse[ii],
-                                                                        results[ii].ContinuationPoint);
-                        }
-                    }
-
-                    while (continuationPoints.Count > 0)
-                    {
-                        var scanPoints = new ByteStringCollection(continuationPoints.Values);
-
-                        var nextResponse = await session.BrowseNextAsync(null, false, scanPoints, token);
-                        results = nextResponse.Results;
-                        ClientBase.ValidateResponse(results, scanPoints);
-                        //references.AddRange(GetDescriptions(results));
-                        Dictionary<BrowseDescription, byte[]> revisedContinuationPoints = new Dictionary<BrowseDescription, byte[]>(
-                            );
-                        var keyArray = continuationPoints.Keys.ToArray();
-                        for (int ii = 0; ii < keyArray.Length; ii++)
-                        {
-                            if (StatusCode.IsBad(results[ii].StatusCode))
-                            {
-                                continue;
-                            }
-                            if (results[ii].References.Count == 0)
-                            {
-                                continue;
-                            }
-                            if (results[ii].ContinuationPoint != null)
-                            {
-                                revisedContinuationPoints.Add(
-                                                                            keyArray[ii],
-                                                                            results[ii].ContinuationPoint);
-                            }
-                        }
-
-                        continuationPoints = revisedContinuationPoints;
-                    }
-
-                    // check if unprocessed results exist.
-                    nodesToBrowse = unprocessedOperations;
-                }
-
-                // return complete list.
-                return references;
-            }
-            catch (Exception e)
-            {
-                logger.Error(e.Message, e);
-                throw e;
-            }
-        }
-
-        public ReferenceDescription GetParent(NodeId nodeId)
-        {
-            try
-            {
-                //We need to browse for property (input and output arguments)
-                //Create a collection for the browse results
-                ReferenceDescriptionCollection referenceDescriptionCollection;
-                ReferenceDescriptionCollection nextReferenceDescriptionCollection;
-                //Create a continuationPoint
-                byte[] continuationPoint;
-                byte[] revisedContinuationPoint;
-
-                session.Browse(
-                    null,
-                    null,
-                    nodeId,
-                    0u,
-                    BrowseDirection.Inverse,
-                    null,
-                    true,
-                    0,
-                    out continuationPoint,
-                    out referenceDescriptionCollection);
-
-                while (continuationPoint != null)
-                {
-                    session.BrowseNext(
-                        null,
-                        false,
-                        continuationPoint,
-                        out revisedContinuationPoint,
-                        out nextReferenceDescriptionCollection);
-                    referenceDescriptionCollection.AddRange(nextReferenceDescriptionCollection);
-                    continuationPoint = revisedContinuationPoint;
-                }
-
-                //Guard Clause
-                if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
-                {
-                    throw new Exception("No Parent Id Found");
-                }
-                if (referenceDescriptionCollection.Count > 1)
-                {
-                    throw new Exception("Multiple Parent Id Found");
-                }
-                return referenceDescriptionCollection[0];
-            }
-            catch (Exception)
-            {
                 throw;
             }
         }
-
-        private static (BrowseDescriptionCollection, ByteStringCollection) GetNewContinuationPoints(
-            BrowseDescriptionCollection nodesToBrowse,
-            BrowseResultCollection results)
-        {
-            var unprocessedOperations = new BrowseDescriptionCollection();
-            var continuationPoints = new ByteStringCollection();
-            for (int ii = 0; ii < nodesToBrowse.Count; ii++)
-            {
-                // check for error.
-                if (StatusCode.IsBad(results[ii].StatusCode))
-                {
-                    // this error indicates that the server does not have enough simultaneously active 
-                    // continuation points. This request will need to be resent after the other operations
-                    // have been completed and their continuation points released.
-                    if (results[ii].StatusCode == StatusCodes.BadNoContinuationPoints)
-                    {
-                        unprocessedOperations.Add(nodesToBrowse[ii]);
-                    }
-
-                    continue;
-                }
-                if (results[ii].References.Count == 0)
-                {
-                    continue;
-                }
-                if (results[ii].ContinuationPoint != null) { continuationPoints.Add(results[ii].ContinuationPoint); }
-            }
-            return (unprocessedOperations, continuationPoints);
-        }
-
-        private static ByteStringCollection GetNewContinuationPoints(
-            ByteStringCollection continuationPoints,
-            BrowseResultCollection results)
-        {
-            var revisedContinuationPoints = new ByteStringCollection();
-            for (int ii = 0; ii < continuationPoints.Count; ii++)
-            {
-                if (StatusCode.IsBad(results[ii].StatusCode))
-                {
-                    continue;
-                }
-                if (results[ii].References.Count == 0)
-                {
-                    continue;
-                }
-                if (results[ii].ContinuationPoint != null) { revisedContinuationPoints.Add(results[ii].ContinuationPoint); }
-            }
-
-            return revisedContinuationPoints;
-        }
-
-        private static IEnumerable<byte[]> GetContinuationPoints(BrowseResponse results) => GetContinuationPoints(
-            results.Results);
-
-        private static IEnumerable<byte[]> GetContinuationPoints(BrowseNextResponse results) => GetContinuationPoints(
-            results.Results);
-
-        private static IEnumerable<byte[]> GetContinuationPoints(BrowseResultCollection results) => results
-                .Select(o => o.ContinuationPoint)
-            .Where(o => o != null && o.Length > 1);
-
-        private static ReferenceDescriptionCollection GetDescriptions(BrowseResponse results) => GetDescriptions(
-            results.Results);
-
-        private static ReferenceDescriptionCollection GetDescriptions(BrowseNextResponse results) => GetDescriptions(
-            results.Results);
-
-        private static ReferenceDescriptionCollection GetDescriptions(BrowseResultCollection results)
-        {
-            ReferenceDescriptionCollection temp = new ReferenceDescriptionCollection();
-            foreach (ReferenceDescriptionCollection item in
-                results.Where(o => StatusCode.IsNotBad(o.StatusCode))
-                       .Select(o => o.References))
-                temp.AddRange(item);
-
-            return temp;
-        }
-
-        public BrowseDescription GetNodeHierarchalBrowseDescription(NodeId node) => new BrowseDescription()
-        {
-            NodeId = node,
-            BrowseDirection = BrowseDirection.Forward,
-            ReferenceTypeId = ReferenceTypeIds.HierarchicalReferences,
-            IncludeSubtypes = true,
-            NodeClassMask = 255u,
-            ResultMask = (uint)BrowseResultMask.All
-        };
-
-        public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(
-            ReferenceDescription node,
-            CancellationToken token) => await AsyncBrowseNode(
-            ExpandedNodeId.ToNodeId(node.NodeId, session?.NamespaceUris),
-            token);
-
-
 
         #endregion Browse
 
@@ -1050,14 +783,6 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public NodeIdCollection TranslateBrowsePathsToNodeIds(NodeId baseNodeId, string[] relativeBrowseCollection)
         {
-            //NamespaceTable wellKnownNamespaceUris = new NamespaceTable();
-            //if (uris != null)
-            //{
-            //    for (int i = 0; i < uris.Length; i++) wellKnownNamespaceUris.Append(uris[i]);
-            //}
-            //for (uint i = 0; i < WellKnownNameSpaces.Count; i++) wellKnownNamespaceUris.Append(WellKnownNameSpaces.GetString(i));
-
-            //wellKnownNamespaceUris.Append(Namespaces.OpcUa);
             BrowsePathCollection result = new BrowsePathCollection();
             result.AddRange(relativeBrowseCollection.Select(o => new BrowsePath()
             {
@@ -1069,7 +794,7 @@ namespace Autabee.Communication.ManagedOpcClient
         public NodeIdCollection TranslateBrowsePathsToNodeIds(BrowsePathCollection browsePaths)
         {
             session.TranslateBrowsePathsToNodeIds(null, browsePaths, out var results, out var diagnostics);
-            ValidateResponse(diagnostics);
+            OpcValidation.ValidateResponse(diagnostics);
             NodeIdCollection nodes = new NodeIdCollection();
             #region From Opc Sample Client Util TranslateBrowsePaths
             for (int ii = 0; ii < results.Count; ii++)
@@ -1157,7 +882,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private static string GetTypeDictionary(string nodeIdString, Session session)
         {
-            
+
 
 
             //Read the desired node first and check if it's a variable
@@ -1190,14 +915,14 @@ namespace Autabee.Communication.ManagedOpcClient
                 tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default XML");
             if (tmp == null)
                 tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default JSON");
-            
+
             if (tmp == null)
                 throw new Exception("No encoding found.");
             nodeId = (NodeId)tmp.NodeId;
 
             //Browse for HasDescription
 
-            
+
 
 
             ReferenceDescriptionCollection refDescCol2;
@@ -1493,7 +1218,7 @@ namespace Autabee.Communication.ManagedOpcClient
             Func<Task<object>> task = async delegate ()
             {
                 var (values, serviceResults) = await session.ReadValuesAsync(nodeCollection);
-                ValidateResponse(serviceResults.Select(o => o.StatusCode));
+                OpcValidation.ValidateResponse(serviceResults.Select(o => o.StatusCode));
 
                 return values.Select(v => v.Value).ToList();
             };
@@ -1586,7 +1311,7 @@ namespace Autabee.Communication.ManagedOpcClient
             Func<NodeCollection> task = delegate ()
             {
                 session.ReadNodes(nodeIdCollection, out var nodes, out IList<ServiceResult> statusResults);
-                ValidateResponse(statusResults.Select(o => o.StatusCode));
+                OpcValidation.ValidateResponse(statusResults.Select(o => o.StatusCode));
                 var nodes2 = new NodeCollection();
                 nodes2.AddRange(nodes);
                 return nodes2;
@@ -1600,7 +1325,7 @@ namespace Autabee.Communication.ManagedOpcClient
             Func<Task<NodeCollection>> task = async delegate ()
             {
                 var (nodes, statusResults) = await session.ReadNodesAsync(nodeIdCollection, true, token).ConfigureAwait(false);
-                ValidateResponse(statusResults.Select(o => o.StatusCode));
+                OpcValidation.ValidateResponse(statusResults.Select(o => o.StatusCode));
                 var nodes2 = new NodeCollection();
                 nodes2.AddRange(nodes);
                 return nodes2;
@@ -1620,7 +1345,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 nodeIds.AddRange(
                     referenceDescriptions.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, session.NamespaceUris)));
                 var (nodes, statusResults) = await session.ReadNodesAsync(nodeIds, true, token).ConfigureAwait(false);
-                ValidateResponse(statusResults.Select(o => o.StatusCode));
+                OpcValidation.ValidateResponse(statusResults.Select(o => o.StatusCode));
                 var nodes2 = new NodeCollection();
                 nodes2.AddRange(nodes);
                 return nodes2;
@@ -1643,7 +1368,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     nodeCollection,
                     out DataValueCollection values,
                     out IList<ServiceResult> serviceResults);
-                ValidateResponse(serviceResults);
+                OpcValidation.ValidateResponse(serviceResults);
                 return values;
             };
 
@@ -1660,8 +1385,8 @@ namespace Autabee.Communication.ManagedOpcClient
                 session.Write(null, nodeCollection,
                     out StatusCodeCollection serviceResults,
                     out DiagnosticInfoCollection diag);
-                ValidateResponse(serviceResults);
-                ValidateResponse(diag);
+                OpcValidation.ValidateResponse(serviceResults);
+                OpcValidation.ValidateResponse(diag);
             };
 
             HandleTask(task);
@@ -1675,7 +1400,7 @@ namespace Autabee.Communication.ManagedOpcClient
             Func<Task<object>> task = async delegate ()
             {
                 var response = await session.WriteAsync(null, nodeCollection, ct).ConfigureAwait(true);
-                ValidateResponse(response.Results);
+                OpcValidation.ValidateResponse(response.Results);
                 return null;
             };
 
@@ -1705,40 +1430,10 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 if (methodNode.NodeClass != NodeClass.Method) { throw new ServiceResultException(StatusCodes.BadNodeClassInvalid); }
 
-                //We need to browse for property (input and output arguments)
-                //Create a collection for the browse results
-                ReferenceDescriptionCollection referenceDescriptionCollection;
-                ReferenceDescriptionCollection nextReferenceDescriptionCollection;
-                //Create a continuationPoint
-                byte[] continuationPoint;
-                byte[] revisedContinuationPoint;
-
                 //Start browsing
                 //Browse from starting point for properties (input and output)
-                session.Browse(
-                    null,
-                    null,
-                    nodeId,
-                    0u,
-                    BrowseDirection.Forward,
-                    ReferenceTypeIds.HasProperty,
-                    true,
-                    0,
-                    out continuationPoint,
-                    out referenceDescriptionCollection);
-
-                while (continuationPoint != null)
-                {
-                    session.BrowseNext(
-                        null,
-                        false,
-                        continuationPoint,
-                        out revisedContinuationPoint,
-                        out nextReferenceDescriptionCollection);
-                    referenceDescriptionCollection.AddRange(nextReferenceDescriptionCollection);
-                    continuationPoint = revisedContinuationPoint;
-                }
-
+                var referenceDescriptionCollection = BrowseNode(new BrowseDescriptionCollection() { BrowseHelperFunctions.GetMethodArgumentsBrowseDescription(nodeId) });
+                
                 //Guard Clause
                 if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
                 {
@@ -1748,6 +1443,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 foreach (ReferenceDescription refDesc in referenceDescriptionCollection)
                 {
                     ArgumentCollection arguments;
+                    
                     //Get correct collection
                     if (refDesc.NodeClass != NodeClass.Variable)
                         continue;
@@ -1767,8 +1463,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     //Read the input/output arguments
                     session.ReadValues(nodeIds, types, out List<object> values, out List<ServiceResult> serviceResults);
 
-                    ServiceResult bad = serviceResults.FirstOrDefault(o => StatusCode.IsNotGood(o.StatusCode));
-                    if (bad != null) throw new Exception(bad.ToString());
+                    OpcValidation.ValidateResponse(serviceResults);
 
                     //Extract arguments
                     foreach (object result in values.Where(o => o != null))
@@ -1802,25 +1497,20 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 return method;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
         }
 
-        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, ArgumentCollection inputArguments)
-            => this.CallMethod(
-            objectNodeId,
-            methodNodeId,
-            inputArguments == null ? new object[0] : inputArguments.Select(o => o.Value).ToArray());
 
-        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, params object[] inputArguments)
+        public IList<object> CallMethod(NodeId objectNodeId, NodeId methodNodeId, object[] inputArguments)
         {
             if (inputArguments is null) inputArguments = new object[0];
             return Session.Call(
-            objectNodeId,
-            methodNodeId,
-            inputArguments);
+                objectNodeId,
+                methodNodeId,
+                inputArguments);
         }
 
 
@@ -1831,7 +1521,8 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 RequestHeader requestHeader = new RequestHeader();
                 var responseHeader = Session.Call(requestHeader, methodRequests, out var results, out var diagnostics);
-                ValidateResponse(diagnostics);
+                OpcValidation.ValidateResponse(diagnostics);
+                OpcValidation.ValidateResponse(results);
 
                 object[] output = new object[results.Count];
 
@@ -1839,21 +1530,12 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     if (StatusCode.IsBad(results[i].StatusCode))
                     {
-                        output[i] = results[i].StatusCode;
+                        output[i] = new object[1] { results[i].StatusCode };
                     }
-                    else if (results[i].OutputArguments.Count > 1)
+                    output[i] = new object[results[i].OutputArguments.Count];
+                    for (int ii = 0; ii < results[i].OutputArguments.Count; ii++)
                     {
-                        output[i] = results[i].OutputArguments
-                            .Select(o => o.Value)
-                            .ToArray();
-                    }
-                    else if (results[i].OutputArguments.Count == 1)
-                    {
-                        output[i] = results[i].OutputArguments[0].Value;
-                    }
-                    else
-                    {
-                        output[i] = null;
+                        output[ii] = results[i].OutputArguments[ii].Value;
                     }
                 }
                 return output;
@@ -1883,9 +1565,9 @@ namespace Autabee.Communication.ManagedOpcClient
                 subscriptions.Add(subscription);
                 return subscription;
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
         }
 
@@ -1905,9 +1587,9 @@ namespace Autabee.Communication.ManagedOpcClient
                 subscription.AddItem(monitoredItem);
                 subscription.ApplyChanges();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
             return monitoredItem;
         }
@@ -1917,16 +1599,14 @@ namespace Autabee.Communication.ManagedOpcClient
                 MonitoredNodeValueEventHandler handler = null)
         {
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, handler: handler);
-            try
-            {
-                subscription.AddItem(monitoredItem);
-                subscription.ApplyChanges();
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
+            AddMonitoredItem(subscription, monitoredItem);
             return monitoredItem;
+        }
+        public IEnumerable<MonitoredItem> AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
+        {
+            IEnumerable<MonitoredItem> items = nodeEntrys.NodeEntries.Select(o => CreateMonitoredItem(o));
+            AddMonitoredItems(subscription, items);
+            return items;
         }
         public void AddMonitoredItem(
                 Subscription subscription,
@@ -1937,74 +1617,32 @@ namespace Autabee.Communication.ManagedOpcClient
                 subscription.AddItem(item);
                 subscription.ApplyChanges();
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                throw e;
+                throw;
             }
         }
-
-        public MonitoredItem AddMonitoredItem(
-                TimeSpan publishingInterval,
-                ValueNodeEntry nodeEntry,
-                MonitoredNodeValueRecordEventHandler handler = null) => AddMonitoredItem(
-                GetSubscription(publishingInterval),
-                nodeEntry,
-                handler);
-
-        public MonitoredItem AddMonitoredItem(
-                TimeSpan publishingInterval,
-                NodeId nodeId,
-                MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
-                GetSubscription(publishingInterval),
-                nodeId,
-                handler);
-        public MonitoredItem AddMonitoredItem(
-                int publishingIntervalMilliSec,
-                ValueNodeEntry nodeEntry,
-                MonitoredNodeValueRecordEventHandler handler = null) => AddMonitoredItem(
-                GetSubscription(publishingIntervalMilliSec),
-                nodeEntry,
-                handler);
-        public MonitoredItem AddMonitoredItem(
-                int publishingIntervalMilliSec,
-                NodeId nodeId,
-                MonitoredNodeValueEventHandler handler = null) => AddMonitoredItem(
-                GetSubscription(publishingIntervalMilliSec),
-                nodeId,
-                handler);
-
-        public IEnumerable<MonitoredItem> AddMonitoredItems(TimeSpan publishingInterval, ValueNodeEntryCollection nodeEntrys)
-            => AddMonitoredItems(
-                GetSubscription(publishingInterval),
-                nodeEntrys);
-
-        public IEnumerable<MonitoredItem> AddMonitoredItems(int publishingIntervalMilliSec, ValueNodeEntryCollection nodeEntrys)
-            => AddMonitoredItems(
-                GetSubscription(publishingIntervalMilliSec),
-                nodeEntrys);
-        public Subscription GetSubscription(TimeSpan publishingInterval) => GetSubscription(publishingInterval.Milliseconds);
-
-
+        public void AddMonitoredItems(
+                Subscription subscription,
+                IEnumerable<MonitoredItem> item)
+        {
+            try
+            {
+                subscription.AddItems(item);
+                subscription.ApplyChanges();
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
         public Subscription GetSubscription(int publishingIntervalMilliSec)
         {
             var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingIntervalMilliSec);
             return subscription != null ? subscription : CreateSubscription(publishingIntervalMilliSec);
         }
 
-        public IEnumerable<MonitoredItem> AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
-        {
-            IEnumerable<MonitoredItem> items = nodeEntrys.NodeEntries.Select(o => CreateMonitoredItem(o));
-            try
-            {
-                subscription.AddItems(items);
-                subscription.ApplyChanges();
-            }
-            catch (Exception e)
-            {
-                throw e;
-            }
-            return items;
-        }
+        
 
         public MonitoredItem CreateMonitoredItem(
             ValueNodeEntry nodeEntry,
@@ -2143,9 +1781,9 @@ namespace Autabee.Communication.ManagedOpcClient
                     subscription.RemoveItem(monitoredItem);
                     subscription.ApplyChanges();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    throw e;
+                    throw;
                 }
             }
         }
@@ -2163,9 +1801,9 @@ namespace Autabee.Communication.ManagedOpcClient
                         subscription.RemoveItem(monitoredItem);
                         subscription.ApplyChanges();
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-                        throw e;
+                        throw;
                     }
                 }
             }
@@ -2174,26 +1812,6 @@ namespace Autabee.Communication.ManagedOpcClient
         public void RemoveMonitoredItems(ValueNodeEntryCollection entrys)
         {
             foreach (var entry in entrys.NodeEntries) RemoveMonitoredItem(entry);
-        }
-        #endregion
-
-        #region Validation
-        private static void ValidateResponse(IList<ServiceResult> diagnostics)
-            => ValidateResponse(diagnostics.Select(o => o.StatusCode));
-
-        private static void ValidateResponse(DiagnosticInfoCollection diagnostics)
-            => ValidateResponse(diagnostics.Select(o => o.InnerStatusCode));
-
-        private static void ValidateResponse(StatusCodeCollection diagnostics)
-            => ValidateResponse(diagnostics.Select(o => o));
-
-        private static void ValidateResponse(IEnumerable<StatusCode> response)
-        {
-            string message = response.Where(o => StatusCode.IsNotGood(o.Code))
-                .Aggregate(string.Empty, (accumulator, result) =>
-                accumulator += $"{result} : {StatusCodes.GetBrowseName(result.Code)}" + Environment.NewLine);
-
-            if (message.Length > 0) throw new ServiceResultException(message);
         }
         #endregion
 

@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using Autabee.OpcScout;
 
 #if ANDROID
 using Android.App;

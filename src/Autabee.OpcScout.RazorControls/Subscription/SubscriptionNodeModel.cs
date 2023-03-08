@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System;

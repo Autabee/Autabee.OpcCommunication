@@ -17,7 +17,7 @@ namespace Autabee.OpcScout
 			this.fileName = fileName;
 		}
 
-		public T? Load()
+		public T Load()
 		{
 			var path = Path.Combine("data", fileName + ".json");
 
@@ -26,7 +26,7 @@ namespace Autabee.OpcScout
 				var json = File.ReadAllText(path, System.Text.Encoding.UTF8);
 				return JsonSerializer.Deserialize<T>(json);
 			}
-			return default;
+			return default(T);
 		}
 		public void Save(T data)
 		{
