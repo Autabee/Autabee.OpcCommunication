@@ -1,10 +1,11 @@
 ﻿using Opc.Ua;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient.Utilities
 {
-    static public class BrowseHelperFunctions
+    static public class Browse
     {
         public static (List<T>, ByteStringCollection) GetContinuationPoints<T>(
             List<T> nodesToBrowse,
@@ -31,8 +32,9 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 {
                     continue;
                 }
-                if (results[i].ContinuationPoint != null) { 
-                    continuationPoints.Add(results[i].ContinuationPoint); 
+                if (results[i].ContinuationPoint != null)
+                {
+                    continuationPoints.Add(results[i].ContinuationPoint);
                 }
             }
             return (unprocessedOperations, continuationPoints);
@@ -63,9 +65,19 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
 
             return temp;
         }
+        public static BrowseDescriptionCollection GetBrowseDescription(NodeIdCollection nodes, BrowseType browseType)
+            => nodes.Select(o => GetBrowseDescription(o, browseType)) as BrowseDescriptionCollection;
 
-
+        public static BrowseDescription GetBrowseDescription(NodeId node, BrowseType browseType)
+            => browseType switch
+            {
+                BrowseType.Children => GetChildrenBrowseDescription(node),
+                BrowseType.Parent => GetParentBrowseDescription(node),
+                BrowseType.MethodArguments => GetMethodArgumentsBrowseDescription(node),
+                BrowseType.Encoding => GetEncodingBrowseDescription(node)
+            };
         
+
 
         public static BrowseDescription GetChildrenBrowseDescription(NodeId node) => new BrowseDescription()
         {
@@ -106,5 +118,12 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             NodeClassMask = (uint)NodeClass.Variable,
             ResultMask = (uint)BrowseResultMask.All
         };
+    }
+    public enum BrowseType
+    {
+        Children,
+        Parent,
+        MethodArguments,
+        Encoding,
     }
 }

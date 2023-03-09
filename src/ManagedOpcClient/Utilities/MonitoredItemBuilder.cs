@@ -7,9 +7,9 @@ using Autabee.Communication.ManagedOpcClient.ManagedNode;
 
 namespace Autabee.Communication.ManagedOpcClient.Utilities
 {
-    public static class MonitoredItemCreation
+    public static class MonitoredItemBuilder
     {
-        public static MonitoredItem CreateMonitoredValueItem(ValueNodeEntry nodeEntry,
+        public static MonitoredItem CreateValueItem(ValueNodeEntry nodeEntry,
             int samplingInterval,
             uint queueSize,
             bool discardOldest,
@@ -27,6 +27,15 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             MonitoredItem monitoredItem = CreateMoniroredValueItemWithoutName(samplingInterval,
                 queueSize, discardOldest, moneteringMode);
             monitoredItem.DisplayName = nodeId.ToString();
+            monitoredItem.StartNodeId = nodeId;
+            return monitoredItem;
+        }
+
+        static public MonitoredItem CreateMonitoredValueItem(string nodeId, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode moneteringMode = MonitoringMode.Reporting)
+        {
+            MonitoredItem monitoredItem = CreateMoniroredValueItemWithoutName(samplingInterval,
+                queueSize, discardOldest, moneteringMode);
+            monitoredItem.DisplayName = nodeId;
             monitoredItem.StartNodeId = nodeId;
             return monitoredItem;
         }
