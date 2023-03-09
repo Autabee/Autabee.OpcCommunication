@@ -4,7 +4,8 @@
 @using Opc.Ua;
 @using Autabee.Communication.ManagedOpcClient.Utilities;
 <tr>
-    <td class="subscription-nodeid">@SubscriptionViewModel.monitoredItem.StartNodeId</td>
+    <td class="subscription-nodeid">@SubscriptionViewModel.NodeTypeId</td>
+    <td class="subscription-nodeid">@SubscriptionViewModel.NodeName</td>
     <td>@SubscriptionViewModel.UpdateTime.ToString()</td>
 
     @if (SubscriptionViewModel.complex)
@@ -39,7 +40,8 @@
     <ComplexSubscriptionNode 
         Value="@SubscriptionViewModel.DictMonitoredValue" 
         NodeId="@SubscriptionViewModel.monitoredItem.StartNodeId.ToString()"
-        Client="@SubscriptionViewModel.nodeItem.Client"/>
+        Client="@SubscriptionViewModel.nodeItem.Client"
+        Depth=@(1)/>
 }
 
 @code {

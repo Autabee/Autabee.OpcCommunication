@@ -25,6 +25,7 @@ namespace Autabee.OpcScout.RazorControl.Subscription
         public event EventHandler<Opc.Ua.Client.Subscription> RemoveSubscription;
 
         public Dictionary<string, object> DictMonitoredValue => (Dictionary<string, object>)MonitoredValue;
+        public string NodeName => nodeItem.Node.DisplayName.ToString();
         public bool complex { get; set; }
         public bool show { get; set; }
         public bool editing { get; set; }
