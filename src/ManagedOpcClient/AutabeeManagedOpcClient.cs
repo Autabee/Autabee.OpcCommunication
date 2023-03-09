@@ -644,8 +644,6 @@ namespace Autabee.Communication.ManagedOpcClient
             }
 
             return;
-
-
         }
 
         private void Reconnected()
@@ -670,10 +668,11 @@ namespace Autabee.Communication.ManagedOpcClient
         /// <param name="refDesc">The ReferenceDescription</param>
         /// <returns>ReferenceDescriptionCollection of found nodes</returns>
         /// <exception cref="Exception">Throws and forwards any exception with short error description.</exception>
-        public ReferenceDescriptionCollection BrowseNode(BrowseDescriptionCollection nodesToBrowse)
+        public ReferenceDescriptionCollection BrowseNodes(BrowseDescriptionCollection nodesToBrowse)
         {
             try
             {
+                if (session == null || session.Disposed) throw new Exception("No session available");
                 ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
 
                 while (nodesToBrowse.Count > 0)
@@ -687,8 +686,8 @@ namespace Autabee.Communication.ManagedOpcClient
                         out DiagnosticInfoCollection diagnosticInfos);
 
                     OpcValidation.ValidateResponse(nodesToBrowse, results, diagnosticInfos);
-                    references.AddRange(BrowseHelperFunctions.GetDescriptions(results));
-                    var (unprocessedOperations, continuationPoints) = BrowseHelperFunctions.GetContinuationPoints(nodesToBrowse, results);
+                    references.AddRange(Browse.GetDescriptions(results));
+                    var (unprocessedOperations, continuationPoints) = Browse.GetContinuationPoints(nodesToBrowse, results);
 
                     while (continuationPoints.Count > 0)
                     {
@@ -696,8 +695,8 @@ namespace Autabee.Communication.ManagedOpcClient
                         session.BrowseNext(null, false, continuationPoints, out results, out diagnosticInfos);
 
                         OpcValidation.ValidateResponse(nodesToBrowse, results, diagnosticInfos);
-                        references.AddRange(BrowseHelperFunctions.GetDescriptions(results));
-                        continuationPoints = BrowseHelperFunctions.GetNewContinuationPoints(continuationPoints, results);
+                        references.AddRange(Browse.GetDescriptions(results));
+                        continuationPoints = Browse.GetNewContinuationPoints(continuationPoints, results);
                     }
 
                     // check if unprocessed results exist.
@@ -714,7 +713,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
-        public async Task<ReferenceDescriptionCollection> AsyncBrowseNode(
+        public async Task<ReferenceDescriptionCollection> AsyncBrowseNodes(
             BrowseDescriptionCollection nodesToBrowse,
             CancellationToken token)
         {
@@ -730,8 +729,8 @@ namespace Autabee.Communication.ManagedOpcClient
                     OpcValidation.ValidateResponse(nodesToBrowse, response);
                     
 
-                    references.AddRange(BrowseHelperFunctions.GetDescriptions(response));
-                    var (unprocessedOperations, continuationPoints) = BrowseHelperFunctions.GetContinuationPoints(nodesToBrowse, response.Results);
+                    references.AddRange(Browse.GetDescriptions(response));
+                    var (unprocessedOperations, continuationPoints) = Browse.GetContinuationPoints(nodesToBrowse, response.Results);
 
                     while (continuationPoints.Count > 0)
                     {
@@ -739,8 +738,8 @@ namespace Autabee.Communication.ManagedOpcClient
 
                         OpcValidation.ValidateResponse(nodesToBrowse, response);
 
-                        references.AddRange(BrowseHelperFunctions.GetDescriptions(nextResponse));
-                        continuationPoints = BrowseHelperFunctions.GetNewContinuationPoints(continuationPoints, nextResponse.Results);
+                        references.AddRange(Browse.GetDescriptions(nextResponse));
+                        continuationPoints = Browse.GetNewContinuationPoints(continuationPoints, nextResponse.Results);
                     }
 
                     // check if unprocessed results exist.
@@ -1432,7 +1431,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 //Start browsing
                 //Browse from starting point for properties (input and output)
-                var referenceDescriptionCollection = BrowseNode(new BrowseDescriptionCollection() { BrowseHelperFunctions.GetMethodArgumentsBrowseDescription(nodeId) });
+                var referenceDescriptionCollection = BrowseNodes(new BrowseDescriptionCollection() { Browse.GetMethodArgumentsBrowseDescription(nodeId) });
                 
                 //Guard Clause
                 if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)

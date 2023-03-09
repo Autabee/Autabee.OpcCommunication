@@ -9,6 +9,7 @@ using Opc.Ua.Configuration;
 using Opc.Ua.Export;
 using Opc.Ua.Security.Certificates;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlTypes;
@@ -194,45 +195,45 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion xml
 
         #region Browsing
-        
-        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, ReferenceDescription refDesc) 
-            =>  client.Session != null
-                ? client.BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, client.Session.NamespaceUris))
-                : throw new Exception("BadNotConnected");
 
-        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, NodeId node) => client.BrowseNode(
-            new BrowseDescriptionCollection() { BrowseHelperFunctions.GetChildrenBrowseDescription(node) });
 
+        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, NodeId node, BrowseType browseType = BrowseType.Children)
+            => client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetBrowseDescription(node, browseType) });
+
+        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, ReferenceDescription refDesc, BrowseType browseType = BrowseType.Children)
+            => client.BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, client.Session.NamespaceUris), browseType);
         public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client,
-            ReferenceDescription node,CancellationToken token)
-            =>  client.Session != null
-                ? await client.AsyncBrowseNode(ExpandedNodeId.ToNodeId(node.NodeId, client.Session.NamespaceUris), token)
-                : throw new Exception("BadNotConnected");
+            ReferenceDescription node, CancellationToken token, BrowseType browseType = BrowseType.Children)
+            => await client.AsyncBrowseNode(ExpandedNodeId.ToNodeId(node.NodeId, client.Session.NamespaceUris), token);
 
 
-        public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client, NodeId node, CancellationToken token)
+        public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client, NodeId node, CancellationToken token, BrowseType browseType = BrowseType.Children)
         {
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection()
             {
-                BrowseHelperFunctions.GetChildrenBrowseDescription(node)
+                Browse.GetBrowseDescription(node, browseType)
             };
-            return await client.AsyncBrowseNode(nodesToBrowse, token);
+            return await client.AsyncBrowseNodes(nodesToBrowse, token);
         }
+        public static ReferenceDescriptionCollection BrowseNodes(this AutabeeManagedOpcClient client, NodeIdCollection nodes, BrowseType browseType = BrowseType.Children)
+            => client.BrowseNodes(Browse.GetBrowseDescription(nodes, browseType));
+        public static ReferenceDescriptionCollection BrowseNodes(this AutabeeManagedOpcClient client, ReferenceDescriptionCollection refDesc, BrowseType browseType = BrowseType.Children)
+            => client.BrowseNodes(refDesc.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, client.Session.NamespaceUris)) as NodeIdCollection, browseType);
         #endregion
 
 
         #region 
         public static ReferenceDescriptionCollection BrowseRoot(this AutabeeManagedOpcClient client)
-            => client.BrowseNode(new BrowseDescriptionCollection() { BrowseHelperFunctions.GetChildrenBrowseDescription(ObjectIds.RootFolder) });
+            => client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetChildrenBrowseDescription(ObjectIds.RootFolder) });
 
 
         public static ReferenceDescription GetParent(this AutabeeManagedOpcClient client, NodeId nodeId)
         {
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection()
             {
-                BrowseHelperFunctions.GetParentBrowseDescription(nodeId)
+                Browse.GetParentBrowseDescription(nodeId)
             };
-            var referenceDescriptionCollection = client.BrowseNode(nodesToBrowse);
+            var referenceDescriptionCollection = client.BrowseNodes(nodesToBrowse);
             //Guard Clause
             if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count == 0)
             {
@@ -399,11 +400,8 @@ namespace Autabee.Communication.ManagedOpcClient
             return client.CallMethods(methodRequests);
         }
         #endregion
-
-
-
-
-        #region pupsub
+        
+        #region PubSub
         
         public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
                 TimeSpan publishingInterval,
@@ -446,8 +444,6 @@ namespace Autabee.Communication.ManagedOpcClient
                 nodeEntrys);
 
         public static Subscription GetSubscription(this AutabeeManagedOpcClient client, TimeSpan publishingInterval) => client.GetSubscription(publishingInterval.Milliseconds);
-
-
         #endregion
     }
 }
