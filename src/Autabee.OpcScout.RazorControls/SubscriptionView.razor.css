@@ -6,7 +6,3 @@
     border-radius: 4px;
     margin: 0px 1em 0px 0em;
 }
-
-.SubscriptionView th::nth-child(1){
-    overflow: hidden;
-}

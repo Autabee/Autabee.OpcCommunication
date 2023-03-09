@@ -8,7 +8,7 @@
     {
         if (dicItem.Count > 0)
         {
-            <ComplexSubscriptionNode Value="@dicItem" NodeId="@item.Key" Depth="@(Depth +1)" />
+            <ComplexSubscriptionNode Value="@dicItem" NodeId="@string.Join('.',NodeId,item.Key)" Depth="@(Depth +1)" />
         }
         else
         {
@@ -24,7 +24,7 @@
     }
     else if(item.Value is ExtensionObject extension)
     {
-        <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extension)" NodeId="@NodeId" Client="Client" Depth="@(Depth +1)" />
+        <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extension)" NodeId="@NodeId" Client="Client" Depth=@(Depth +1) />
     }
     else if (item.Value is ExtensionObject[] extensions)
     {
@@ -37,7 +37,7 @@
     else if (item.Value is NodeDataRecord<object> record)
     {
         <tr>
-            <td style="padding-left=@(Depth*4)px">@string.Join('.',NodeId,item.Key)</td>
+            <td style="padding-left:@((Depth+1)*8)px">@string.Join('.',NodeId,item.Key)</td>
             <td>@item.Key</td>
             <td></td>
             <td>@(record.Value)</td>
