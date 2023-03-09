@@ -709,7 +709,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             catch (Exception e)
             {
-                logger.Error(e.Message, e);
+                logger?.Error(e.Message, e);
                 throw;
             }
         }

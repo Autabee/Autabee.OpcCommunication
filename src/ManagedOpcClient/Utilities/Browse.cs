@@ -13,7 +13,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
         {
             var unprocessedOperations = new List<T>();
             var continuationPoints = new ByteStringCollection();
-            for (int i = 0; i < continuationPoints.Count; i++)
+            for (int i = 0; i < results.Count; i++)
             {
                 // check for error.
                 if (StatusCode.IsBad(results[i].StatusCode))
