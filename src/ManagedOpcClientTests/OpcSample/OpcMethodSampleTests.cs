@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.Utility.Logger;
 using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
@@ -37,26 +38,26 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             {
                 logger.Information(item.NodeId.ToString());
                 logger.Information(item.BrowseName.Name);
-                browseDescriptions.Add(communicator.GetNodeHierarchalBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
+                browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
             }
 
-            root = communicator.BrowseNode(browseDescriptions);
+            root = communicator.BrowseNodes(browseDescriptions);
             browseDescriptions.Clear();
 
             foreach (var item in root)
             {
                 logger.Information(item.NodeId.ToString());
                 logger.Information(item.BrowseName.Name);
-                browseDescriptions.Add(communicator.GetNodeHierarchalBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
+                browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
             }
-            root = communicator.BrowseNode(browseDescriptions);
+            root = communicator.BrowseNodes(browseDescriptions);
             browseDescriptions.Clear();
 
             foreach (var item in root)
             {
                 logger.Information(item.NodeId.ToString());
                 logger.Information(item.BrowseName.Name);
-                browseDescriptions.Add(communicator.GetNodeHierarchalBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
+                browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
             }
         }
 
