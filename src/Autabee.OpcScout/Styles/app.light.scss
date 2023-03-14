@@ -62,6 +62,10 @@ input {
     background: $color-secendary;
 }
 
+.Node-Selected >td {
+    color: white;
+    background: $color-secendary;
+}
 
 .Node-Selected:hover {
     color: white;
@@ -71,7 +75,7 @@ input {
 .Node button:hover {
     background-color: adjust-color($color-secendary,$lightness: -10);
 }
-.Node-Selected button:hover {
+.Node-Selected > button:hover {
     color: white;
     background: $color-secendary;
 }
