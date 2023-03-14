@@ -336,6 +336,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             catch (Exception)
             {
+                mApplicationConfig.CertificateValidator.CertificateValidation -= Notification_CertificateValidation;
                 //handle Exception here
                 throw;
             }
@@ -429,26 +430,33 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private void Session_SessionClosing(object sender, EventArgs e)
         {
-            //if (!closing)
-            //{
-            //    logger?.Warning("Reconnection as a closing was detected from outside of the helper");
-            //    Session.Reconnect();
-            //    ConnectionUpdated?.Invoke(this, null);
-            //}
+            if (closing)
+            {
+                return;
+            }
             if (sender is Session session1)
             {
-                session1.KeepAlive -= Notification_KeepAlive;
-
                 if (session == session1)
                 {
-                    session1.Dispose();
-                    session = null;
-                    connectionState = OpcConnectionStatus.Disconnected;
-                    ConnectionStatusChanged?.Invoke(this, new OpcConnectionStatusChangedEventArgs(OpcConnectionStatus.Disconnected, null, "Session Closing"));
-                    ConnectionUpdated?.Invoke(this, null);
+                    CloseSession();
                 }
             }
+        }
+
+        private void CloseSession()
+        {
+            session.KeepAlive -= Notification_KeepAlive;
+            session.Dispose();
+            session = null;
+            connectionState = OpcConnectionStatus.Disconnected;
+            ConnectionStatusChanged?.Invoke(this, new OpcConnectionStatusChangedEventArgs(OpcConnectionStatus.Disconnected, null, "Session Closed"));
+            ConnectionUpdated?.Invoke(this, null);
+            nodeIdCache.Clear();
+            connectionState = OpcConnectionStatus.Disconnected;
             ClearNodeEntries?.Invoke(this, null);
+            ConnectionUpdated?.Invoke(this, null);
+            closing = false;
+            timer?.Dispose();
         }
 
         /// <summary>
@@ -464,16 +472,8 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     closing = true;
                     var status = session.Close(10000);
-                    if (session != null)
-                    {
-                        session.KeepAlive -= Notification_KeepAlive;
-                    }
-                    nodeIdCache.Clear();
-                    connectionState = OpcConnectionStatus.Disconnected;
-                    //ClearNodeEntries?.Invoke(this, null);
-                    ConnectionUpdated?.Invoke(this, null);
+                    CloseSession();
                     closing = false;
-                    timer?.Dispose();
                 }
             }
             catch (Exception)
