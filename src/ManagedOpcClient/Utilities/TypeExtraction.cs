@@ -150,7 +150,6 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             }
 
             //Check for HasEncoding reference with name "Default Binary"
-
             var tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default Binary");
             if (tmp == null)
                 tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default XML");
@@ -162,10 +161,6 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             nodeId = (NodeId)tmp.NodeId;
 
             //Browse for HasDescription
-
-
-
-
             ReferenceDescriptionCollection refDescCol2;
             session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasDescription, true, 0, out _, out refDescCol2);
 
@@ -183,6 +178,124 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 return nodeId.ToString();
             }
 
+        }
+
+
+        public static Dictionary<string, NodeTypeData> GetOpcNodeTypeData(List<XmlDocument> xmls)
+        {
+            var dict = new Dictionary<string, NodeTypeData>();
+
+            foreach (var item in xmls)
+            {
+                foreach (XmlNode child in item.GetElementsByTagName("opc:StructuredType"))
+                {
+                    var nodeType = new NodeTypeData();
+                    nodeType.Name = GetCorrectedName(child);
+                    nodeType.TypeName = GetCorrectedName(child);
+                    nodeType.ChildData = new List<NodeTypeData>();
+                    foreach (XmlNode child2 in child.ChildNodes)
+                    {
+                        if (child2.Name == "opc:Field")
+                        {
+                            var childNode = new NodeTypeData();
+                            childNode.Name = GetCorrectedName(child2);
+                            childNode.TypeName = GetCorrectedTypeName(child2);
+                            childNode.ChildData = new List<NodeTypeData>();
+                            nodeType.ChildData.Add(childNode);
+                        }
+                    }
+                    dict.Add(nodeType.Name, nodeType);
+                }
+            }
+
+            foreach (var item in dict)
+            {
+                var type = item.Value;
+                AddOpcNodeTypeDataChildren(dict, type);
+            }
+            return dict;
+        }
+
+        public static void AddOpcNodeTypeDataChildren(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
+        {
+            for (int i = 0; i < type.ChildData.Count; i++)
+            {
+                var child = type.ChildData[i];
+                if (dict.ContainsKey(child.TypeName))
+                {
+                    type.ChildData[i].ChildData = dict[child.TypeName].ChildData;
+                    foreach (var item in type.ChildData[i].ChildData)
+                    {
+                        AddChildren(dict, item);
+                    }
+                }
+            }
+        }
+
+
+        public static string[] GetServerTypeSchema(this Session session, bool all = false)
+        {
+            if (!session.Connected) throw new Exception("Not Connected");
+            ReferenceDescriptionCollection refDescColBin;
+            ReferenceDescriptionCollection refDescColXml;
+            byte[] continuationPoint;
+
+            ResponseHeader BinaryNodes = session.Browse(
+                null,
+                null,
+                ObjectIds.OPCBinarySchema_TypeSystem,
+                0u,
+                BrowseDirection.Forward,
+                ReferenceTypeIds.HierarchicalReferences,
+                true,
+                0,
+                out continuationPoint,
+                out refDescColBin);
+
+            ResponseHeader XMLNodes = session.Browse(
+                null,
+                null,
+                ObjectIds.XmlSchema_TypeSystem,
+                0u,
+                BrowseDirection.Forward,
+                ReferenceTypeIds.HierarchicalReferences,
+                true,
+                0,
+                out continuationPoint,
+                out refDescColXml);
+
+            NodeIdCollection nodeIds = new NodeIdCollection();
+            foreach (var item in refDescColBin)
+            {
+                if (!item.DisplayName.Text.StartsWith("Opc.Ua") || all) nodeIds.Add((NodeId)item.NodeId);
+            }
+
+            foreach (var xmlItem in refDescColXml)
+            {
+                if (refDescColBin.FirstOrDefault(o => o.DisplayName.Text == xmlItem.DisplayName.Text) == null)
+                {
+                    nodeIds.Add((NodeId)xmlItem.NodeId);
+                }
+            }
+
+            var result = new List<string>();
+            session.ReadValues(nodeIds, out var values, out var errors);
+            for (int i = 0; i < values.Count; i++)
+            {
+                if (values[i] != null && values[i].Value != null) { result.Add(Encoding.ASCII.GetString((byte[])values[i].Value)); }
+            }
+            //result.RemoveAll(o => string.IsNullOrEmpty(o));
+
+            return result.ToArray();
+        }
+
+
+        public static Dictionary<string, NodeTypeData> GetNodeTypeDataCashe(Session session, List<XmlDocument> xmls)
+        {
+            xmls.Clear();
+            xmls.AddRange(session.GetServerTypeSchema(true).Select(o => { var temp = new XmlDocument(); temp.LoadXml(o); return temp; }));
+            var dict = TypeExtraction.UpdateNodeType(xmls);
+            return dict;
         }
     }
 }

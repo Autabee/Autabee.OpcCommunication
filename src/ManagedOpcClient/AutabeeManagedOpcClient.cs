@@ -1,6 +1,7 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Communication.ManagedOpcClient.Utilities;
+using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Serilog.Core;
@@ -8,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -324,15 +327,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     userIdentity,
                     null);
 
-                ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
-                session.KeepAlive += Notification_KeepAlive;
-                ConnectionUpdated?.Invoke(this, null);
-                session.SessionClosing += Session_SessionClosing;
-                ReInstateNodeEntries?.Invoke(this, null);
-                wasConnected = true;
-                subscriptions.Clear();
-
-                UpdateTypeData();
+                InitManagedConnection();
             }
             catch (Exception)
             {
@@ -514,22 +509,26 @@ namespace Autabee.Communication.ManagedOpcClient
                     60_000,
                     mUserIdentity,
                     null);
-
-                ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
-                session.KeepAlive += Notification_KeepAlive;
-                ConnectionUpdated?.Invoke(this, null);
-                session.SessionClosing += Session_SessionClosing;
-                ReInstateNodeEntries?.Invoke(this, null);
-                wasConnected = true;
-                subscriptions.Clear();
-
-                UpdateTypeData();
+                InitManagedConnection();
             }
             catch (Exception)
             {
                 //handle Exception here
                 throw;
             }
+        }
+
+        private void InitManagedConnection()
+        {
+            ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
+            session.KeepAlive += Notification_KeepAlive;
+            ConnectionUpdated?.Invoke(this, null);
+            session.SessionClosing += Session_SessionClosing;
+            ReInstateNodeEntries?.Invoke(this, null);
+            wasConnected = true;
+            subscriptions.Clear();
+
+            UpdateNodeTypeDataCache(session, PreparedTypes, Xmls);
         }
 
 
@@ -842,7 +841,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 return PreparedTypes[parseString];
             }
 
-            parseString = GetTypeDictionary(nodeIdString, session);
+            parseString = TypeExtraction.GetTypeDictionary(nodeIdString, session);
             PreparedNodeTypes.Add(nodeIdString, parseString);
             return GetTypeEncoding(parseString);
         }
@@ -857,7 +856,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
             //trying updating the type data
 
-            UpdateTypeData();
+            UpdateNodeTypeDataCache(session,PreparedTypes,Xmls);
 
             if (PreparedTypes.TryGetValue(parseString, out value))
             {
@@ -867,11 +866,9 @@ namespace Autabee.Communication.ManagedOpcClient
             throw new Exception("Type not found");
         }
 
-        private void UpdateTypeData()
+        private static void UpdateNodeTypeDataCache(Session session,Dictionary<string, NodeTypeData> PreparedTypes, List<XmlDocument> xmls)
         {
-            Xmls.Clear();
-            Xmls.AddRange(this.GetServerTypeSchema().Select(o => { var temp = new XmlDocument(); temp.LoadXml(o); return temp; }));
-            var dict = UpdateNodeType(Xmls);
+            Dictionary<string, NodeTypeData> dict = TypeExtraction.GetNodeTypeDataCashe(session, xmls);
             foreach (var o in dict)
             {
                 if (PreparedTypes.ContainsKey(o.Key)) PreparedTypes.Remove(o.Key);
@@ -879,96 +876,26 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        private static string GetTypeDictionary(string nodeIdString, Session session)
+        
+
+        private static string? GetContFieldEnum(int id, Type type)
         {
-
-
-
-            //Read the desired node first and check if it's a variable
-            Node node = session.ReadNode(nodeIdString);
-            if (node.NodeClass != NodeClass.Variable)
+            var fields = type.GetFields();
+            FieldInfo field = null;
+            var values = fields.Select(o => o.GetRawConstantValue()).OrderBy(o => o).ToArray();
+            foreach (var item in fields)
             {
-                Exception ex = new Exception("No variable data type found");
-                throw ex;
+                var checkId = (uint)item.GetRawConstantValue();
+                if (checkId == id)
+                {
+                    field = item;
+                    break;
+                }
             }
-            //Get the node id of node's data type
-            VariableNode variableNode = (VariableNode)node.DataLock;
-            NodeId nodeId = (NodeId)variableNode.DataType;
-
-            //Browse for HasEncoding
-            ReferenceDescriptionCollection refDescCol;
-            //byte[] continuationPoint;
-            session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasEncoding, true, 0, out _, out refDescCol);
-
-            //Check For found reference
-            if (refDescCol.Count == 0)
-            {
-                Exception ex = new Exception("No data type to encode. Could be a build-in data type you want to read.");
-                throw ex;
-            }
-
-            //Check for HasEncoding reference with name "Default Binary"
-
-            var tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default Binary");
-            if (tmp == null)
-                tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default XML");
-            if (tmp == null)
-                tmp = refDescCol.FirstOrDefault(o => o.DisplayName.Text == "Default JSON");
-
-            if (tmp == null)
-                throw new Exception("No encoding found.");
-            nodeId = (NodeId)tmp.NodeId;
-
-            //Browse for HasDescription
-
-
-
-
-            ReferenceDescriptionCollection refDescCol2;
-            session.Browse(null, null, nodeId, 0u, BrowseDirection.Forward, ReferenceTypeIds.HasDescription, true, 0, out _, out refDescCol2);
-
-            //Check For found reference
-            if (refDescCol2.Count > 0)
-            {
-                //Read from node id of the found description to get a value to parse for later on
-                nodeId = new NodeId(refDescCol2[0].NodeId.Identifier, refDescCol2[0].NodeId.NamespaceIndex);
-                DataValue resultValue = session.ReadValue(nodeId);
-                return resultValue.Value.ToString();
-                //parseString;
-                //Browse for ComponentOf from last browsing result inversely
-                //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
-
-            }
-            else
-            {
-                //var resultValue = session.ReadValue();
-                return nodeId.ToString();
-                //parseString;
-                //Browse for ComponentOf from last browsing result inversely
-                //session.Browse(null, null, nodeId, 0u, BrowseDirection.Inverse, ReferenceTypeIds.HasComponent, true, 0, out _, out refDescCol);
-            }
-
-
-
-            //
-            //Check if reference was found
-            //if (refDescCol.Count == 0)
-            //{
-            //  Exception ex = new Exception("Data type isn't a component of parent type in address space. Can't continue decoding.");
-            //  throw ex;
-            //}
-
-            //Read from node id of the found HasComponent reference to get a XML file (as HEX string) containing struct/UDT information
-
-            //nodeId = new NodeId(refDescCol[0].NodeId.Identifier, refDescCol[0].NodeId.NamespaceIndex);
-            //resultValue = session.ReadValue(nodeId);
-
-            //Convert the HEX string to ASCII string
-            //string xmlString = Encoding.ASCII.GetString((byte[])resultValue.Value);
-
-            //Return the dictionary as ASCII string
-
+           
+            return field?.Name;
         }
+
         public object GetCorrectValue(object value)
         {
             if (value is ExtensionObject eoValue)
@@ -998,56 +925,7 @@ namespace Autabee.Communication.ManagedOpcClient
             };
         }
 
-        private static Dictionary<string, NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
-        {
-            var dict = new Dictionary<string, NodeTypeData>();
-
-            foreach (var item in xmls)
-            {
-                foreach (XmlNode child in item.GetElementsByTagName("opc:StructuredType"))
-                {
-                    var nodeType = new NodeTypeData();
-                    nodeType.Name = GetCorrectedName(child);
-                    nodeType.TypeName = GetCorrectedName(child);
-                    nodeType.ChildData = new List<NodeTypeData>();
-                    foreach (XmlNode child2 in child.ChildNodes)
-                    {
-                        if (child2.Name == "opc:Field")
-                        {
-                            var childNode = new NodeTypeData();
-                            childNode.Name = GetCorrectedName(child2);
-                            childNode.TypeName = GetCorrectedTypeName(child2);
-                            childNode.ChildData = new List<NodeTypeData>();
-                            nodeType.ChildData.Add(childNode);
-                        }
-                    }
-                    dict.Add(nodeType.Name, nodeType);
-                }
-            }
-
-            foreach (var item in dict)
-            {
-                var type = item.Value;
-                AddChildren(dict, type);
-            }
-            return dict;
-        }
-
-        private static void AddChildren(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
-        {
-            for (int i = 0; i < type.ChildData.Count; i++)
-            {
-                var child = type.ChildData[i];
-                if (dict.ContainsKey(child.TypeName))
-                {
-                    type.ChildData[i].ChildData = dict[child.TypeName].ChildData;
-                    foreach (var item in type.ChildData[i].ChildData)
-                    {
-                        AddChildren(dict, item);
-                    }
-                }
-            }
-        }
+        
 
         static string GetCorrectedName(XmlNode value)
         {

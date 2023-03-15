@@ -134,65 +134,6 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 #endif
 
-        #region xml
-        public static string[] GetServerTypeSchema(this AutabeeManagedOpcClient client, bool all = false)
-        {
-            if (!client.Connected) throw new Exception("Not Connected");
-            ReferenceDescriptionCollection refDescColBin;
-            ReferenceDescriptionCollection refDescColXml;
-            byte[] continuationPoint;
-
-            ResponseHeader BinaryNodes = client.Session.Browse(
-                null,
-                null,
-                ObjectIds.OPCBinarySchema_TypeSystem,
-                0u,
-                BrowseDirection.Forward,
-                ReferenceTypeIds.HierarchicalReferences,
-                true,
-                0,
-                out continuationPoint,
-                out refDescColBin);
-            ResponseHeader XMLNodes = client.Session.Browse(
-                null,
-                null,
-                ObjectIds.XmlSchema_TypeSystem,
-                0u,
-                BrowseDirection.Forward,
-                ReferenceTypeIds.HierarchicalReferences,
-                true,
-                0,
-                out continuationPoint,
-                out refDescColXml);
-
-            NodeIdCollection nodeIds = new NodeIdCollection();
-            foreach (var item in refDescColBin)
-            {
-                if (!item.DisplayName.Text.StartsWith("Opc.Ua") || all) nodeIds.Add((NodeId)item.NodeId);
-            }
-
-            foreach (var xmlItem in refDescColXml)
-            {
-                if (refDescColBin.FirstOrDefault(o => o.DisplayName.Text == xmlItem.DisplayName.Text) == null)
-                {
-                    nodeIds.Add((NodeId)xmlItem.NodeId);
-                }
-            }
-
-            var result = new List<string>();
-            var values = client.ReadValues(nodeIds, null);
-            for (int i = 0; i < values.Count; i++)
-            {
-                if (values[i] != null) { result.Add(Encoding.ASCII.GetString((byte[])values[i].Value)); }
-            }
-            //result.RemoveAll(o => string.IsNullOrEmpty(o));
-
-            return result.ToArray();
-        }
-
-
-
-        #endregion xml
 
         #region Browsing
 
@@ -315,6 +256,8 @@ namespace Autabee.Communication.ManagedOpcClient
         #region ReadValue
         public static object ReadValue(this AutabeeManagedOpcClient client, string nodeIdString)
             => client.ReadValue(new NodeId(nodeIdString));
+        public static object ReadValue(this AutabeeManagedOpcClient client, Node node)
+            => client.ReadValue(node.NodeId);
 
         public static object ReadValue(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId, Type type = null)
             => client.ReadValue((NodeId)nodeId, type);
