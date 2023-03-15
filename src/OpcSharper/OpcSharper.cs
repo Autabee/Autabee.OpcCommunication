@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Autabee.Communication.ManagedOpcClient;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.OpcToClass;
 using Opc.Ua;
 using Serilog.Core;
@@ -35,7 +36,7 @@ namespace Autabee.OpcSharper
 
 
             logger?.Information("Start Retrieving Type Definitions");
-            var schemas = service.GetServerTypeSchema();
+            var schemas = service.Session.GetServerTypeSchema();
             XmlDocument[] xmls = new XmlDocument[schemas.Length];
             logger?.Information("Type Definitions Retrieved");
             logger?.Information("Start Generating Type Schema");
@@ -80,15 +81,15 @@ namespace Autabee.OpcSharper
                 foundTypes.AddRange(nodes);
             }
 #else
-        foreach (var chunk in found)
-        {
-            var nodes = service.ReadNode(chunk);
-            foundTypes.Add(nodes);
-        }
+            foreach (var chunk in found)
+            {
+                var nodes = service.ReadNode(chunk);
+                foundTypes.Add(nodes);
+            }
 #endif
 
             OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
-            OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(found, foundTypes, xmls, settings);
+            OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, settings);
         }
     }
 }

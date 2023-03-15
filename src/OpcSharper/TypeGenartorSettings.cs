@@ -10,7 +10,7 @@ namespace Autabee.OpcToClass
         public string baseNamespace;
         public string baseLocation;
         public NodeIdCollection nodes = new NodeIdCollection();
-        public Dictionary<object, string> typeOverrides = new Dictionary<object, string>();
+        public Dictionary<string, string> typeOverrides = new Dictionary<string, string>();
         /// <summary>
         /// Namespace Prefix
         /// </summary>

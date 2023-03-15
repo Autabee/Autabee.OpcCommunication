@@ -1,4 +1,7 @@
-﻿using Opc.Ua;
+﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Opc.Ua;
+using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -413,7 +416,7 @@ namespace Autabee.OpcToClass
             CreateFile(Path.Combine(settings.baseLocation, "AddressSpace.cs"), fileContents);
         }
 
-        static public void GenerateNodeEntryAddressSpace(ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorSettings settings)
+        static public void GenerateNodeEntryAddressSpace(AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorSettings settings)
         {
             var fileContents = "using Opc.Ua;\n"
                 + "using Autabee.Communication.ManagedOpcClient.ManagedNode;\n\n"
@@ -440,9 +443,24 @@ namespace Autabee.OpcToClass
 
                 if (referenceNode.TypeDefinition.IdType == IdType.Numeric && nodeData is VariableNode varNode)
                 {
-                    if (!settings.typeOverrides.TryGetValue(varNode.DataType.Identifier.ToString(), out nodetype))
+                    nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nsPrefix);
+
+                    if (nodetype.Contains("Unknown") )
                     {
-                        nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nsPrefix);
+                        var value = client.ReadValue(nodeData);
+                        if (typeof(NodeTypeData).IsInstanceOfType(value) || typeof(EncodeableObject).IsInstanceOfType(value))
+                        {
+                            if (settings.typeOverrides.TryGetValue(varNode.DataType.Identifier.ToString(), out nodetype))
+                            {
+                                var compare = referenceNode.NodeId.ToString() + "[";
+                                if (referenceNodes.FirstOrDefault(o => o.NodeId.ToString().StartsWith(compare)) != null) 
+                                    nodetype += "[]";
+                            }
+                        }
+                        else
+                        {
+                            nodetype = value.GetType().FullName;
+                        }
                     }
                 }
                 else
