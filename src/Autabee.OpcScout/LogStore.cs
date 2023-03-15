@@ -10,7 +10,6 @@ namespace Autabee.OpcScout
 
         public void Emit(LogEvent logEvent)
         {
-            logEvent.ToString();
             var log = new LogMessage(logEvent);
             Messages.Add(log);
             MessageUpdate?.Invoke(this,log);
