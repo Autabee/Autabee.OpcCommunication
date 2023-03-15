@@ -4,6 +4,7 @@ using Autabee.Communication.ManagedOpcClient.Utilities;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
+using Opc.Ua.Export;
 using Serilog.Core;
 using System;
 using System.Collections.Generic;
@@ -716,7 +717,7 @@ namespace Autabee.Communication.ManagedOpcClient
             BrowseDescriptionCollection nodesToBrowse,
             CancellationToken token)
         {
-            
+
             try
             {
                 ReferenceDescriptionCollection references = new ReferenceDescriptionCollection();
@@ -726,7 +727,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     var response = await session.BrowseAsync(null, null, 0, nodesToBrowse, token);
 
                     OpcValidation.ValidateResponse(nodesToBrowse, response);
-                    
+
 
                     references.AddRange(Browse.GetDescriptions(response));
                     var (unprocessedOperations, continuationPoints) = Browse.GetContinuationPoints(nodesToBrowse, response.Results);
@@ -742,7 +743,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     }
 
                     // check if unprocessed results exist.
-                    nodesToBrowse = new BrowseDescriptionCollection(); 
+                    nodesToBrowse = new BrowseDescriptionCollection();
                     nodesToBrowse.AddRange(unprocessedOperations);
                 }
 
@@ -840,10 +841,26 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 return PreparedTypes[parseString];
             }
-
-            parseString = TypeExtraction.GetTypeDictionary(nodeIdString, session);
-            PreparedNodeTypes.Add(nodeIdString, parseString);
-            return GetTypeEncoding(parseString);
+            try
+            {
+                parseString = TypeExtraction.GetEncodedTypeName(session, nodeIdString);
+                PreparedNodeTypes.Add(nodeIdString, parseString);
+                return GetTypeEncoding(parseString);
+            }
+            catch (Exception)
+            {
+                var readValue = session.ReadValue(nodeIdString);
+                if (readValue == null) throw new Exception("read value is null so can't interprect its type");
+                var readType = readValue.GetValue(null).GetType();
+                parseString = readType.FullName;
+                var nodeTypeData = new NodeTypeData(readType);
+                if (!PreparedTypes.ContainsKey(parseString))
+                {
+                    PreparedTypes.Add(parseString, nodeTypeData);
+                }
+                PreparedNodeTypes.Add(nodeIdString, parseString);
+                return nodeTypeData;
+            }
         }
 
         public NodeTypeData GetTypeEncoding(string parseString)
@@ -854,19 +871,10 @@ namespace Autabee.Communication.ManagedOpcClient
                 return value;
             }
 
-            //trying updating the type data
-
-            UpdateNodeTypeDataCache(session,PreparedTypes,Xmls);
-
-            if (PreparedTypes.TryGetValue(parseString, out value))
-            {
-                return value;
-            }
-
             throw new Exception("Type not found");
         }
 
-        private static void UpdateNodeTypeDataCache(Session session,Dictionary<string, NodeTypeData> PreparedTypes, List<XmlDocument> xmls)
+        private static void UpdateNodeTypeDataCache(Session session, Dictionary<string, NodeTypeData> PreparedTypes, List<XmlDocument> xmls)
         {
             Dictionary<string, NodeTypeData> dict = TypeExtraction.GetNodeTypeDataCashe(session, xmls);
             foreach (var o in dict)
@@ -876,7 +884,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        
+
 
         private static string? GetContFieldEnum(int id, Type type)
         {
@@ -892,7 +900,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     break;
                 }
             }
-           
+
             return field?.Name;
         }
 
@@ -925,7 +933,7 @@ namespace Autabee.Communication.ManagedOpcClient
             };
         }
 
-        
+
 
         static string GetCorrectedName(XmlNode value)
         {
@@ -1310,7 +1318,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 //Start browsing
                 //Browse from starting point for properties (input and output)
                 var referenceDescriptionCollection = BrowseNodes(new BrowseDescriptionCollection() { Browse.GetMethodArgumentsBrowseDescription(nodeId) });
-                
+
                 //Guard Clause
                 if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count <= 0)
                 {
@@ -1320,7 +1328,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 foreach (ReferenceDescription refDesc in referenceDescriptionCollection)
                 {
                     ArgumentCollection arguments;
-                    
+
                     //Get correct collection
                     if (refDesc.NodeClass != NodeClass.Variable)
                         continue;
@@ -1519,7 +1527,7 @@ namespace Autabee.Communication.ManagedOpcClient
             return subscription != null ? subscription : CreateSubscription(publishingIntervalMilliSec);
         }
 
-        
+
 
         public MonitoredItem CreateMonitoredItem(
             ValueNodeEntry nodeEntry,

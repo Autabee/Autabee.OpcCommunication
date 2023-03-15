@@ -124,7 +124,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
 
 
 
-        public static string GetTypeDictionary(string nodeIdString, Session session)
+        public static string GetEncodedTypeName(Session session, string nodeIdString)
         {
             //Read the desired node first and check if it's a variable
             Node node = session.ReadNode(nodeIdString);
