@@ -174,13 +174,13 @@
     {
         Browser.UpdateSelectedNode(ScannedNodeModel);
         ScannedNodeModel.NodeClassType = "Node-Selected Node";
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 
     private async void DeSelect(object sender, EventArgs data)
     {
         ScannedNodeModel.NodeClassType = "Node";
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
     private async void UpdateState(object sender, EventArgs data)
     {

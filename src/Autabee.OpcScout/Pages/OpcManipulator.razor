@@ -104,7 +104,7 @@
                 Clients = controlBackend.clients,
                 Selected = controlBackend.observing
             };
-        subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes);
+        subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes, logger);
         if (controlBackend.observing != null) nodeViewerModel.UpdateSelected(this, controlBackend.observing);
         logger.Information("Open Manipulator");
         base.OnInitialized();

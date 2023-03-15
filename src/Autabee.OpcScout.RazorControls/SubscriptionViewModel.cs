@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.OpcScout.RazorControl.Subscription;
+using Serilog.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,12 +10,14 @@ using System.Threading.Tasks;
 namespace Autabee.OpcScout.RazorControl
 {
 
-    
+
     public class SubscriptionViewModel
     {
         public readonly List<SubscriptionNodeModel> subscriptionNodeModels = new List<SubscriptionNodeModel>();
-        public SubscriptionViewModel(List<SubscriptionNodeModel> subscriptionNodeModels)
+        readonly Logger logger;
+        public SubscriptionViewModel(List<SubscriptionNodeModel> subscriptionNodeModels, Logger logger)
         {
+            this.logger = logger;
             this.subscriptionNodeModels = subscriptionNodeModels;
             foreach (var model in subscriptionNodeModels)
             {
@@ -22,19 +25,26 @@ namespace Autabee.OpcScout.RazorControl
             }
         }
 
-        public event EventHandler OnListChanged;
+        public event EventHandler<List<SubscriptionNodeModel>> OnListChanged;
         public void AddSubscription(object sender, ScannedNodeModel selected)
         {
-            SubscriptionNodeModel model = new SubscriptionNodeModel(selected);
-            subscriptionNodeModels.Add(model);
-            model.RemoveMonitoredItem += RemoveSubscription;
-            OnListChanged?.Invoke(sender, null);
+            try
+            {
+                SubscriptionNodeModel model = new SubscriptionNodeModel(selected);
+                subscriptionNodeModels.Add(model);
+                model.RemoveMonitoredItem += RemoveSubscription;
+                OnListChanged?.Invoke(sender, subscriptionNodeModels);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex, "Failed to subcribe");
+            }
         }
 
         private void RemoveSubscription(object sender, EventArgs obj)
         {
             subscriptionNodeModels.Remove((SubscriptionNodeModel)sender);
-            OnListChanged?.Invoke(sender, null);
+            OnListChanged?.Invoke(sender, subscriptionNodeModels);
         }
         public IEnumerable<string> RemoveSubscriptions(AutabeeManagedOpcClient client)
         {
@@ -43,7 +53,7 @@ namespace Autabee.OpcScout.RazorControl
             {
                 subscriptionNodeModels.Remove(item);
             }
-            OnListChanged?.Invoke(this, null);
+            OnListChanged?.Invoke(this, subscriptionNodeModels);
             return items.Select(o => o.nodeItem.Node.NodeId.ToString());
         }
     }

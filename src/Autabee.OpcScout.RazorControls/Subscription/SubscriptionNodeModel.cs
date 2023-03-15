@@ -105,14 +105,15 @@ namespace Autabee.OpcScout.RazorControl.Subscription
             {
                 UpdateMonitoredValue(dict);
             }
-            else if (value is object[] avalue)
+            else if (value.GetType().IsArray)
             {
+                var avalue = ((Array)value);
                 UpdateTime = DateTime.Now;
                 complex = true;
                 var tmp = new Dictionary<string, object>();
-                for (int i = 0; i < avalue.Length; i++)
+                for (int i = 0; i < ((Array)avalue).Length; i++)
                 {
-                    tmp.Add(nodeItem.Node.NodeId + $"[{i}]", avalue[i]);
+                    tmp.Add( $"[{i}]", avalue.GetValue(i));
                 }
                 MonitoredValue = tmp;
             }
