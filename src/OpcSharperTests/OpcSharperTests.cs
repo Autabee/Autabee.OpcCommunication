@@ -4,22 +4,29 @@ using System.Linq;
 using Autabee.OpcToClass;
 using Opc.Ua;
 using Xunit.Abstractions;
-using Autabee.Utility.Logger.xUnit;
 using Autabee.Communication.ManagedOpcClient;
 using Newtonsoft.Json;
 using System.IO;
 using System.Threading.Tasks;
 using System.Reflection;
 using System.Collections.ObjectModel;
+using Autabee.OpcSharper;
+using Serilog;
+using Serilog.Core;
 
 namespace Tests
 {
   public class OpcSharperTests
   {
-    AutabeeXunitLogger logger;
-    public OpcSharperTests(ITestOutputHelper outputHelper)
+        private Logger logger;
+
+        public OpcSharperTests(ITestOutputHelper outputHelper)
     {
-      logger = new AutabeeXunitLogger(outputHelper);
+            logger = new Serilog.LoggerConfiguration()
+                    .MinimumLevel.Verbose()
+                    .WriteTo.TestOutput(outputHelper)
+                    .CreateLogger();
+            
     }
     [SkippableFact]
     public async void GenerateProjectTest()
