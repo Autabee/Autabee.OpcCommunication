@@ -6,6 +6,8 @@ using Opc.Ua;
 using Serilog.Core;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Xml;
 
@@ -31,7 +33,8 @@ namespace Autabee.OpcSharper
                 throw new AggregateException(exceptions);
 
 
-            logger?.Information("Generate Project");
+            logger?.Information("Generate Project at, {0}", Path.Combine(Directory.GetCurrentDirectory(), settings.baseLocation) );
+#if skip
             OpcToCSharpGenerator.GenerateCsharpProject(settings);
 
 
@@ -90,6 +93,32 @@ namespace Autabee.OpcSharper
 
             OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
             OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, settings);
+#endif
+            try
+            {
+                string path = GetSharperZip(settings);
+                logger.Information("create zip at {0}", path);
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+                ZipFile.CreateFromDirectory(settings.baseLocation, path);
+                if (settings.clearOnZip)
+                {
+                    Directory.Delete(settings.baseLocation,true);
+                }
+            }
+            catch
+            {
+                
+            }
+        }
+
+        public static string GetSharperZip(GeneratorSettings settings)
+        {
+            Directory.CreateDirectory(settings.zipStoreLocation);
+            var path = Path.Combine(settings.zipStoreLocation, settings.baseNamespace + ".zip");
+            return path;
         }
     }
 }

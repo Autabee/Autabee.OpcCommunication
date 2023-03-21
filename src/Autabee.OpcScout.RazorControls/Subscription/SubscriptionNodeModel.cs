@@ -30,8 +30,6 @@ namespace Autabee.OpcScout.RazorControl.Subscription
         public bool show { get; set; }
         public bool editing { get; set; }
         public DateTime UpdateTime { get; set; }
-        public DateTime updateTime { get; set; }
-
         public string error { get; set; } = string.Empty;
         public object lockItem { get; set; } = new object();
         public object MonitoredValue { get; set; }
@@ -113,7 +111,7 @@ namespace Autabee.OpcScout.RazorControl.Subscription
                 var tmp = new Dictionary<string, object>();
                 for (int i = 0; i < ((Array)avalue).Length; i++)
                 {
-                    tmp.Add( $"[{i}]", avalue.GetValue(i));
+                    tmp.Add($"[{i}]", avalue.GetValue(i));
                 }
                 MonitoredValue = tmp;
             }

@@ -2,6 +2,7 @@
 @using Autabee.Utility.Messaging;
 @using Opc.Ua;
 @using System.Text.Json;
+@using Autabee.Communication.ManagedOpcClient.Utilities;
 
 <ContextMenu Id="OpcBrowserNodeContext">
     @if (context.Data is ScannedNodeModel currentItem)
@@ -9,10 +10,21 @@
         <Item OnClick="@ReadNode"><icon class="mdi mdi-tag-text" /> Node Settings</Item>
         @if (currentItem.Node is VariableNode)
         {
-            <Item OnClick="@ReadValue"><icon class="mdi mdi-tag-arrow-left" /> Read Node Value</Item>
+            @if (currentItem.Node.HasCurrentReadAccess())
+            {
+                <Item OnClick="@ReadValue"><icon class="mdi mdi-tag-arrow-left" /> Read Node Value</Item>
+            }
+            @if (currentItem.Node.HasCurrentWriteAccess())
+            {
+                <Item OnClick="@WriteValue"><icon class="mdi mdi-tag-arrow-right" /> Write Node Value</Item>
+            }
             <Item OnClick="@SubscribeValue"><icon class="mdi mdi-tag-plus" /> Subscribe to Node Value</Item>
         }
 
+        @if (Browser.SharperActive)
+        {
+            <Item OnClick="@AddNodeToSharperCollection"><icon class="mdi mdi-magnify-plus" /> Add To Sharper</Item>
+        }
         @*<Item OnClick="@OnClick" Enabled="false">Item 3 (disabled)</Item>
     <Seperator />
     <Item>
@@ -103,9 +115,15 @@
     {
         if (e.Data is ScannedNodeModel model)
         {
-            Browser.UpdateSelectedNode(model);
-            model.NodeClassType = "Node-Selected Node";
-            StateHasChanged();
+            Browser.ReadValue(model);
+        }
+    }
+
+    private async void WriteValue(ItemClickEventArgs e)
+    {
+        if (e.Data is ScannedNodeModel model)
+        {
+            Browser.WriteNodeValue(model);
         }
     }
     private Message GetValueMessage(object value)
@@ -121,6 +139,14 @@
         if (e.Data is ScannedNodeModel model)
         {
             Browser.SubscriptionRequest(model);
+        }
+    }
+
+    private async void AddNodeToSharperCollection(ItemClickEventArgs e)
+    {
+        if (e.Data is ScannedNodeModel model)
+        {
+            Browser.AddSharperNode(model.Node.NodeId);
         }
     }
 }

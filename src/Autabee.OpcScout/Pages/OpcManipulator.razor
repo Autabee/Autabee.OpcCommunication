@@ -10,8 +10,12 @@
 @using System.Linq;
 @using Serilog.Core;
 @using Autabee.Communication.ManagedOpcClient.Utilities;
+@using Microsoft.Extensions.Configuration
+@inject IJSRuntime JS
 
 @inject OpcScoutPersistentData controlBackend
+@inject NavigationManager NavigationManager
+@inject IConfiguration config;
 @inject IJSRuntime _jsRuntime
 @inject Logger logger
 @inject InMemoryLog messageStore;
@@ -39,38 +43,48 @@
 
     <div class="ReadWrite Viewport mid-ViewPort">
         <h3>Logs</h3>
-        @*<div class="Viewportheader">
-        <button @onclick="()=>OpenLog()">logs</button>
-        <button @onclick="()=>OpenReadWrite()">read/write</button>
-        </div>*@
+        <div class="Viewportheader">
+            <button @onclick="()=>OpenLog()">logs</button>
+            @*<button @onclick="()=>OpenReadWrite()">read/write</button>*@
+            <button @onclick="()=>OpenSharper()">Sharper</button>
+        </div>
 
         <div class="InnerItem">
-            @*@if (log){*@
-            @foreach (var item in messageStore.Messages.AsEnumerable().Reverse())
+            @if (activeControl == ActiveControl.log)
             {
-                <div class="logitem logitem-@item.message.Level.ToString()">
-                    <span class="logitemtime">[@item.message.Timestamp.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
-                    <span class=@item.MessageClass>@item.message.RenderMessage()</span>
-                    @if (item.MultiLine || item.message.RenderMessage().Length > 80)
-                    {
-                        @if (item.ShowFullMessage)
+                @foreach (var item in messageStore.Messages.AsEnumerable().Reverse())
+                {
+                    <div class="logitem logitem-@item.message.Level.ToString()">
+                        <span class="logitemtime">[@item.message.Timestamp.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
+                        <span class=@item.MessageClass>@item.message.RenderMessage()</span>
+                        @if (item.MultiLine || item.message.RenderMessage().Length > 80)
                         {
-                            <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
-                        }
-                        else
-                        {
-                            <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
+                            @if (item.ShowFullMessage)
+                            {
+                                <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
+                            }
+                            else
+                            {
+                                <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
+                            }
+
                         }
 
-                    }
-
-                </div>
+                    </div>
+                }
             }
-            @*}
-            else if (readwrite)
+            else if (activeControl == ActiveControl.readwrite)
             {
-            <ReadWriteNodeCollection/>
-            }*@
+                <ReadWriteNodeCollection />
+            }
+            else if (activeControl == ActiveControl.sharper)
+            {
+                @if (sharperViewModel.Generating)
+                {
+                    <MudProgressLinear Color="Color.Warning" Indeterminate="true" Class="my-7" />
+                }
+                <SharperView Model="sharperViewModel" />
+            }
         </div>
     </div>
 
@@ -91,21 +105,44 @@
 
 @code {
     public NodeBrowserModel nodeBrowser;
+    public SharperViewModel sharperViewModel;
     public NodeViewModel nodeViewerModel = new NodeViewModel();
     public SubscriptionViewModel subscriptionViewModel;
+    ActiveControl activeControl = ActiveControl.log;
 
-    bool log = true;
-    bool readwrite = false;
+    public enum ActiveControl
+    {
+        log,
+        readwrite,
+        sharper
+    }
 
     protected override void OnInitialized()
     {
         nodeBrowser = new NodeBrowserModel()
             {
                 Clients = controlBackend.clients,
-                Selected = controlBackend.observing
+                Selected = controlBackend.observing,
+                SharperActive = true
             };
         subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes, logger);
         if (controlBackend.observing != null) nodeViewerModel.UpdateSelected(this, controlBackend.observing);
+        if (controlBackend.sharperViewModel != null)
+        {
+            sharperViewModel = controlBackend.sharperViewModel;
+
+        }
+        else
+        {
+            sharperViewModel = new SharperViewModel(controlBackend.clients, logger);
+            sharperViewModel.ZipSafeLocation = config["Sharper:ZipSafeLocation"];
+            sharperViewModel.ClearOnZip = config["Sharper:ClearOnZip"]?.Trim().ToLower() == "true";
+            sharperViewModel.ProjectLocationSelectable = config["Sharper:ClearOnZip"]?.Trim().ToLower() != "true";
+            //controlBackend.sharperViewModel = sharperViewModel;
+            sharperViewModel.OnGenerateProcessStarted += (_, _) => InvokeAsync(StateHasChanged);
+            sharperViewModel.OnGenerateProcessCompleted += CompletSharper;
+        }
+        nodeBrowser.OnAddSharperNode += AddSharperNode;
         logger.Information("Open Manipulator");
         base.OnInitialized();
         nodeBrowser.OnSelectedChanged += UpdateSelected;
@@ -116,17 +153,40 @@
         nodeBrowser.OnOpenCall += OpenCallDialog;
         nodeBrowser.OnOpenWrite += OpenWriteDialog;
         messageStore.MessageUpdate += Logger_MessageUpdate;
+
+
+    }
+
+    private async  void CompletSharper(object sender, string e)
+    {
+        if (config["Sharper:DownloadOnSafe"]?.ToLower() == "true")
+        {
+            var fileName = Path.GetFileName(e);
+            var fileURL = Path.Combine(NavigationManager.BaseUri, Path.GetRelativePath("wwwroot/", e));
+            await JS.InvokeVoidAsync("triggerFileDownload", fileName, fileURL);
+        }
+        InvokeAsync(StateHasChanged);
+    }
+    
+
+    private void AddSharperNode(object sender,NodeId node)
+    {
+        activeControl = ActiveControl.sharper;
+        sharperViewModel.AddNode(sender, node);
+        InvokeAsync(StateHasChanged);
     }
 
     private void OpenLog()
     {
-        log = true;
-        readwrite = false;
+        activeControl = ActiveControl.log;
     }
     private void OpenReadWrite()
     {
-        log = false;
-        readwrite = true;
+        activeControl = ActiveControl.readwrite;
+    }
+    private void OpenSharper()
+    {
+        activeControl = ActiveControl.sharper;
     }
 
     private void UpdateSelected(object sender, ScannedNodeModel selected)
@@ -176,7 +236,7 @@
         }
         catch (Exception e)
         {
-            logger.Log(new Message(exception: e , text: "Failed to complete write dialoge: {}", parameters: e.Message));
+            logger.Log(new Message(exception: e, text: "Failed to complete write dialoge: {}", parameters: e.Message));
             return;
         }
     }

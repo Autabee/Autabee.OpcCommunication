@@ -1,0 +1,95 @@
+﻿<div>
+    <table class="SharperForm">
+        <tr>
+            <td>Selected Endpoint</td>
+            <td>
+                <select style="height:25px; " type="string" @onchange="SetConnection" placeholder="***">
+                    @foreach (var item in Model.Clients)
+                    {
+                        @if (item != null && item.client.Connected)
+                        {
+                            <option value="@item.client.Session.SessionName">@item.client.GetConnectedServer()?.ApplicationName</option>
+                        }
+                    }
+                </select>
+            </td>
+            <td><button @onclick="Model.GenerateProject" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-cogs"></icon></button></td>
+        </tr>
+        @if (Model.ProjectLocationSelectable)
+        {
+            <tr>
+                <td>Project Location</td>
+                <td><input type="text" placeholder="Project Location" @bind-value=Model.ProjectLocation /></td>
+                <td></td>
+            </tr>
+        }
+        <tr>
+            <td>Project Base Namespace</td>
+            <td><input type="text" placeholder="Base Namespace" @bind-value=Model.BaseNamespace /></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Project Base Namespace</td>
+            <td><input type="text" placeholder="Base Namespace" @bind-value=Model.NameSpacePrefix /></td>
+            <td></td>
+        </tr>
+        @if (Model.Nodes.Count() == 0)
+        {
+            <tr>
+                <td colspan="3" style="text-align:center">
+                    select nodes in your node browser
+                </td>
+            </tr>
+        }
+        else
+        {
+            @for (int i = 0; i < Model.Nodes.Count(); i++)
+            {
+                var j = i;
+                <tr>
+                    <td>Node[@i]</td>
+                    <td><input type="text" @bind-value=Model.Nodes[i] placeholder="***" readonly="true" /></td>
+                    <td>
+                        <button @onclick="()=>Remove(j)" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-close-thick"></icon></button>
+                    </td>
+                </tr>
+            }   }
+    </table>
+
+
+</div>
+
+@code {
+    [Parameter]
+    public SharperViewModel Model { get; set; }
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        Model.OnStateHasChanged += (_, _) => InvokeAsync(StateHasChanged);
+    }
+
+    private void Remove(int i)
+    {
+        Model.Nodes.RemoveAt(i);
+        StateHasChanged();
+    }
+
+    private void SetConnection(ChangeEventArgs e)
+    {
+        if (e is null)
+        {
+            return;
+        }
+
+        string value = e.Value as string;
+        var selected = Model.Clients.FirstOrDefault(x => x.client.Session.SessionName == value);
+        if (selected == null)
+        {
+            return;
+        }
+
+        Model.SelectedClient = selected;
+
+
+    }
+}

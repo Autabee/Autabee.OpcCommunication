@@ -30,39 +30,39 @@
     margin-left: auto;
     border: none;
 }
-.loginform{
+.loginform, .SharperForm{
     margin: 20px auto 20px auto
 }
 
-.loginform > tr > td:nth-child(1) {
+.loginform > tr > td:nth-child(1), .SharperForm > tr > td:nth-child(1) {
     padding-right: 5px;
-    text-align:end;
-    width: 120px;
+    text-align: end;
+    width: 200px;
 }
-.loginform > tr > td:nth-child(3) {
+.loginform > tr > td:nth-child(3), .SharperForm > tr > td:nth-child(3) {
     float: left;
-    width: 120px;
+    width: 200px;
 }
 
-.loginform > tr > td:nth-child(2) {
+.loginform > tr > td:nth-child(2), .SharperForm > tr > td:nth-child(2) {
     width: 300px;
 }
-.loginform > tr > td:nth-child(2) > * {
-    width:300px;
+.loginform > tr > td:nth-child(2) > *, .SharperForm > tr > td:nth-child(2) >* {
+    width: 300px;
     border-top-width: 0px;
-    border-right-width:2px;
-    border-left-width:2px;
-    border-bottom-width:2px;
+    border-right-width: 2px;
+    border-left-width: 2px;
+    border-bottom-width: 2px;
 }
 
-.loginform > tr:nth-child(1) > td:nth-child(2) > * {
+.loginform > tr:nth-child(1) > td:nth-child(2) > *, .SharperForm > tr:nth-child(1) > td:nth-child(2) > * {
     border-top-width: 2px;
 }
 
-.loginform > tr > td > input, .loginform > tr > td > select {
+.loginform > tr > td > input, .loginform > tr > td > select, .SharperForm > tr > td > input, .SharperForm > tr > td > select {
     height: 25px;
     border-radius: 0px;
-    padding-left:5px;
+    padding-left: 5px;
 }
 .SelectEnpoint > p {
     text-align:center

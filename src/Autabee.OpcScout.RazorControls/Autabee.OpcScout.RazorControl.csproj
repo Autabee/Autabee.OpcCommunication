@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ManagedOpcClient\Autabee.Communication.ManagedOpcClient.csproj" />
+    <ProjectReference Include="..\OpcSharper\Autabee.OpcSharper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
