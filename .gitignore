@@ -376,3 +376,5 @@ src/.cr
 /src/Autabee.OpcScout/Styles/*.css
 /src/Autabee.OpcScout/Styles/*.css.*
 /src/Autabee.OpcScoutWeb/data/
+/src/Autabee.OpcScoutWeb/Generated/Model/Autabee.Opc.Model
+/src/Autabee.OpcScoutWeb/wwwroot/sharper/models
