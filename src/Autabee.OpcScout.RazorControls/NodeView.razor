@@ -146,7 +146,7 @@
                 {
                     values.Add(new NodeDetail(
                         string.Format("Inputarguments[{0}]",i), 
-                        arguments.InputArgumentTypes[i].Name + ": " + arguments.InputArguments[0].Name.ToString()
+                        arguments.InputArgumentTypes[i].Name + ": " + arguments.InputArguments[i].Name.ToString()
                     ));
                 }
                 
@@ -155,7 +155,7 @@
                 {
                     values.Add(new NodeDetail(
                         string.Format("OutputArguments[{0}]", i), 
-                        arguments.OutputArgumentTypes[i].Name + ": " + arguments.OutputArguments[0].Name.ToString()
+                        arguments.OutputArgumentTypes[i].Name + ": " + arguments.OutputArguments[i].Name.ToString()
                     ));
                 }
             }

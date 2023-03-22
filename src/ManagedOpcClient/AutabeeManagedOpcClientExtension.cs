@@ -138,34 +138,38 @@ namespace Autabee.Communication.ManagedOpcClient
         #region Browsing
 
 
-        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, NodeId node, BrowseType browseType = BrowseType.Children)
-            => client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetBrowseDescription(node, browseType) });
+        public static BrowseResult BrowseNode(this AutabeeManagedOpcClient client, NodeId node, BrowseType browseType = BrowseType.Children)
+            => client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetBrowseDescription(node, browseType) }).First();
 
-        public static ReferenceDescriptionCollection BrowseNode(this AutabeeManagedOpcClient client, ReferenceDescription refDesc, BrowseType browseType = BrowseType.Children)
+        public static BrowseResult BrowseNode(this AutabeeManagedOpcClient client, ReferenceDescription refDesc, BrowseType browseType = BrowseType.Children)
             => client.BrowseNode(ExpandedNodeId.ToNodeId(refDesc.NodeId, client.Session.NamespaceUris), browseType);
-        public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client,
+        public static async Task<BrowseResult> AsyncBrowseNode(this AutabeeManagedOpcClient client,
             ReferenceDescription node, CancellationToken token, BrowseType browseType = BrowseType.Children)
-            => await client.AsyncBrowseNode(ExpandedNodeId.ToNodeId(node.NodeId, client.Session.NamespaceUris), token);
+        => await client.AsyncBrowseNode(ExpandedNodeId.ToNodeId(node.NodeId, client.Session.NamespaceUris), token, browseType);
 
 
-        public static async Task<ReferenceDescriptionCollection> AsyncBrowseNode(this AutabeeManagedOpcClient client, NodeId node, CancellationToken token, BrowseType browseType = BrowseType.Children)
+        public static async Task<BrowseResult> AsyncBrowseNode(this AutabeeManagedOpcClient client, NodeId node, CancellationToken token, BrowseType browseType = BrowseType.Children)
         {
             BrowseDescriptionCollection nodesToBrowse = new BrowseDescriptionCollection()
             {
                 Browse.GetBrowseDescription(node, browseType)
             };
-            return await client.AsyncBrowseNodes(nodesToBrowse, token);
+            return (await client.AsyncBrowseNodes(nodesToBrowse, token)).First();
         }
-        public static ReferenceDescriptionCollection BrowseNodes(this AutabeeManagedOpcClient client, NodeIdCollection nodes, BrowseType browseType = BrowseType.Children)
+        public static BrowseResultCollection BrowseNodes(this AutabeeManagedOpcClient client, NodeIdCollection nodes, BrowseType browseType = BrowseType.Children)
             => client.BrowseNodes(Browse.GetBrowseDescription(nodes, browseType));
-        public static ReferenceDescriptionCollection BrowseNodes(this AutabeeManagedOpcClient client, ReferenceDescriptionCollection refDesc, BrowseType browseType = BrowseType.Children)
-            => client.BrowseNodes(refDesc.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, client.Session.NamespaceUris)) as NodeIdCollection, browseType);
+        public static BrowseResultCollection BrowseNodes(this AutabeeManagedOpcClient client, ReferenceDescriptionCollection refDesc, BrowseType browseType = BrowseType.Children)
+        {
+            NodeIdCollection nodeIds = new NodeIdCollection();
+            nodeIds.AddRange(refDesc.Select(o => ExpandedNodeId.ToNodeId(o.NodeId, client.Session.NamespaceUris)));
+            return client.BrowseNodes(nodeIds, browseType);
+        }
         #endregion
 
 
-        #region 
+        #region Extended Functions
         public static ReferenceDescriptionCollection BrowseRoot(this AutabeeManagedOpcClient client)
-            => client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetChildrenBrowseDescription(ObjectIds.RootFolder) });
+            => Browse.GetDescriptions( client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetChildrenBrowseDescription(ObjectIds.RootFolder) }));
 
 
         public static ReferenceDescription GetParent(this AutabeeManagedOpcClient client, NodeId nodeId)
@@ -174,18 +178,21 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 Browse.GetParentBrowseDescription(nodeId)
             };
-            var referenceDescriptionCollection = client.BrowseNodes(nodesToBrowse);
+            var referenceDescriptionCollection = client.BrowseNodes(nodesToBrowse)[0];
             //Guard Clause
-            if (referenceDescriptionCollection == null || referenceDescriptionCollection.Count == 0)
+            if (referenceDescriptionCollection == null || referenceDescriptionCollection.References.Count == 0)
             {
                 throw new Exception("No Parent Id Found");
             }
-            if (referenceDescriptionCollection.Count > 1)
+            if (referenceDescriptionCollection.References.Count > 1)
             {
                 throw new Exception("Multiple Parent Id Found");
             }
-            return referenceDescriptionCollection[0];
+            return referenceDescriptionCollection.References[0];
         }
+
+
+        
         #endregion
 
         #region Typing
@@ -283,6 +290,9 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion
 
         #region Methods
+
+        public static MethodArguments GetMethodArguments(this AutabeeManagedOpcClient client,  string nodeIdString)
+            => client.GetMethodArguments(new NodeId(nodeIdString));
         public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, string methodNodeString, params object[] inputArguments)
             => client.CallMethod(
            new NodeId(objectNodeString),
@@ -324,7 +334,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
 
 
-        public static IList<object> CallMethods(this AutabeeManagedOpcClient client, IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
+        public static CallMethodResultCollection CallMethods(this AutabeeManagedOpcClient client, IEnumerable<(NodeEntry, MethodNodeEntry, object[])> data)
         {
             var methodRequests = new CallMethodRequestCollection();
             methodRequests.AddRange(
@@ -388,5 +398,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public static Subscription GetSubscription(this AutabeeManagedOpcClient client, TimeSpan publishingInterval) => client.GetSubscription(publishingInterval.Milliseconds);
         #endregion
+
+
     }
 }

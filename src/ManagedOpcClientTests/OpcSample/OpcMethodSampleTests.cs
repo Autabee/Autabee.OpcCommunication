@@ -41,23 +41,26 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                 browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
             }
 
-            root = communicator.BrowseNodes(browseDescriptions);
+            var roota = communicator.BrowseNodes(browseDescriptions);
             browseDescriptions.Clear();
 
-            foreach (var item in root)
-            {
-                logger.Information(item.NodeId.ToString());
-                logger.Information(item.BrowseName.Name);
-                browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
-            }
-            root = communicator.BrowseNodes(browseDescriptions);
+            Process(browseDescriptions, roota);
+            roota = communicator.BrowseNodes(browseDescriptions);
             browseDescriptions.Clear();
 
+            Process(browseDescriptions, roota);
+        }
+
+        private void Process(BrowseDescriptionCollection browseDescriptions, BrowseResultCollection root)
+        {
             foreach (var item in root)
             {
-                logger.Information(item.NodeId.ToString());
-                logger.Information(item.BrowseName.Name);
-                browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(item.NodeId, null)));
+                foreach (var child in item.References)
+                {
+                    logger.Information(child.NodeId.ToString());
+                    logger.Information(child.BrowseName.Name);
+                    browseDescriptions.Add(Browse.GetChildrenBrowseDescription(ExpandedNodeId.ToNodeId(child.NodeId, null)));
+                }
             }
         }
 
@@ -105,7 +108,8 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                         (UInt32) 1,
                         (UInt32) 100,
                     });
-
+            Assert.Equal((uint)50, arguments[0]);
+            Assert.Equal((uint)100, arguments[1]);
         }
 
         [SkippableFact]
@@ -117,7 +121,6 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
             List<(NodeEntry, MethodNodeEntry, object[])> values = new List<(NodeEntry, MethodNodeEntry, object[])>();
-            nodes = communicator.RegisterNodeIds(nodes);
             var argument = communicator.GetMethodArguments(nodes[1]);
 
             
@@ -162,13 +165,13 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             );
 
 
-            var arguments = communicator.CallMethods(values);
+            var results = communicator.CallMethods(values);
 
-            Assert.Equal((uint)50, (arguments[0] as object[])[0]);
-            Assert.Equal((uint)100, (arguments[0] as object[])[1]);
-            Assert.Equal(StatusCodes.BadArgumentsMissing, ((StatusCode)arguments[1]).Code);
-            Assert.Equal(StatusCodes.BadInvalidArgument, ((StatusCode)arguments[2]).Code);
-            Assert.Equal(StatusCodes.BadTooManyArguments, ((StatusCode)arguments[3]).Code);
+            Assert.Equal((uint)50, results[0].OutputArguments[0].Value);
+            Assert.Equal((uint)100,results[0].OutputArguments[1].Value);
+            Assert.Equal(StatusCodes.BadArgumentsMissing, results[1].StatusCode);
+            Assert.Equal(StatusCodes.BadInvalidArgument, results[2].StatusCode);
+            Assert.Equal(StatusCodes.BadTooManyArguments, results[3].StatusCode);
         }
     }
 }

@@ -18,9 +18,8 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 // check for error.
                 if (StatusCode.IsBad(results[i].StatusCode))
                 {
-                    // this error indicates that the server does not have enough simultaneously active 
-                    // continuation points. This request will need to be resent after the other operations
-                    // have been completed and their continuation points released.
+                    // this error indicates that the server does not have enough simultaneously active continuation points.
+                    // This request will need to be resent after the other operations have been completed and their continuation points released.
                     if (results[i].StatusCode == StatusCodes.BadNoContinuationPoints)
                     {
                         unprocessedOperations.Add(nodesToBrowse[i]);
@@ -40,6 +39,38 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             return (unprocessedOperations, continuationPoints);
         }
 
+
+        public static IEnumerable<BrowseResult> GetEnumerableDoneBrowseResults(BrowseResultCollection results)
+        {
+            return results.Where(o => !StatusCode.IsBad(o.StatusCode) && o.ContinuationPoint == null);
+        }
+
+        public static BrowseResultCollection GetDoneBrowseResults(
+            BrowseResultCollection results)
+        {
+            var continuationPoints = new BrowseResultCollection();
+
+            continuationPoints.AddRange(GetEnumerableDoneBrowseResults(results));
+            return continuationPoints;
+        }
+
+        public static BrowseResultCollection GetDoneBrowseResults(
+            BrowseNextResponse results)
+        {
+            var continuationPoints = new BrowseResultCollection();
+
+            continuationPoints.AddRange(GetEnumerableDoneBrowseResults(results.Results));
+            return continuationPoints;
+        }
+        public static BrowseResultCollection GetDoneBrowseResults(
+            BrowseResponse results)
+        {
+            var continuationPoints = new BrowseResultCollection();
+
+            continuationPoints.AddRange(GetEnumerableDoneBrowseResults(results.Results));
+            return continuationPoints;
+        }
+
         public static ByteStringCollection GetNewContinuationPoints(
             ByteStringCollection continuationPoints,
             BrowseResultCollection results)
@@ -51,6 +82,9 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
 
         public static ReferenceDescriptionCollection GetDescriptions(BrowseResponse results) => GetDescriptions(
             results.Results);
+
+        public static ReferenceDescriptionCollection GetDescriptions(BrowseResult results) => 
+            results.References;
 
         public static ReferenceDescriptionCollection GetDescriptions(BrowseNextResponse results) => GetDescriptions(
             results.Results);
@@ -66,7 +100,11 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             return temp;
         }
         public static BrowseDescriptionCollection GetBrowseDescription(NodeIdCollection nodes, BrowseType browseType)
-            => nodes.Select(o => GetBrowseDescription(o, browseType)) as BrowseDescriptionCollection;
+        {
+            var temp = new BrowseDescriptionCollection();
+            temp.AddRange(nodes.Select(o => GetBrowseDescription(o, browseType)));
+            return temp;
+        }
 
         public static BrowseDescription GetBrowseDescription(NodeId node, BrowseType browseType)
             => browseType switch

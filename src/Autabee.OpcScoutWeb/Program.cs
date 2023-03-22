@@ -35,33 +35,7 @@ namespace Autabee.OpcScoutWeb
                     config.SnackbarConfiguration.SnackbarVariant = MudBlazor.Variant.Filled;
                 });
 
-
-            
-#if WINDOWS
-            int res = 0;
-            try
-            {
-                //WqlEventQuery query = new WqlEventQuery(
-                //     "SELECT * FROM RegistryValueChangeEvent WHERE " +
-                //     "Hive = 'HKEY_CURRENT_USER' " +
-                //     @"AND KeyPath ='HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' AND ValueName='AppsUseLightTheme'");
-
-                //watcher = new ManagementEventWatcher(query);
-                //Console.WriteLine("Waiting for an event...");
-
-                //// Set up the delegate that will handle the change event.
-                //watcher.EventArrived += new EventArrivedEventHandler(HandleEvent);
-
-                //// Start listening for events.
-                //watcher.Start();
-
-                res = (int)Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "AppsUseLightTheme", -1);
-            }
-            catch (Exception e)
-            {
-                //Exception Handling     
-            }
-#endif
+           
             builder.Services.AddSingleton(o =>
             {
                 //var ass = Assembly.GetExecutingAssembly();

@@ -233,6 +233,9 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
         }
 
 
+        public static string[] GetServerTypeSchema(this AutabeeManagedOpcClient client, bool all = false) => 
+            GetServerTypeSchema(client.Session, all);
+
         public static string[] GetServerTypeSchema(this Session session, bool all = false)
         {
             if (!session.Connected) throw new Exception("Not Connected");
