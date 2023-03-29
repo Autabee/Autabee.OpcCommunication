@@ -45,6 +45,10 @@
       <Watch Remove="Styles\_app.var.scss" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\css\app.dark.css" />
+    </ItemGroup>
+
     <Target Name="ToolRestore" BeforeTargets="PreBuildEvent">
         <Exec Command="dotnet tool restore" StandardOutputImportance="high" />
     </Target>

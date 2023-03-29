@@ -46,8 +46,11 @@
             {
                 <button @onclick="WriteValue" title="write node value"><icon class="mdi mdi-tag-arrow-right" /></button>
             }
+            @if (ScannedNodeModel.Node.HasCurrentReadAccess())
+            {
+                <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
+            }
 
-            <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
         }
         @if (ScannedNodeModel.Node.NodeClass == NodeClass.Method)
         {

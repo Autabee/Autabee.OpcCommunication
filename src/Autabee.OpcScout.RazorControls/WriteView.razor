@@ -1,0 +1,46 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+
+<div>
+    @if (record == null)
+    {
+        <p>no record</p>    
+    }
+    else
+    {
+
+        <div class="NodeWriteHead">
+            <div class="NodeWriteHeadActions">
+                <button class="mdi mdi-tag-arrow-right MicroButton Info" onclick="Write"/>
+            </div
+            ><p>@node</p>
+        </div>
+        <table class="NodeWrite">
+            <thead>
+                <tr>
+                    <th>Node</th>
+                    <th>Value</th>
+                    <th>Type</th>
+                </tr>
+            </thead>
+            <tbody>
+                <WriteItem Value=@record.values />
+            </tbody>
+        </table>
+    }
+</div>
+    
+@code {
+    [Parameter]
+    public ValueRecord record { get; set; }
+    [Parameter]
+    public string node { get; set; }
+    [Parameter]
+    public EventCallback update { get; set; }
+    [Parameter]
+    public AutabeeManagedOpcClient client { get; set; }
+
+    public void Write()
+    {
+        client.WriteValue(node, record.values);
+    }
+}

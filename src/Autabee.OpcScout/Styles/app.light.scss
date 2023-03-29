@@ -23,9 +23,20 @@ html, body {
 th {
     background: $color-primary;
 }
-.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .node-set > *:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
+
+.SubscriptionView tr:nth-child(even),
+.data-item:nth-child(even),
+.node-set > *:nth-child(even),
+.logitem:nth-child(even),
+.OpcNodeViewer tr:nth-child(even),
+.WriteItem:nth-child(even) {
     background: adjust-color($color-main-background,$lightness: 5);
 }
+
+.StructItem {
+    background: adjust-color($color-main-background, $lightness: -10);
+}
+
 
 
 

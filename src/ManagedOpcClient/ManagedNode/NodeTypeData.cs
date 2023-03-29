@@ -97,7 +97,9 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             ChildData = nodeTypeData.ChildData;
         }
 
-        public string Name { get; set; } = "";
+        public string Name { get; set; } = string.Empty;
+        public string ArrayLengthField { get; set; } = string.Empty;
+        public bool ArraySizeField { get; set; } = false;
         public string TypeName
         {
             get => typeName; set
@@ -105,6 +107,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
                 typeName = value;
             }
         }
+        public bool IsArray { get; set; }
         public bool Primitive { get => ChildData.Count() == 0; }
         //public int index = 0;
         public List<NodeTypeData> ChildData { get; set; } = new List<NodeTypeData>();
@@ -120,12 +123,34 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             for (int i = 0; i < ChildData.Count; i++)
             {
                 var child = ChildData[i];
-                if (ChildData[i].Primitive)
-                    dict.Add(child.Name, new NodeDataRecord<object>(ChildData[i], decoder.Read(child.TypeName, child.Name)));
+                if (!string.IsNullOrWhiteSpace(child.ArrayLengthField))
+                {
+                    var size_field = (int)dict[child.ArrayLengthField];
+                    for (int j = 0; j < size_field; j++)
+                    {
+                        dict.Add($"{child.Name}[{j}]", AddChildItem(decoder, child));
+                    }
+                }
+
                 else
-                    dict.Add(child.Name, child.Decode(decoder));
+                {
+                    dict.Add(child.Name, AddChildItem(decoder, child));
+                }
             }
+
             return dict;
+
+            object AddChildItem(IDecoder decoder, NodeTypeData child)
+            {
+                if (child.Primitive)
+                {
+                    return decoder.Read(child.TypeName, child.Name);
+        }
+                else
+                {
+                    return child.Decode(decoder);
+                }
+            }
         }
 
 
@@ -135,16 +160,11 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             for (int i = 0; i < ChildData.Count; i++)
             {
                 var child = ChildData[i];
-                if (ChildData[i].Primitive)
-                    dict.Add(child.Name, new NodeDataRecord<object>(ChildData[i], ChildData[i].propertyInfo.GetValue(encodedItem)));
-                else
-                    dict.Add(child.Name, ChildData[i].propertyInfo.GetValue(encodedItem));
+                dict.Add(child.Name, ChildData[i].propertyInfo.GetValue(encodedItem));
             }
+
             return dict;
         }
-
-
-
     }
 
     public static class NodeTypeDataExtension

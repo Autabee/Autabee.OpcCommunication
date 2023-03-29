@@ -1,0 +1,95 @@
+﻿@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Microsoft.JSInterop;
+
+@if (Clients == null)
+{
+    <div>No connected clients</div>
+}
+else
+{
+    <div>
+        <table class="NodeRead NodeTableForm">
+            <tr>
+                <td>Selected Endpoint</td>
+                <td>
+                    <select style="height:25px; " type="string" @onchange="SetConnection" placeholder="***">
+                        @foreach (ClientCache item in Clients)
+                        {
+                            @if (item != null && item.client.Connected)
+                            {
+                                <option value="@item.client.Session.SessionName">@item.client.GetConnectedServer()?.ApplicationName</option>
+                            }
+                        }
+                    </select>
+                </td>
+
+                <td></td>
+            </tr>
+            <tr>
+                <td>Node</td>
+                <td>
+                    <input type="text" placeholder="Node" @bind-value=@NodeToRead />
+                </td>
+
+                <td><buttton @onclick="ReadNode" title="read node" class="Info MicroButton"><icon class="mdi mdi-tag-search" /></buttton></td>
+            </tr>
+        </table>
+        <WriteView record="@record" node="@readNode"/>
+    </div>
+}
+
+
+@code {
+    [Parameter]
+    public List<ClientCache> Clients { get; set; }
+    [Parameter]
+    public Serilog.Core.Logger Logger { get; set; }
+
+    public string NodeToRead { get; set; }
+    public string readNode { get; set; }
+    [Parameter]
+    public ValueRecord record { get; set; }
+    private ClientCache client { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        var selectedClient = Clients.First();
+        if (selectedClient != null)
+        {
+            this.client = selectedClient;
+        }
+    }
+
+
+    public void SetConnection(ChangeEventArgs e)
+    {
+        var selectedClient = Clients.FirstOrDefault(x => x.client.Session.SessionName == e.Value.ToString());
+        if (selectedClient != null)
+        {
+            this.client = selectedClient;
+        }
+    }
+
+    public void ReadNode()
+    {
+        if (client == null)
+        {
+            return;
+        }
+        try
+        {
+            readNode = NodeToRead;
+            var value = client.client.ReadValue(NodeToRead);
+            record = new ValueRecord(value);
+        }
+        catch(Exception e)
+        {
+            Logger?.Error(e,e.Message);
+        }
+        StateHasChanged();
+    }
+
+
+}

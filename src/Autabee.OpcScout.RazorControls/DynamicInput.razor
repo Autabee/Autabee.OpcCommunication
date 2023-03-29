@@ -1,0 +1,60 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+
+@if (value is double
+   || value is int
+   || value is uint
+   || value is float
+   || value is long
+   || value is ulong
+   || value is short
+   || value is ushort
+   || value is byte
+   || value is sbyte
+   || value is decimal
+)
+{
+    <input type="number" inputmode="numeric" value="@value" onchange="UpdateValue" />
+}
+else if (value is bool)
+{
+    <input type="checkbox" checked=@((bool)value) onchange="UpdateValue" />
+}
+else if (value is string)
+{
+    <input type="text" value="@((string)value)" onchange="UpdateValue" />
+}
+else if (value is DateTime)
+{
+    <input type="datetime" value=@((DateTime)value) onchange="UpdateValue" />
+}
+else if (value is DateTimeOffset)
+{
+    <input type="datetime" value=@((DateTimeOffset)value) onchange="UpdateValue" />
+}
+else if (value is TimeSpan)
+{
+    <input type="time" value="@value" onchange="UpdateValue" />
+}
+else
+{
+    <input type="text" value="@value" readonly=@true class="ReadOnlyDynamicType" />
+}
+
+@code {
+    [Parameter]
+    public string key { get; set; }
+    [Parameter]
+    public object value { get; set; }
+
+    private string error { get; set; }
+    [Parameter]
+    public EventCallback<(string key, object value)> OnChange { get; set; }
+
+
+    public void UpdateValue(ChangeEventArgs e)
+    {
+        value = e.Value;
+        OnChange.InvokeAsync((key, e.Value));
+    }
+   
+}

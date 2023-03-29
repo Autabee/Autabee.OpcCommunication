@@ -1,8 +1,10 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Utility.Messaging;
+using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System;
+using System.Collections;
 using System.Linq;
 using System.Text.Json;
 
@@ -85,6 +87,17 @@ namespace Autabee.OpcScout.RazorControl
             try
             {
                 var data = model.Client.ReadValue(model.Node.NodeId);
+                if (data.GetType().IsArray)
+                {
+                    var dict = new Dictionary<string, object>();
+                    for (int i = 0; i < ((Array)data).Length; i++)
+                    {
+                        dict.Add($"[{i}]", ((Array)data).GetValue(i));
+                    }
+
+                    data = dict;
+                }
+
                 Message message = GetValueMessage(data);
                 ReadNodeValue(message);
             }

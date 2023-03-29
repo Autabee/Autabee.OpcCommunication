@@ -1416,7 +1416,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 //CallOutput[] output = new CallOutput[results.Count];
 
-                
+
                 return results;
             };
 

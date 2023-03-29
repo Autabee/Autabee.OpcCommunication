@@ -11,7 +11,6 @@ html, body {
     background-color: $color-main-background;
 }
 
-
 #blazor-error-ui {
     background-color: $color-main-background;
     color: white;
@@ -60,8 +59,6 @@ button {
     background-color: adjust-color($color-secendary,$lightness: -10);
 }
 
-
-
 .ABnavitem > a {
     text-decoration: none;
     color: $color-main-text;
@@ -75,7 +72,6 @@ th {
     color: black;
     background: $color-primary;
 }
-
 
 .OpcNodeViewer > table > tr > td > button:hover {
     background-color: adjust-color($color-secendary,$lightness: -10);
@@ -109,29 +105,14 @@ th {
 .node-caret{
     color: white;
 }
+
 .logitem > button{
     background-color: transparent;
 }
+
 .logitem > button:hover {
     background-color: $color-secendary;
 }
-
-button.Danger {
-    background-color: $color-error;
-    color: white;
-    font-weight: $bold;
-}
-
-button.Info {
-    background-color: $color-info;
-    color: white;
-    font-weight: $bold;
-}
-
-button.Info:hover, button.Danger:hover {
-    background-color: adjust-color($color-primary,$lightness: -5);
-}
-
 
 input, select {
     border-color: adjust-color($color-main-background,$lightness: 10);
@@ -143,6 +124,7 @@ input, select {
     background: $color-primary;
     color: black;
 }
+
 .Root-Node{
     
 }
@@ -156,6 +138,7 @@ dialog, .blazor-context-menu--default {
     background: adjust-color($color-main-background,$lightness: -5);
     border-color: adjust-color($color-main-background,$lightness: 10);
 }
+
 th.node-actions  > button{
     color: black;
 }

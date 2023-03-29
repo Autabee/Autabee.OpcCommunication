@@ -21,7 +21,7 @@
 }*@
 
 
-<table class="loginform">
+<table class="loginform NodeTableForm">
     <tr>
         <td>Server</td>
         <td><input @bind="server" type="url" /></td>
@@ -41,8 +41,8 @@
             </select>
         </td>
         <td>
-            <button @onclick="Connect" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-connection"></icon></button>
-            <button @onclick="Edit" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-cog"></icon></button>
+            <button @onclick="Connect" class="Info MicroButton" style="float:left"><icon class="mdi mdi-connection"></icon></button>
+            <button @onclick="Edit" class="Info MicroButton" style="float:left"><icon class="mdi mdi-cog"></icon></button>
         </td>
     </tr>
 

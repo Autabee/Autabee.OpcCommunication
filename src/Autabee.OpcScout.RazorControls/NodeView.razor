@@ -46,12 +46,9 @@
         }
         else
         {
-
             <tbody>
                 <tr><td colspan="3" style="text-align:center">Non-selected</td></tr>
-
             </tbody>
-
         }
     </table>
 </div>
@@ -129,8 +126,15 @@
             }
             if (node is VariableNode variableNode)
             {
-                Node typeNode = value.Client.ReadNode(variableNode.DataType);
-                values.Add(new NodeDetail("Value Type", typeNode.DisplayName.ToString()));
+                try
+                {
+                    Node typeNode = value.Client.ReadNode(variableNode.DataType);
+                    values.Add(new NodeDetail("Value Type", typeNode.DisplayName.ToString()));
+                }
+                catch
+                {
+                    values.Add(new NodeDetail("Value Type", "Undefined", false));
+                }
             }
             else
             {

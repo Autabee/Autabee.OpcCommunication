@@ -61,7 +61,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
         public static Dictionary<string, NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
         {
             var dict = new Dictionary<string, NodeTypeData>();
-
+            var arraylist = new List<string>();
             foreach (var item in xmls)
             {
                 foreach (XmlNode child in item.GetElementsByTagName("opc:StructuredType"))
@@ -72,6 +72,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                     nodeType.ChildData = new List<NodeTypeData>();
                     foreach (XmlNode child2 in child.ChildNodes)
                     {
+                        arraylist.Clear();
                         if (child2.Name == "opc:Field")
                         {
                             var childNode = new NodeTypeData();
@@ -79,7 +80,18 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                             childNode.TypeName = GetCorrectedTypeName(child2);
                             childNode.ChildData = new List<NodeTypeData>();
                             nodeType.ChildData.Add(childNode);
+                            if (child2.Attributes["LengthField"] != null)
+                            {
+                                childNode.IsArray = true;
+                                childNode.ArrayLengthField = child2.Attributes["LengthField"].Value;
+                                arraylist.Add(childNode.ArrayLengthField);
+
+                            }
                         }
+                        foreach(var arraySizeItem in nodeType.ChildData.Where(o => arraylist.Contains(o.Name)))
+                        {
+                            arraySizeItem.ArraySizeField = true;
+                        }                        
                     }
                     dict.Add(nodeType.Name, nodeType);
                 }

@@ -169,6 +169,9 @@ else
             case "NodeId":
                 DataValue = new NodeId();
                 break;
+            case "Boolean":
+                DataValue = false;
+                break;
             default:
                 throw new Exception("Type not supported");
         }
