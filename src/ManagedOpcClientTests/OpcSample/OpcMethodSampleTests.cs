@@ -87,16 +87,8 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var node1 = communicator.ReadNode("ns=2;i=1");
 
-            var node2 = communicator.TranslateBrowsePathsToNodeId(ObjectIds.ObjectsFolder, "2:My Process/2:Start"
-                //, new string[1]{ "http://opcfoundation.org/Quickstarts/Methods" }
-                );
+            var node2 = communicator.TranslateBrowsePathsToNodeId(ObjectIds.ObjectsFolder, "2:My Process/2:Start");
             Assert.Equal("ns=2;i=3", node2?.ToString());
-
-            //communicator.WellKnownNameSpaces.Append("http://opcfoundation.org/Quickstarts/Methods");
-            //node2 = communicator.TranslateBrowsePathsToNodeId(ObjectIds.ObjectsFolder, 
-            //    "2:My Process/2:Start"
-            //    );
-            //Assert.Equal(node2?.ToString(), "ns=2;i=3");
         }
 
         [SkippableFact]
