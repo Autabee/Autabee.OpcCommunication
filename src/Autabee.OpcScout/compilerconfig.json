@@ -1,7 +1,7 @@
 ﻿[
     {
-        "outputFile": "wwwroot/css/app.css",
-        "inputFile": "Styles/app.scss"
+        "outputFile": "wwwroot/css/app.light.css",
+        "inputFile": "Styles/app.light.scss"
     },
     {
         "outputFile": "wwwroot/css/nav.light.css",

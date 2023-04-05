@@ -82,11 +82,11 @@
 .NodeTableForm > tr > td:nth-child(1) {
     padding-right: 5px;
     text-align: end;
-    width: 200px;
+    min-width: 200px;
 }
 .NodeTableForm > tr > td:nth-child(3) {
     float: left;
-    width: 200px;
+    min-width: 200px;
 }
 
 .NodeTableForm > tr > td:nth-child(2) {
@@ -184,4 +184,8 @@ dialog {
     overflow: auto; /* Enable scroll if needed */
     text-align: left;
     margin: auto;
+}
+
+.SharperForm{
+    width: 100%;
 }

@@ -139,11 +139,13 @@ input {
     color: black;
 }
 
-.SelectEnpoint{
+.Empty {
     background-color: $color-info;
-    color:white;
-    padding:10px;
-    font-size:22px;
+    color: white;
+    padding: 10px;
+    font-size: 22px;
+    text-align: center;
+    font-style: italic;
 }
 
 button.Danger {
