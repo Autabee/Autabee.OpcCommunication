@@ -1,18 +1,28 @@
-﻿using Serilog.Core;
+﻿using MudBlazor;
+using Newtonsoft.Json.Serialization;
+using Serilog.Core;
 using Serilog.Events;
 
 namespace Autabee.OpcScout
 {
     public class InMemoryLog : ILogEventSink
     {
+        ISnackbar snackbar;
         public List<LogMessage> Messages { get; set; } = new List<LogMessage>();
         public event EventHandler<LogMessage> MessageUpdate;
-
+        public InMemoryLog(ISnackbar snackbar)
+        {
+            this.snackbar = snackbar;
+        }
         public void Emit(LogEvent logEvent)
         {
             var log = new LogMessage(logEvent);
             Messages.Add(log);
             MessageUpdate?.Invoke(this,log);
+            if (logEvent.Level >= LogEventLevel.Warning)
+            {
+                snackbar.Add(log.ToString(), (Severity)(int)logEvent.Level);
+            }
         }
     }
 
