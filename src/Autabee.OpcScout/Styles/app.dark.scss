@@ -40,7 +40,9 @@ button {
 /*.data-item:nth-child(even), .Node:nth-child(even), .logitem:nth-child(even) {
     background: adjust-color($color-main-background,$lightness: 10);
 }*/
-
+.NodeWriteHead {
+    color: black;
+}
 .mid-ViewPort {
     border-left: 2px solid $color-primary;
     border-right: 2px solid $color-primary
