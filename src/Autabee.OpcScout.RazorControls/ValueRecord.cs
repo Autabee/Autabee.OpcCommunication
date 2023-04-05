@@ -54,4 +54,10 @@ namespace Autabee.OpcScout.RazorControl
             }
         }
     }
+    public class ReadRecordSettings
+    {
+        public string NodeId { get; set; }
+        public ValueRecord Record { get; set; }
+        public ClientCache Client { get; set; }
+    }
 }

@@ -11,6 +11,8 @@ namespace Autabee.OpcScout.Data
         {
         }
         public readonly List<ClientCache> clients = new List<ClientCache>();
+        public ReadRecordSettings ReadRecord = null;
+        public ScannedNodeModel ModelReadRecord = null;
         public ScannedNodeModel observing = null;
         public readonly List<SubscriptionNodeModel> subscriptionNodes = new List<SubscriptionNodeModel>();
         public SharperViewModel sharperViewModel = null;

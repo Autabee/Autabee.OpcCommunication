@@ -75,7 +75,7 @@
             }
             else if (activeControl == ActiveControl.readwrite)
             {
-                 <NodeReadWrite Clients=@controlBackend.clients Logger=@logger />
+                <NodeReadWrite Clients=@controlBackend.clients Logger=@logger WriteRecord=@controlBackend.ModelReadRecord ReadSettings=@controlBackend.ReadRecord ValueRecordChanged="@ReadRecordChanged" />
             }
             else if (activeControl == ActiveControl.sharper)
             {
@@ -167,7 +167,12 @@
         }
         InvokeAsync(StateHasChanged);
     }
-    
+    private async void ReadRecordChanged( ReadRecordSettings e)
+    {
+        controlBackend.ReadRecord = e;
+        controlBackend.ModelReadRecord = null;
+        InvokeAsync(StateHasChanged);
+    }
 
     private void AddSharperNode(object sender,NodeId node)
     {
@@ -232,6 +237,14 @@
                 var encoding = selected.Client.GetNodeTypeEncoding(selected.Node);
                 var parameters = new DialogParameters { ["record"] = encoding };
                 var dialog = await DialogService.ShowAsync<WriteValueDialoge>("Call", parameters);
+                var result = await dialog.Result;
+            }
+            else
+            {
+                controlBackend.ModelReadRecord = selected;
+                controlBackend.ReadRecord = null; 
+                OpenReadWrite();
+                await InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception e)

@@ -32,48 +32,77 @@ else
                     <input type="text" placeholder="Node" @bind-value=@NodeToRead />
                 </td>
 
-                <td><buttton @onclick="ReadNode" title="read node" class="Info MicroButton"><icon class="mdi mdi-tag-search" /></buttton></td>
+                <td><buttton @onclick="ReadNodeItem" title="read node" class="Info MicroButton"><icon class="mdi mdi-tag-search" /></buttton></td>
             </tr>
         </table>
-        <WriteView record="@record" node="@readNode" client="@client.client" logger="@Logger"/>
+        <WriteView record="@record" node="@readNode" client="@client.client" logger="@Logger" />
     </div>
 }
 
 
 @code {
     [Parameter]
-    public List<ClientCache> Clients { get; set; }
+    public List<ClientCache> Clients { get; set; } = new List<ClientCache>();
     [Parameter]
-    public Serilog.Core.Logger Logger { get; set; }
+    public Serilog.Core.Logger? Logger { get; set; }
 
-    public string NodeToRead { get; set; }
-    public string readNode { get; set; }
+    public string NodeToRead { get; set; } = string.Empty;
+    public string readNode { get; set; } = string.Empty;
     [Parameter]
-    public ValueRecord record { get; set; }
-    private ClientCache client { get; set; }
+    public ScannedNodeModel? WriteRecord { get; set; }
+    private ScannedNodeModel? _writeRecord;
+    [Parameter]
+    public ReadRecordSettings? ReadSettings { get; set; }
+    public ValueRecord? record { get; set; }
+    private ClientCache? client { get; set; }
+    [Parameter]
+    public EventCallback<ReadRecordSettings> ValueRecordChanged { get; set; }
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        var selectedClient = Clients.First();
-        if (selectedClient != null)
+        UpdateRecord();
+    }
+
+    private void UpdateRecord()
+    {
+        if (WriteRecord != null && _writeRecord != WriteRecord && Clients.First(o => o.client == WriteRecord.Client) != default)
         {
-            this.client = selectedClient;
+            this.client = Clients.First(o => o.client == WriteRecord.Client);
+            NodeToRead = WriteRecord.Node.NodeId.ToString();
+            _writeRecord = WriteRecord;
+            ReadNodeItem();
         }
+        if (ReadSettings!= null)
+        {
+            _writeRecord = null;
+            record = ReadSettings?.Record;
+            client = ReadSettings?.Client;
+            readNode = ReadSettings?.NodeId;
+            NodeToRead = ReadSettings?.NodeId;
+        }
+        else if (Clients.Count > 0)
+        {
+            this.client = Clients.First();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        UpdateRecord();
     }
 
 
     public void SetConnection(ChangeEventArgs e)
     {
-        var selectedClient = Clients.FirstOrDefault(x => x.client.Session.SessionName == e.Value.ToString());
+        var selectedClient = Clients.FirstOrDefault(x => x.client.Session.SessionName == e.Value?.ToString());
         if (selectedClient != null)
         {
             this.client = selectedClient;
             record = null;
         }
     }
-
-    public void ReadNode()
+    public void ReadNodeItem()
     {
         if (client == null)
         {
@@ -81,15 +110,21 @@ else
         }
         try
         {
-            record = null; 
+            record = null;
             StateHasChanged();
             readNode = NodeToRead;
             var value = client.client.ReadValue(NodeToRead);
             record = new ValueRecord(value);
+            ValueRecordChanged.InvokeAsync(new ReadRecordSettings()
+                {
+                    Record = record,
+                    NodeId = readNode,
+                    Client = client
+                });
         }
-        catch(Exception e)
+        catch (Exception e)
         {
-            Logger?.Error(e,e.Message);
+            Logger?.Error(e, e.Message);
         }
         StateHasChanged();
     }
