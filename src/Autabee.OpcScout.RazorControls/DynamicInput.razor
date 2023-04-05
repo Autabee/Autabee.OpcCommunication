@@ -14,7 +14,7 @@
    || value is decimal
 )
 {
-    <input type="number" inputmode="numeric" value="value" @onchange="UpdateValue" />
+    <input type="number" inputmode="numeric" value="@value" @onchange="UpdateValue" />
 }
 else if (value is bool)
 {
