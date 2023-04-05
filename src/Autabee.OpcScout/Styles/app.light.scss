@@ -11,7 +11,8 @@ $color-main-text:black;
 
 html, body {
     background-color: $color-main-background;
-    color:black;
+    scrollbar-base-color: adjust-color($color-main-background,$lightness: 10);
+    color: black;
 }
 
 

@@ -1,4 +1,5 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
+@using Serilog.Core;
 
 <div>
     @if (record == null)
@@ -10,7 +11,7 @@
 
         <div class="NodeWriteHead">
             <div class="NodeWriteHeadActions">
-                <button class="mdi mdi-tag-arrow-right MicroButton Info" onclick="Write"/>
+                <button class="mdi mdi-tag-arrow-right MicroButton Info" onclick=@Write/>
             </div
             ><p>@node</p>
         </div>
@@ -39,8 +40,33 @@
     [Parameter]
     public AutabeeManagedOpcClient client { get; set; }
 
+    [Parameter]
+    public Logger logger { get; set; }
+
     public void Write()
     {
-        client.WriteValue(node, record.values);
+        try
+        {
+            if (record.isArray)
+            {
+                Dictionary<string, object>[] values = new Dictionary<string, object>[record.values.Count];
+                var count = 0;
+                foreach (var key in record.values)
+                {
+                    values[count++] = (Dictionary<string, object>)key.Value;
+                }
+
+                client.WriteValue(node, values);
+            }
+            else
+            {
+                client.WriteValue(node, record.values);
+            }
+
+        }
+        catch(Exception e)
+        {
+            logger?.Error(e, e.Message);
+        }
     }
 }

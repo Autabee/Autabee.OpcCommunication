@@ -1,4 +1,5 @@
-﻿@using Microsoft.AspNetCore.Components.Forms
+﻿@using Autabee.Communication.ManagedOpcClient.Utilities;
+@using Microsoft.AspNetCore.Components.Forms
 
 @if (value is double
    || value is int
@@ -13,31 +14,31 @@
    || value is decimal
 )
 {
-    <input type="number" inputmode="numeric" value="@value" onchange="UpdateValue" />
+    <input type="number" inputmode="numeric" value="value" @onchange="UpdateValue" />
 }
 else if (value is bool)
 {
-    <input type="checkbox" checked=@((bool)value) onchange="UpdateValue" />
+    <input type="checkbox" checked=@((bool)value) @onchange="UpdateValue" />
 }
 else if (value is string)
 {
-    <input type="text" value="@((string)value)" onchange="UpdateValue" />
+    <input type="text" value="@((string)value)" @onchange="UpdateValue" />
 }
 else if (value is DateTime)
 {
-    <input type="datetime" value=@((DateTime)value) onchange="UpdateValue" />
+    <input type="datetime" value=@((DateTime)value) @onchange="UpdateValue" />
 }
 else if (value is DateTimeOffset)
 {
-    <input type="datetime" value=@((DateTimeOffset)value) onchange="UpdateValue" />
+    <input type="datetime" value=@((DateTimeOffset)value) @onchange="UpdateValue" />
 }
 else if (value is TimeSpan)
 {
-    <input type="time" value="@value" onchange="UpdateValue" />
+    <input type="time" value="@value" @onchange="UpdateValue" />
 }
 else
 {
-    <input type="text" value="@value" readonly=@true class="ReadOnlyDynamicType" />
+    <input type="text" value="@value" readonly=@true />
 }
 
 @code {
@@ -53,8 +54,11 @@ else
 
     public void UpdateValue(ChangeEventArgs e)
     {
-        value = e.Value;
-        OnChange.InvokeAsync((key, e.Value));
+        if (e.Value is string s)
+        {
+            value = ConvertOpc.StringToObject(value.GetType(), s);
+        }
+        OnChange.InvokeAsync((key, value));
     }
    
 }

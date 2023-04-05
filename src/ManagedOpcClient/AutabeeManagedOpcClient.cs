@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -519,8 +520,9 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        private void InitManagedConnection()
+        private async void InitManagedConnection()
         {
+            await session.LoadDataTypeSystem();
             ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
             session.KeepAlive += Notification_KeepAlive;
             ConnectionUpdated?.Invoke(this, null);
@@ -1136,15 +1138,55 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         public void WriteValue(NodeEntry nodeEntry, object value)
         {
-            WriteValueCollection writeCollection = new WriteValueCollection();
-            writeCollection.Add(CreateWriteValue(nodeEntry.GetNodeId(), value));
-            WriteValues(writeCollection);
+            WriteValue(nodeEntry.GetNodeId(), value);
         }
         public void WriteValue(NodeId nodeId, object value)
         {
             WriteValueCollection writeCollection = new WriteValueCollection();
             writeCollection.Add(CreateWriteValue(nodeId, value));
             WriteValues(writeCollection);
+        }
+
+
+
+        [Obsolete("Use a non dictonary value write or better a IEncodable object write for structs to remove dictionary reformating.")]
+        public void WriteValue(NodeId nodeId, Dictionary<string, object> value)
+        {
+            Session.ReadValues(new List<NodeId>() { nodeId }, new List<Type>() { null }, out var values, out var  serviceResults);
+            var result= new ExtensionObject();
+            var data = OpcObjectEncoder.Binary(session.MessageContext, value);
+            result.Body= data;
+            result.TypeId = ((ExtensionObject)values[0]).TypeId;
+
+            //var task = Session.LoadDataTypeSystem();
+            //task.Wait();
+
+            WriteValueCollection writeCollection = new WriteValueCollection
+            {
+                new WriteValue()
+                {
+                    NodeId = nodeId,
+                    Value = new DataValue(new Variant(result)),
+                    AttributeId = Attributes.Value
+                }
+            };
+
+
+            WriteValues(writeCollection);
+        }
+
+        [Obsolete("Use a non dictonary value write or better a IEncodable object write for structs to remove dictionary reformating.")]
+        public void WriteValue(NodeId nodeId, Dictionary<string, object>[] values)
+        {
+            var result = new ExtensionObject[values.Length];
+            var counter = 0;
+            foreach (var item in values)
+            {
+                result[counter] = new ExtensionObject();
+                result[counter++].Body = (Object)OpcObjectEncoder.Binary(session.MessageContext, item);
+            }
+
+            WriteValue(nodeId, new DataValue(result));
         }
 
         public void WriteValues(NodeValueRecordCollection list)
@@ -1161,15 +1203,38 @@ namespace Autabee.Communication.ManagedOpcClient
             await WriteValuesAsync(CreateWriteCollection(list), ct);
         }
 
+        
         private static WriteValue CreateWriteValue(NodeId nodeId, object value)
         {
-            return new WriteValue()
+
+            try
             {
-                NodeId = nodeId,
-                Value = new DataValue(new Variant(value)),
-                AttributeId = Attributes.Value
-            };
+                if (value is DataValue dvalue)
+                {
+                    return new WriteValue()
+                    {
+                        NodeId = nodeId,
+                        Value = dvalue,
+                        AttributeId = Attributes.Value
+                    };
+                    
+                }
+                else
+                {
+                    return new WriteValue()
+                    {
+                        NodeId = nodeId,
+                        Value = new DataValue(new Variant(value)),
+                        AttributeId = Attributes.Value
+                    };
+                }
+                
+            }
+            catch (Exception e){
+                throw;
+            }
         }
+
         private static WriteValue CreateWriteValue(NodeValueRecord record)
         {
             return new WriteValue()

@@ -9,6 +9,7 @@ $color-main-text: white;
 html, body {
     color: $color-main-text;
     background-color: $color-main-background;
+    scrollbar-base-color: adjust-color($color-main-background,$lightness: -10);
 }
 
 #blazor-error-ui {

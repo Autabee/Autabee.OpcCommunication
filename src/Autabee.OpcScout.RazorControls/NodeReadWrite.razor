@@ -35,7 +35,7 @@ else
                 <td><buttton @onclick="ReadNode" title="read node" class="Info MicroButton"><icon class="mdi mdi-tag-search" /></buttton></td>
             </tr>
         </table>
-        <WriteView record="@record" node="@readNode"/>
+        <WriteView record="@record" node="@readNode" client="@client.client" logger="@Logger"/>
     </div>
 }
 
@@ -69,6 +69,7 @@ else
         if (selectedClient != null)
         {
             this.client = selectedClient;
+            record = null;
         }
     }
 
@@ -80,6 +81,8 @@ else
         }
         try
         {
+            record = null; 
+            StateHasChanged();
             readNode = NodeToRead;
             var value = client.client.ReadValue(NodeToRead);
             record = new ValueRecord(value);

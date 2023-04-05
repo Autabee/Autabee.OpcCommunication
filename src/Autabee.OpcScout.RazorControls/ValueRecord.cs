@@ -12,6 +12,7 @@ namespace Autabee.OpcScout.RazorControl
     public class ValueRecord
     {
         public Dictionary<string, object> values = new Dictionary<string, object> ();
+        public bool isArray { get; private set; } = false; 
         public ValueRecord(object value)
         {
             UpdateValue(value);
@@ -25,6 +26,7 @@ namespace Autabee.OpcScout.RazorControl
             }
             else if (value.GetType().IsArray)
             {
+                isArray = true;
                 var avalue = ((Array)value);
                 var tmp = new Dictionary<string, object>();
                 for (int i = 0; i < avalue.Length; i++)
