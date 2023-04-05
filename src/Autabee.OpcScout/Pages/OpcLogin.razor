@@ -2,12 +2,12 @@
 @using Autabee.OpcScout.Data;
 @using Autabee.OpcScout.MBRazorControl.Dialoges;
 @using Autabee.OpcScout.RazorControl;
-@using Autabee.Utility.Logger;
 @using Opc.Ua;
 @using System.Security.Cryptography.X509Certificates
 @using System.Text.RegularExpressions;
+@using Serilog.Core;
 
-@inject IAutabeeLogger logger
+@inject Logger logger
 @inject OpcScoutPersistentData backend
 @inject NavigationManager Navigation
 @inject ApplicationConfiguration config
@@ -16,26 +16,12 @@
 @inject ISnackbar Snackbar
 @page "/Opc/Login"
 
-<dialog open="@(!string.IsNullOrWhiteSpace(messageTitle))">
-    <h3>@messageTitle</h3>
-    @if (@messageData.Count > 0)
-    {
-        <table>
-            <tr><th>Data</th><th>Value</th></tr>
-            @foreach (var item in messageData)
-            {
-                <tr><td>@item.Key</td><td>@item.Value</td></tr>
-            }
-        </table>
-    }
+@*@if (Loading) {
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+}*@
 
-    @foreach (var button in Buttons)
-    {
-        <button class="@button.Value.Item1" @onclick="button.Value.Item2">@button.Key</button>
-    }
-</dialog>
 
-<table class="loginform">
+<table class="loginform NodeTableForm">
     <tr>
         <td>Server</td>
         <td><input @bind="server" type="url" /></td>
@@ -55,8 +41,8 @@
             </select>
         </td>
         <td>
-            <button @onclick="Connect" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-connection"></icon></button>
-            <button @onclick="Edit" class="Info" style="float:left;height:25px; width:25px; padding:1px;"><icon class="mdi mdi-cog"></icon></button>
+            <button @onclick="Connect" class="Info MicroButton" style="float:left"><icon class="mdi mdi-connection"></icon></button>
+            <button @onclick="Edit" class="Info MicroButton" style="float:left"><icon class="mdi mdi-cog"></icon></button>
         </td>
     </tr>
 
@@ -75,8 +61,8 @@
 
 @if (endpoints == null)
 {
-    <div class="SelectEnpoint">
-    <p ><em>Request server for endpoints</em></p>
+    <div class="Empty">
+    Request server for endpoints
     </div>
 }
 @*else if (editingEndpoint)
@@ -133,7 +119,9 @@ else
     X509Certificate2 lastCert = null;
     bool AcceptLast;
     bool editingEndpoint = false;
+    //bool Loading = false;
     List<EndpointRecord> savedEndpoints = new List<EndpointRecord>();
+    IDialogReference dialog = null;
 
     protected override void OnInitialized()
     {
@@ -146,32 +134,59 @@ else
             dropSelectedEndpoint = savedEndpoints.First();
         }
     }
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
         Client.CertificateValidationNotification -= CertificateValidation;
     }
 
-    private void CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
+    private async void CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
     {
+        if (dialog != null)
+        {
+            return;
+        }
         if (lastCert != null && lastCert.Thumbprint == e.Certificate.Thumbprint && AcceptLast)
         {
             e.Accept = AcceptLast;
             e.AcceptAll = AcceptLast;
             return;
         }
-        messageTitle = "Accept certificate?";
-        messageData["Issuer"] = e.Certificate.Issuer;
-        messageData["Thumbprint"] = e.Certificate.Thumbprint;
-        Buttons.Clear();
-        Buttons.Add("Reject", ("Danger", delegate () { ClearMessage(); }));
-        Buttons.Add("Accept", ("Info", delegate ()
-        {
-            AcceptLast = true;
-            ClearMessage();
-            Connect(selectedEndpoint);
-        }
-        ));
+
+        //Buttons.Clear();
+        //Buttons.Add("Reject", ("Danger", delegate () { ClearMessage(); }));
+        //Buttons.Add("Accept", ("Info", delegate ()
+        //{
+        //    AcceptLast = true;
+        //    ClearMessage();
+        //    Connect(selectedEndpoint);
+        //}
+        //));
         lastCert = e.Certificate;
+        var parameters = new DialogParameters { ["record"] = e };
+        dialog = await DialogService.ShowAsync<AcceptCert>("Accept certificate?", parameters, new DialogOptions()
+        {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+        });
+        var result = await dialog.Result;
+        dialog.Close();
+        dialog = null;
+        if (!result.Canceled)
+        {
+            try
+            {
+                //Loading  = true;
+                StateHasChanged();
+                AcceptLast = true;
+                await InvokeAsync(() => Connect(selectedEndpoint));
+
+            }
+            catch (Exception)
+            {
+                //Loading = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     void SetEndpoint(ChangeEventArgs e)
@@ -185,7 +200,7 @@ else
         dropSelectedEndpoint = selected;
     }
 
-    public async void SaveAndConnect(EndpointDescription endpoint)
+    public void SaveAndConnect(EndpointDescription endpoint)
     {
         var endpointRecord = new EndpointRecord()
             {
@@ -199,29 +214,34 @@ else
         Connect(endpoint);
     }
 
-    public async void Connect()
+    public void Connect()
     {
         if (dropSelectedEndpoint != null)
         {
-            try
-            {
-                endpoints = AutabeeManagedOpcClient.GetEndpoints(dropSelectedEndpoint.Server);
-                CertAccepted = new bool[endpoints.Count];
-                var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
-                if (selectedEndpoint != null)
+            //Loading = true;
+            //InvokeAsync(StateHasChanged);
+
+                try
                 {
-                    logger.Information("attempting to connect with:" + selectedEndpoint.Server.ApplicationUri);
-                    Connect(selectedEndpoint);
+                    endpoints = AutabeeManagedOpcClient.GetEndpoints(dropSelectedEndpoint.Server);
+                    CertAccepted = new bool[endpoints.Count];
+                    var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
+                    if (selectedEndpoint != null)
+                    {
+                        logger.Information("attempting to connect with:" + selectedEndpoint.Server.ApplicationUri);
+                        Connect(selectedEndpoint);
+                    }
+                    else
+                    {
+                        Snackbar.Add("unable to find server", Severity.Error);
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    Snackbar.Add("unable to find server", Severity.Error);
+                    Snackbar.Add(e.Message, Severity.Error);
                 }
-            }
-            catch (Exception e)
-            {
-                Snackbar.Add(e.Message, Severity.Error);
-            }
+            //Loading = false; 
+            //InvokeAsync(StateHasChanged);
         }
     }
     public async void Edit()
@@ -269,7 +289,7 @@ else
         }
     }
 
-    public async void GetEnpoints()
+    public void GetEnpoints()
     {
         messageTitle = string.Empty;
         Stack<string> stackSearch = new Stack<string>();
@@ -374,12 +394,11 @@ else
                 {
                     //OpcUaClientHelperApi.ValidateCertificate(cert);
                     validator.Validate(cert);
-                    CertAccepted[i] = (true);
+                    CertAccepted[i] = true;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-
-                    CertAccepted[i] = (false);
+                    CertAccepted[i] = false;
                 }
             }
         }

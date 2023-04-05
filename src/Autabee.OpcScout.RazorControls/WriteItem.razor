@@ -1,0 +1,63 @@
+﻿@using Autabee.Communication.ManagedOpcClient.ManagedNode;
+
+@foreach (var item in Value)
+{
+    @if (item.Value is Dictionary<string, object> dict)
+    {
+        <tr class="StructItem">
+            <td style="padding-left:@((Depth+1)*4)px">
+                @(GetItem(item.Key))
+            </td>
+            <td></td>
+            <td></td>
+        </tr>
+        <WriteItem Value=@dict Depth=@(Depth+1) NodeId="@(GetItem(item.Key))" />
+    }
+
+    else if (item.Value is NodeDataRecord<object> record)
+    {
+        <tr class="WriteItem">
+            <td style="padding-left:@((Depth+1)*4)px">@(GetItem(item.Key))</td>
+            <td><DynamicInput value="@(record.Value)" key="@(item.Key)" OnChange="OnChange" /></td>
+            <td>@record.TypeName</td>
+        </tr>
+    }
+    else
+    {
+        <tr class="WriteItem">
+            <td style="padding-left:@((Depth+1)*4)px">@(GetItem(item.Key))</td>
+            <td><DynamicInput value="@(item.Value)" key="@(item.Key)" OnChange="OnChange" /></td>
+            <td> @item.Value?.GetType()?.Name</td>
+        </tr>
+    }
+
+}
+
+
+@code {
+    [Parameter]
+    public Dictionary<string, object> Value { get; set; }
+    [Parameter]
+    public int Depth { get; set; }
+    [Parameter]
+    public string NodeId { get; set; }
+
+    private void OnChange((string key, object value) e)
+    {
+        if (Value[e.key] is NodeDataRecord<object> record)
+        {
+            record.Value = e.value;
+        }
+        else
+        {
+            Value[e.key] = e.value;
+        }
+    }
+
+    private string GetItem(string item)
+    {
+        return string.IsNullOrWhiteSpace(NodeId)
+                    ? item
+                    : $"{NodeId}.{item}";
+    }
+}

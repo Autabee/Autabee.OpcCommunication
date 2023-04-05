@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.OpcCommunicator;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.Utility.Logger;
 using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
@@ -28,6 +29,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Skip.If(skipServerNotFound, "Server not Found");
 
             var root = communicator.BrowseRoot();
+            var roota = communicator.BrowseNodes(root);
             foreach (var item in root)
             {
                 logger.Information(item.NodeId.ToString());

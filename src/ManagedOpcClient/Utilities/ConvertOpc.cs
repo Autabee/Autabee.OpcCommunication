@@ -3,7 +3,7 @@ using System;
 using System.Linq;
 using System.Xml;
 
-namespace Autabee.Communication.ManagedOpcClient
+namespace Autabee.Communication.ManagedOpcClient.Utilities
 {
     public static class ConvertOpc
     {
@@ -236,7 +236,8 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public static object StringToObject(Type type, string value)
         {
-            return type.FullName switch {
+            return type.FullName switch
+            {
                 "System.Boolean" => bool.Parse(value),
                 "System.Byte" => byte.Parse(value),
                 "System.SByte" => sbyte.Parse(value),
@@ -359,7 +360,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             return data;
         }
-        public static string NodeTypeString(ExpandedNodeId nodeTypeId) 
+        public static string NodeTypeString(ExpandedNodeId nodeTypeId)
             => NodeTypeString((NodeId)nodeTypeId);
         public static string NodeTypeString(NodeId nodeTypeId)
         {
@@ -405,7 +406,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     case DataTypes.QualifiedName: return "QualifiedName";
                 }
             }
-            
+
             return "unkown";
         }
     }

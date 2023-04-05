@@ -3,6 +3,7 @@
 @using Autabee.OpcScout.RazorControl;
 @using Opc.Ua;
 @using System.Xml;
+@using Autabee.Communication.ManagedOpcClient.Utilities;
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -26,7 +27,7 @@
     </DialogActions>
 </MudDialog>
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
     [Parameter]
     public MethodArguments record { get; set; } = new MethodArguments();
     public string[] strValues = new string[0];
@@ -37,9 +38,9 @@
 
         for (int i = 0; i < strValues.Count(); i++)
         {
-            strValues[i] = record.InputArguments[i].Value == null ?
-                string.Empty :
-                record.InputArguments[i].Value.ToString();
+            strValues[i] = record.InputArguments[i].Value == null 
+                ? string.Empty 
+                : record.InputArguments[i].Value.ToString();
         }
         base.OnInitialized();
     }

@@ -2,7 +2,7 @@
 @using Opc.Ua;
 
 @using Microsoft.JSInterop;
-@using static Autabee.Communication.ManagedOpcClient.NodeExtension;
+@using static Autabee.Communication.ManagedOpcClient.Utilities.NodeExtension;
 @inject IJSRuntime _jsRuntime
 
 <div class="OpcNodeViewer">
@@ -46,12 +46,9 @@
         }
         else
         {
-
             <tbody>
                 <tr><td colspan="3" style="text-align:center">Non-selected</td></tr>
-
             </tbody>
-
         }
     </table>
 </div>
@@ -129,8 +126,15 @@
             }
             if (node is VariableNode variableNode)
             {
-                Node typeNode = value.Client.ReadNode(variableNode.DataType);
-                values.Add(new NodeDetail("Value Type", typeNode.DisplayName.ToString()));
+                try
+                {
+                    Node typeNode = value.Client.ReadNode(variableNode.DataType);
+                    values.Add(new NodeDetail("Value Type", typeNode.DisplayName.ToString()));
+                }
+                catch
+                {
+                    values.Add(new NodeDetail("Value Type", "Undefined", false));
+                }
             }
             else
             {
@@ -146,7 +150,7 @@
                 {
                     values.Add(new NodeDetail(
                         string.Format("Inputarguments[{0}]",i), 
-                        arguments.InputArgumentTypes[i].Name + ": " + arguments.InputArguments[0].Name.ToString()
+                        arguments.InputArgumentTypes[i].Name + ": " + arguments.InputArguments[i].Name.ToString()
                     ));
                 }
                 
@@ -155,7 +159,7 @@
                 {
                     values.Add(new NodeDetail(
                         string.Format("OutputArguments[{0}]", i), 
-                        arguments.OutputArgumentTypes[i].Name + ": " + arguments.OutputArguments[0].Name.ToString()
+                        arguments.OutputArgumentTypes[i].Name + ": " + arguments.OutputArguments[i].Name.ToString()
                     ));
                 }
             }

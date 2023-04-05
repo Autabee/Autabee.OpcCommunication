@@ -6,7 +6,7 @@
 				<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
 				<Description>Standard logging interface for autabee packages</Description>
 				<PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
-				<Version>0.2.0</Version>
+				<Version>0.2.2</Version>
 				<PackageTags>opcua;client;opcua-client</PackageTags>
 		</PropertyGroup>
 		<ItemGroup>
@@ -17,9 +17,9 @@
 		</ItemGroup>
 
 		<ItemGroup>
-				<PackageReference Include="Autabee.Utility.Logger" Version="1.0.1" />
 				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.371.60" />
 				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.4.371.60" />
+				<PackageReference Include="Serilog" Version="2.12.0" />
 		</ItemGroup>
 
 		<ItemGroup>

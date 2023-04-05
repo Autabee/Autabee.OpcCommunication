@@ -1,4 +1,7 @@
-﻿using Opc.Ua;
+﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Opc.Ua;
+using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -202,6 +205,8 @@ namespace Autabee.OpcToClass
 
         static public void GenerateCsharpProject(GeneratorSettings settings)
         {
+            
+
             Directory.CreateDirectory(settings.baseLocation);
 
             // generate cs libary project file in generate folder with the basetype name
@@ -229,7 +234,7 @@ namespace Autabee.OpcToClass
                 var (name, scriptContent) = (item.Key, item.Value);
                 var split = name.Split('.');
 
-                var namespaceName = string.Join('.' + settings.nsPrefix, split.Take(split.Length - 1));
+                var namespaceName = string.Join('.' + settings.nameSpacePrefix, split.Take(split.Length - 1));
                 var className = split.Last();
                 var fileName = className + ".cs";
 
@@ -240,8 +245,8 @@ namespace Autabee.OpcToClass
                 }
                 else
                 {
-                    Directory.CreateDirectory(Path.Combine(settings.baseLocation, settings.nsPrefix + string.Join($"\\{settings.nsPrefix}", split.Take(split.Length - 1))));
-                    filePath = Path.Combine(settings.baseLocation, settings.nsPrefix + string.Join($"\\{settings.nsPrefix}", split.Take(split.Length - 1)), fileName);
+                    Directory.CreateDirectory(Path.Combine(settings.baseLocation, settings.nameSpacePrefix + string.Join($"\\{settings.nameSpacePrefix}", split.Take(split.Length - 1))));
+                    filePath = Path.Combine(settings.baseLocation, settings.nameSpacePrefix + string.Join($"\\{settings.nameSpacePrefix}", split.Take(split.Length - 1)), fileName);
                 }
 
                 CreateFile(filePath, scriptContent);
@@ -256,14 +261,14 @@ namespace Autabee.OpcToClass
             {
                 var name = GetCorrectedName(value);
                 var split = name.Split('.');
-                var namespaceName = string.Join('.' + settings.nsPrefix, split.Take(split.Length - 1));
+                var namespaceName = string.Join('.' + settings.nameSpacePrefix, split.Take(split.Length - 1));
                 namespaceName = string.IsNullOrWhiteSpace(namespaceName)
                   ? settings.baseNamespace
-                  : settings.baseNamespace + '.' + settings.nsPrefix + namespaceName;
+                  : settings.baseNamespace + '.' + settings.nameSpacePrefix + namespaceName;
 
                 var scriptContent = "using Opc.Ua;\n\n"
                     + "namespace " + namespaceName + "\n{";
-                scriptContent += GenerateClass(settings.nsPrefix, value, split.Last()).Replace("\n", "\n\t");
+                scriptContent += GenerateClass(settings.nameSpacePrefix, value, split.Last()).Replace("\n", "\n\t");
                 scriptContent += "\n}";
 
                 scripts[name] = scriptContent;
@@ -413,7 +418,7 @@ namespace Autabee.OpcToClass
             CreateFile(Path.Combine(settings.baseLocation, "AddressSpace.cs"), fileContents);
         }
 
-        static public void GenerateNodeEntryAddressSpace(ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorSettings settings)
+        static public void GenerateNodeEntryAddressSpace(AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorSettings settings)
         {
             var fileContents = "using Opc.Ua;\n"
                 + "using Autabee.Communication.ManagedOpcClient.ManagedNode;\n\n"
@@ -440,9 +445,24 @@ namespace Autabee.OpcToClass
 
                 if (referenceNode.TypeDefinition.IdType == IdType.Numeric && nodeData is VariableNode varNode)
                 {
-                    if (!settings.typeOverrides.TryGetValue(varNode.DataType.Identifier.ToString(), out nodetype))
+                    nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nameSpacePrefix);
+
+                    if (nodetype.Contains("Unknown") )
                     {
-                        nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nsPrefix);
+                        var value = client.ReadValue(nodeData);
+                        if (typeof(NodeTypeData).IsInstanceOfType(value) || typeof(EncodeableObject).IsInstanceOfType(value))
+                        {
+                            if (settings.typeOverrides.TryGetValue(varNode.DataType.Identifier.ToString(), out nodetype))
+                            {
+                                var compare = referenceNode.NodeId.ToString() + "[";
+                                if (referenceNodes.FirstOrDefault(o => o.NodeId.ToString().StartsWith(compare)) != null) 
+                                    nodetype += "[]";
+                            }
+                        }
+                        else
+                        {
+                            nodetype = value.GetType().FullName;
+                        }
                     }
                 }
                 else
@@ -459,7 +479,7 @@ namespace Autabee.OpcToClass
                                 if (temp.Count() == 1) nodetype = temp[0];
                                 else
                                 {
-                                    nodetype = settings.nsPrefix + String.Join('.' + settings.nsPrefix, temp.Take(temp.Length - 1)) + "." + temp.Last();
+                                    nodetype = settings.nameSpacePrefix + String.Join('.' + settings.nameSpacePrefix, temp.Take(temp.Length - 1)) + "." + temp.Last();
                                 }
                                 var compare = referenceNode.NodeId.ToString() + "[";
                                 if (referenceNodes.FirstOrDefault(o => o.NodeId.ToString().StartsWith(compare)) != null) nodetype += "[]";

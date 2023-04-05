@@ -131,3 +131,29 @@ dialog > button {
 h3 {
     font-weight: $bold;
 }
+
+.MicroButton{
+    align-items:center;
+    display: inline-block;
+    height: 25px;
+    width: 25px;
+    padding: 1px;
+    text-align: center;
+}
+
+
+.Danger {
+    background-color: $color-error;
+    color: white;
+    font-weight: $bold;
+}
+
+.Info {
+    background-color: $color-info;
+    color: white;
+    font-weight: $bold;
+}
+
+.Info:hover, .Danger:hover {
+    background-color: adjust-color($color-primary,$lightness: -5);
+}
