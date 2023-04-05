@@ -8,6 +8,19 @@
     {
         @if (dicItem.Count > 0)
         {
+            <tr>
+                @if (item.Key.StartsWith("["))
+                {
+                    <td style="padding-left:@(Depth)em">@($"{NodeId}{item.Key}")</td>
+                }
+                else
+                {
+                    <td style="padding-left:@(Depth)em">@($"{NodeId}.{item.Key}")</td>
+                }
+                <td colspan="5" />
+
+            </tr>
+
             @if (item.Key.StartsWith("["))
             {
                 <ComplexSubscriptionNode Value="@dicItem" NodeId=@($"{NodeId}{item.Key}") Depth="@(Depth +1)" />
@@ -22,11 +35,11 @@
             <tr>
                 @if (item.Key.StartsWith("["))
                 {
-                <td style="padding-left=@(Depth*4)px">@($"{NodeId}{item.Key}")</td>
+                    <td style="padding-left:@(Depth*4)px">@($"{NodeId}{item.Key}")</td>
                 }
                 else
                 {
-                <td style="padding-left=@(Depth*4)px">@($"{NodeId}.{item.Key}")</td>
+                    <td style="padding-left:@(Depth*4)px">@($"{NodeId}.{item.Key}")</td>
                 }
 
                 <td></td>
@@ -52,36 +65,25 @@
     else if (item.Value is NodeDataRecord<object> record)
     {
         <tr>
-            @if (item.Key.StartsWith("["))
-            {
-            <td style="padding-left=@(Depth*4)px">@($"{NodeId}{item.Key}")</td>
-            }
-            else
-            {
-            <td style="padding-left=@(Depth*4)px">@($"{NodeId}.{item.Key}")</td>
-            }
+            <td style="padding-left:@(Depth)em">@(NodeIdName(NodeId, item.Key))</td>
             <td>@item.Key</td>
             <td></td>
             <td>@(record.Value)</td>
             <td>@(record.TypeName)</td>
+            <td></td>
             <td></td>
         </tr>
     }
     else
     {
         <tr>
-            @if (item.Key.StartsWith("["))
-            {
-            <td style="padding-left=@(Depth*4)px">@($"{NodeId}{item.Key}")</td>
-            }
-            else
-            {
-            <td style="padding-left=@(Depth*4)px">@($"{NodeId}.{item.Key}")</td>
-            }
+            <td style="padding-left:@(Depth)em">@(NodeIdName(NodeId, item.Key))</td>
+            <td>@item.Key</td>
             <td></td>
             <td>@(item.Value)</td>
+            <td>@(item.Value.GetType().FullName)</td>
             <td></td>
-            <td></td>
+
         </tr>
     }
 }
@@ -96,4 +98,17 @@
     public string NodeId { get; set; }
     [Parameter]
     public int Depth { get; set; }
+
+
+    public string NodeIdName(string NodeId, string key)
+    {
+        if (key.StartsWith("["))
+        {
+            return $"{NodeId}{key}";
+        }
+        else
+        {
+            return $"{NodeId}.{key}";
+        }
+    }
 }

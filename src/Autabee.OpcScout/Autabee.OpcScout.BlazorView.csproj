@@ -40,6 +40,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Watch Remove="Styles\app.scss" />
+      <Watch Remove="Styles\_app.dark.scss" />
+      <Watch Remove="Styles\_app.light.scss" />
       <Watch Remove="Styles\_app.OpcControls.style.scss" />
       <Watch Remove="Styles\_app.style.scss" />
       <Watch Remove="Styles\_app.var.scss" />

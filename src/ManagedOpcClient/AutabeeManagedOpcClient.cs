@@ -1152,38 +1152,47 @@ namespace Autabee.Communication.ManagedOpcClient
         [Obsolete("Use a non dictonary value write or better a IEncodable object write for structs to remove dictionary reformating.")]
         public void WriteValue(NodeId nodeId, Dictionary<string, object> value)
         {
-            Session.ReadValues(new List<NodeId>() { nodeId }, new List<Type>() { null }, out var values, out var  serviceResults);
-            var result= new ExtensionObject();
-            var data = OpcObjectEncoder.Binary(session.MessageContext, value);
-            result.Body= data;
-            result.TypeId = ((ExtensionObject)values[0]).TypeId;
-
-            //var task = Session.LoadDataTypeSystem();
-            //task.Wait();
-
-            WriteValueCollection writeCollection = new WriteValueCollection
+            WriteValueCollection writeCollection;
+            if (value.Count > 1)
             {
-                new WriteValue()
+                Session.ReadValues(new List<NodeId>() { nodeId }, new List<Type>() { null }, out var values, out var serviceResults);
+                var result = new ExtensionObject();
+                var data = OpcObjectEncoder.Binary(session.MessageContext, value);
+                result.Body = data;
+                result.TypeId = ((ExtensionObject)values[0]).TypeId;
+
+                //var task = Session.LoadDataTypeSystem();
+                //task.Wait();
+
+                writeCollection = new WriteValueCollection
                 {
-                    NodeId = nodeId,
-                    Value = new DataValue(new Variant(result)),
-                    AttributeId = Attributes.Value
-                }
-            };
-
-
-            WriteValues(writeCollection);
+                    new WriteValue()
+                    {
+                        NodeId = nodeId,
+                        Value = new DataValue(new Variant(result)),
+                        AttributeId = Attributes.Value
+                    }
+                };
+                WriteValues(writeCollection);
+            }
+            else
+            {
+                WriteValue(nodeId,value.First().Value);
+            }
         }
 
         [Obsolete("Use a non dictonary value write or better a IEncodable object write for structs to remove dictionary reformating.")]
         public void WriteValue(NodeId nodeId, Dictionary<string, object>[] values)
         {
-            var result = new ExtensionObject[values.Length];
+            Session.ReadValues(new List<NodeId>() { nodeId }, new List<Type>() { null }, out var read_values, out var serviceResults);
+
+            var result = new ExtensionObject[((ExtensionObject[])read_values[0]).Count()];
             var counter = 0;
             foreach (var item in values)
             {
                 result[counter] = new ExtensionObject();
-                result[counter++].Body = (Object)OpcObjectEncoder.Binary(session.MessageContext, item);
+                result[counter].Body = (Object)OpcObjectEncoder.Binary(session.MessageContext, item);
+                result[counter++].TypeId = ((ExtensionObject[])read_values[0])[0].TypeId;
             }
 
             WriteValue(nodeId, new DataValue(result));
