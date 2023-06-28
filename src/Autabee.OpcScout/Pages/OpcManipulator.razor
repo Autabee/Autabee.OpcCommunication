@@ -42,7 +42,7 @@
 
 
     <div class="ReadWrite Viewport mid-ViewPort">
-        <h3>Logs</h3>
+        <h3>Utilities</h3>
         <div class="Viewportheader">
             <button @onclick="()=>OpenLog()">logs</button>
             <button @onclick="()=>OpenReadWrite()">read/write</button>
@@ -157,7 +157,7 @@
 
     }
 
-    private async  void CompletSharper(object sender, string e)
+    private async void CompletSharper(object sender, string e)
     {
         if (config["Sharper:DownloadOnSafe"]?.ToLower() == "true")
         {
@@ -165,20 +165,20 @@
             var fileURL = Path.Combine(NavigationManager.BaseUri, Path.GetRelativePath("wwwroot/", e));
             await JS.InvokeVoidAsync("triggerFileDownload", fileName, fileURL);
         }
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
     private async void ReadRecordChanged( ReadRecordSettings e)
     {
         controlBackend.ReadRecord = e;
         controlBackend.ModelReadRecord = null;
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
 
-    private void AddSharperNode(object sender,NodeId node)
+    private async void AddSharperNode(object sender,NodeId node)
     {
         activeControl = ActiveControl.sharper;
         sharperViewModel.AddNode(sender, node);
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
 
     private void OpenLog()
