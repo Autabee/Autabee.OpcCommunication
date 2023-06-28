@@ -145,7 +145,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
                 if (child.Primitive)
                 {
                     return decoder.Read(child.TypeName, child.Name);
-        }
+                }
                 else
                 {
                     return child.Decode(decoder);

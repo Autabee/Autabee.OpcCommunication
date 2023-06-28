@@ -386,6 +386,21 @@ namespace Autabee.Communication.ManagedOpcClient
                 nodeId,
                 handler);
 
+        public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
+                TimeSpan publishingInterval,
+                string nodeId,
+                MonitoredNodeValueEventHandler handler = null) => client.AddMonitoredItem(
+                client.GetSubscription(publishingInterval),
+                new NodeId(nodeId),
+                handler); 
+        public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
+                int publishingIntervalMilliSec,
+                string nodeId,
+                MonitoredNodeValueEventHandler handler = null) => client.AddMonitoredItem(
+                client.GetSubscription(publishingIntervalMilliSec),
+                new NodeId(nodeId),
+                handler);
+
         public static IEnumerable<MonitoredItem> AddMonitoredItems(this AutabeeManagedOpcClient client, TimeSpan publishingInterval, ValueNodeEntryCollection nodeEntrys)
             => client.AddMonitoredItems(
                 client.GetSubscription(publishingInterval),

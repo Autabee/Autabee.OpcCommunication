@@ -20,7 +20,7 @@ using System.Xml.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
-    public delegate void MonitoredNodeValueRecordEventHandler(object sender, NodeValueRecord e);
+    public delegate void MonitoredNodeValueRecordEventHandler(MonitoredItem sender, NodeValueRecord e);
     public delegate void MonitoredNodeValueEventHandler(MonitoredItem nodeId, object e);
 
     public class AutabeeManagedOpcClient
@@ -1239,7 +1239,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 }
                 
             }
-            catch (Exception e){
+            catch (Exception){
                 throw;
             }
         }
