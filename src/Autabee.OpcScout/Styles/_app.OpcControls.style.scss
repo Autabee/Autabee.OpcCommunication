@@ -14,6 +14,7 @@
 }
 
 .node-actions button {
+    height:100%;
     float: right;
     padding: 0px 1px 0px 1px;
     width: 20px;
@@ -23,46 +24,90 @@
     font-weight: normal;
 }
 
+.NodeWrite th {
+    background-color: $color-primary;
+    font-weight: $bold;
+    text-align: center;
+    font-size: 12px;
+}
 
+.NodeWrite {
+    width: 100%;
+    max-width: 100%;
+    word-wrap: break-word;
+    word-break: break-word;
+    border-spacing: 0px;
+}
+
+.NodeWrite input {
+    width: 100%;
+    max-width: 100%;
+    word-wrap: break-word;
+    word-break: break-word;
+    border-spacing: 0px;
+}
+
+.NodeWriteHead {
+    width: 100%;
+    max-width: 100%;
+    display: grid; 
+    word-wrap: break-word;
+    word-break: break-word;
+    border-spacing: 0px;
+    grid-template: "actions node" 25px / 25px auto;
+}
+
+.NodeWriteHead p {
+    padding-left: 5px;
+    width: 100%;
+    background-color: $color-primary;
+    height: 25px;
+    grid-area: node;
+    font-weight: $bold;
+}
+
+.NodeWriteHeadActions {
+    grid-area: actions;
+}
 
 .Theme {
     font-size: 20px;
     margin-left: auto;
     border: none;
 }
-.loginform{
+.NodeTableForm {
     margin: 20px auto 20px auto
 }
 
-.loginform > tr > td:nth-child(1) {
+.NodeTableForm > tr > td:nth-child(1) {
     padding-right: 5px;
-    text-align:end;
-    width: 120px;
+    text-align: end;
+    min-width: 200px;
 }
-.loginform > tr > td:nth-child(3) {
+.NodeTableForm > tr > td:nth-child(3) {
     float: left;
-    width: 120px;
+    min-width: 200px;
 }
 
-.loginform > tr > td:nth-child(2) {
+.NodeTableForm > tr > td:nth-child(2) {
     width: 300px;
 }
-.loginform > tr > td:nth-child(2) > * {
-    width:300px;
+.NodeTableForm > tr > td:nth-child(2) > * {
+    width: 300px;
     border-top-width: 0px;
-    border-right-width:2px;
-    border-left-width:2px;
-    border-bottom-width:2px;
+    border-right-width: 2px;
+    border-left-width: 2px;
+    border-bottom-width: 2px;
 }
 
-.loginform > tr:nth-child(1) > td:nth-child(2) > * {
+.NodeTableForm > tr:nth-child(1) > td:nth-child(2) > *{
     border-top-width: 2px;
 }
 
-.loginform > tr > td > input, .loginform > tr > td > select {
+.NodeTableForm > tr > td > input, .NodeTableForm > tr > td > select{
     height: 25px;
     border-radius: 0px;
-    padding-left:5px;
+    padding-left: 5px;
 }
 .SelectEnpoint > p {
     text-align:center
@@ -139,4 +184,8 @@ dialog {
     overflow: auto; /* Enable scroll if needed */
     text-align: left;
     margin: auto;
+}
+
+.SharperForm{
+    width: 100%;
 }

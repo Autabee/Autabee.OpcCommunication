@@ -1,8 +1,8 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
-@using Autabee.Utility.Logger
 @using Autabee.Utility.Messaging;
 @using Opc.Ua
 @using System.Text.Json;
+@using Autabee.Communication.ManagedOpcClient.Utilities;
 
 <tr class="@ScannedNodeModel.NodeClassType" >
     
@@ -46,8 +46,11 @@
             {
                 <button @onclick="WriteValue" title="write node value"><icon class="mdi mdi-tag-arrow-right" /></button>
             }
+            @if (ScannedNodeModel.Node.HasCurrentReadAccess())
+            {
+                <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
+            }
 
-            <button @onclick="SubscribeValue" title="Subscribe to node"><icon class="mdi mdi-tag-plus" /></button>
         }
         @if (ScannedNodeModel.Node.NodeClass == NodeClass.Method)
         {
@@ -80,8 +83,6 @@
     public NodeBrowserModel Browser { get; set; }
 
     public int depthNext { get => depth + 1; }
-
-
     public string depthString { get => (depth * 8).ToString() + "px"; }
     private bool openedOnce { get; set; }
     protected override async void OnInitialized()
@@ -133,6 +134,7 @@
         //((MethodNode)ScannedNodeModel.Node).TypeId
         Browser.OpenCall(ScannedNodeModel);
     }
+    
     private async void Close()
     {
         ScannedNodeModel.Close();
@@ -140,29 +142,12 @@
 
     private async void ReadValue()
     {
-        try
-        {
-            var data = ScannedNodeModel.Client.ReadValue(ScannedNodeModel.Node.NodeId);
-            Message message = GetValueMessage(data);
-            Browser.ReadNodeValue(message);
-        }
-        catch (Exception e)
-        {
-            Browser.ReadNodeValue(new Message(level: MessageLevel.Error, text: " {0} : {1} \n{2}", ScannedNodeModel.Node, e.Message, e));
-        }
+        Browser.ReadValue(ScannedNodeModel);
     }
 
     private async void WriteValue()
     {
         Browser.WriteNodeValue(ScannedNodeModel);
-    }
-
-    private Message GetValueMessage(object value)
-    {
-        if (value == null) return new Message(level: MessageLevel.Info, text: "NULL");
-        else if (value is Dictionary<string, object> dic) return new Message(level: MessageLevel.Info, text: "{0}", JsonSerializer.Serialize(dic));
-        else if (value is object[] list) return new Message(level: MessageLevel.Info, text: "{0}", string.Join("\n", list));
-        else return new Message(level: MessageLevel.Info, text: "{0}", value?.ToString());
     }
 
     private async void SubscribeValue()
@@ -174,14 +159,15 @@
     {
         Browser.UpdateSelectedNode(ScannedNodeModel);
         ScannedNodeModel.NodeClassType = "Node-Selected Node";
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
 
     private async void DeSelect(object sender, EventArgs data)
     {
         ScannedNodeModel.NodeClassType = "Node";
-        StateHasChanged();
+        InvokeAsync(StateHasChanged);
     }
+    
     private async void UpdateState(object sender, EventArgs data)
     {
         InvokeAsync(StateHasChanged);

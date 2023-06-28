@@ -32,7 +32,7 @@ namespace AutabeeTestFixtures
                     task.Wait(10000);
                     SkipServerNotFound = task.IsCompleted && !Communicator.Connected;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     //Logger.Error("Failed to connect", e);
                     SkipServerNotFound = true;

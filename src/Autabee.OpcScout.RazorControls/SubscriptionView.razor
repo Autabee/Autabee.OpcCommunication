@@ -3,14 +3,17 @@
 
 <div class="SubscriptionView">
     <table>
-        <tr>
-            <th>NodeId</th>
-            <th>Time</th>
-            <th>Value</th>
-            <th>Type</th>
-            <th></th>
+        <thead>
+            <tr>
+                <th>NodeId</th>
+                <th>Node Name</th>
+                <th>Time</th>
+                <th>Value</th>
+                <th>Type</th>
+                <th></th>
 
-        </tr>
+            </tr>
+        </thead>
         @foreach (var item in SubscriptionViewModel.subscriptionNodeModels)
         {
             <SubscriptionNode SubscriptionViewModel="@item" />

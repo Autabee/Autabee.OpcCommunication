@@ -1,4 +1,5 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.OpcScout.RazorControl.Browse;
 using Opc.Ua;
@@ -60,7 +61,7 @@ namespace Autabee.OpcScout.RazorControl
                 NodeImage = NodeImageId.Loading;
                 StateUpdated?.Invoke(this, new EventArgs());
                 var token = CancellationToken.None;
-                var descriptions = Client.BrowseNode(Node.NodeId);
+                var descriptions = Autabee.Communication.ManagedOpcClient.Utilities.Browse.GetDescriptions(Client.BrowseNode(Node.NodeId));
 
                 var splitted = SplitList(descriptions);
                 NodeCollection childNodes = new NodeCollection();

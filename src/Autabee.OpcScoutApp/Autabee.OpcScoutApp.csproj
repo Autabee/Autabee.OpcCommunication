@@ -13,14 +13,14 @@
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
 
         <!-- Display name -->
-        <ApplicationTitle>Autabee.OpcScoutApp</ApplicationTitle>
+        <ApplicationTitle>opcscout</ApplicationTitle>
 
         <!-- App Identifier -->
-        <ApplicationId>com.companyname.autabee.opcscoutapp</ApplicationId>
+        <ApplicationId>com.autabee.opcscoutapp</ApplicationId>
         <ApplicationIdGuid>4864F782-BBD2-4D85-96F8-ED2AC852F25F</ApplicationIdGuid>
 
         <!-- Versions -->
-        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
         <ApplicationVersion>1</ApplicationVersion>
 
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">14.2</SupportedOSPlatformVersion>
@@ -29,6 +29,23 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
         <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
+        <AssemblyName>opcscout</AssemblyName>
+        <Company>Autabee</Company>
+        
+        
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0-windows10.0.19041.0|AnyCPU'">
+      <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0-windows10.0.19041.0|AnyCPU'">
+      <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
+        <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
+        <PackageCertificateThumbprint>55F63D1750799DF2679879F27489E4F1E749015E</PackageCertificateThumbprint>
     </PropertyGroup>
 
     <ItemGroup>
@@ -57,6 +74,10 @@
       <EmbeddedResource Include="autabeeopcscout.Config.xml">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </EmbeddedResource>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
     </ItemGroup>
 
     <ItemGroup>

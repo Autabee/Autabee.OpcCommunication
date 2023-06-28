@@ -1,7 +1,7 @@
-﻿@using Autabee.Utility.Logger;
-@using Microsoft.AspNetCore.Components.Forms
+﻿@using Microsoft.AspNetCore.Components.Forms
 @using Opc.Ua;
-@inject IAutabeeLogger logger
+@using Serilog.Core;
+@inject Logger logger
 <h3>EditConnectionDetails</h3>
 <EditForm Model="@endpointRecord" OnSubmit="@HandleSubmit">
     <DataAnnotationsValidator />

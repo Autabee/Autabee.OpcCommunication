@@ -2,10 +2,10 @@ using Autabee.Communication.ManagedOpcClient;
 using Autabee.OpcScout;
 using Autabee.OpcScout.Data;
 using Autabee.OpcScout.RazorControl;
-using Autabee.Utility.Logger;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using MudBlazor.Services;
+using Serilog;
 using System.Reflection;
 
 namespace Autabee.OpcScoutWeb
@@ -35,33 +35,7 @@ namespace Autabee.OpcScoutWeb
                     config.SnackbarConfiguration.SnackbarVariant = MudBlazor.Variant.Filled;
                 });
 
-
-            
-#if WINDOWS
-            int res = 0;
-            try
-            {
-                //WqlEventQuery query = new WqlEventQuery(
-                //     "SELECT * FROM RegistryValueChangeEvent WHERE " +
-                //     "Hive = 'HKEY_CURRENT_USER' " +
-                //     @"AND KeyPath ='HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize' AND ValueName='AppsUseLightTheme'");
-
-                //watcher = new ManagementEventWatcher(query);
-                //Console.WriteLine("Waiting for an event...");
-
-                //// Set up the delegate that will handle the change event.
-                //watcher.EventArrived += new EventArrivedEventHandler(HandleEvent);
-
-                //// Start listening for events.
-                //watcher.Start();
-
-                res = (int)Registry.GetValue("HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize", "AppsUseLightTheme", -1);
-            }
-            catch (Exception e)
-            {
-                //Exception Handling     
-            }
-#endif
+           
             builder.Services.AddSingleton(o =>
             {
                 //var ass = Assembly.GetExecutingAssembly();
@@ -76,8 +50,20 @@ namespace Autabee.OpcScoutWeb
                 NavLinked = true
                 
             });
+
+            builder.Services.AddScoped(o =>
+            {
+                var logger = new Serilog.LoggerConfiguration()
+                    .MinimumLevel.Verbose()
+                    .WriteTo.Sink(o.GetRequiredService<InMemoryLog>())
+                    .WriteTo.File("logs/log.txt", rollingInterval: RollingInterval.Day)
+                    .WriteTo.Console()
+                    .CreateLogger();
+                return logger;
+            });
+
+
             builder.Services.AddScoped<InMemoryLog>();
-            builder.Services.AddScoped<IAutabeeLogger, InMemoryLog>(o => (InMemoryLog)o.GetService(typeof(InMemoryLog)));
             builder.Services.AddSingleton<OpcScoutPersistentData>();
 
             builder.Services.AddScoped<IPersistentProgramData<List<EndpointRecord>>>(o => new DataFolder<List<EndpointRecord>>("EndpointsRecord"));

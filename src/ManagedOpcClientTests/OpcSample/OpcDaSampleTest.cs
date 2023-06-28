@@ -5,6 +5,7 @@ using Autabee.Communication.OpcCommunicator;
 using Autabee.Utility.Logger;
 using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
+using Opc.Ua;
 using System;
 using System.Linq;
 using System.Xml.XPath;
@@ -121,6 +122,16 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var types = communicator.ReadValue<double>("ns=2;s=1:FC1001?SetPoint/ValuePrecision");
             Assert.True(types.GetType() == typeof(double));
+        }
+
+
+        [SkippableFact]
+        public void BrowseMultipleNodes()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var root  = communicator.BrowseRoot();
+            communicator.BrowseNodes(root);
         }
     }
 }

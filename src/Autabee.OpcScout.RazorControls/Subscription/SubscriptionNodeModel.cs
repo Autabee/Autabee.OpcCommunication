@@ -1,5 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Autabee.Communication.ManagedOpcClient.Utilities;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System;
@@ -24,12 +25,11 @@ namespace Autabee.OpcScout.RazorControl.Subscription
         public event EventHandler<Opc.Ua.Client.Subscription> RemoveSubscription;
 
         public Dictionary<string, object> DictMonitoredValue => (Dictionary<string, object>)MonitoredValue;
+        public string NodeName => nodeItem.Node.DisplayName.ToString();
         public bool complex { get; set; }
         public bool show { get; set; }
         public bool editing { get; set; }
         public DateTime UpdateTime { get; set; }
-        public DateTime updateTime { get; set; }
-
         public string error { get; set; } = string.Empty;
         public object lockItem { get; set; } = new object();
         public object MonitoredValue { get; set; }
@@ -98,19 +98,37 @@ namespace Autabee.OpcScout.RazorControl.Subscription
 
         public void UpdateMonitoredValue(object value)
         {
-
-            if (value is Dictionary<string, object> dict)
+            if (value == null) 
+            {
+                UpdateTime = DateTime.Now;
+                lock (lockItem)
+                {
+                    if (!editing)
+                    {
+                        MonitoredValue = value;
+                        MonitoredValueString = value == null ? "NULL" : value.ToString();
+                    }
+                    else
+                    {
+                        BackendMonitoredValue = value;
+                        BackendMonitoredValueString = value == null ? "NULL" : value.ToString();
+                    }
+                }
+                complex = false;
+            }
+            else if (value is Dictionary<string, object> dict)
             {
                 UpdateMonitoredValue(dict);
             }
-            else if (value is object[] avalue)
+            else if (value.GetType().IsArray)
             {
+                var avalue = ((Array)value);
                 UpdateTime = DateTime.Now;
                 complex = true;
                 var tmp = new Dictionary<string, object>();
-                for (int i = 0; i < avalue.Length; i++)
+                for (int i = 0; i < ((Array)avalue).Length; i++)
                 {
-                    tmp.Add(nodeItem.Node.NodeId + $"[{i}]", avalue[i]);
+                    tmp.Add($"[{i}]", avalue.GetValue(i));
                 }
                 MonitoredValue = tmp;
             }

@@ -1,0 +1,58 @@
+﻿@using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Autabee.Communication.ManagedOpcClient;
+@using Autabee.OpcScout.RazorControl;
+@using Opc.Ua;
+@using Autabee.Communication.ManagedOpcClient.Utilities;
+@inject ISnackbar Snackbar
+
+@if(MudDialog != null && record != null)
+{
+    <MudDialog>
+        <TitleContent>
+            <MudText Typo="Typo.h6">
+                <icon class="mdi mdi-certificate" />
+                @MudDialog.Title
+            </MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudTextField Value="@record.Certificate.FriendlyName" Label="Name" ReadOnly=true />
+            <MudTextField Value="@record.Certificate.Issuer" Label="Issuer" ReadOnly=true/>
+            <MudTextField Value="@record.Certificate.Thumbprint" Label="Thumprint" ReadOnly=true />
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Cancel">Reject</MudButton>
+            <MudButton Color="Color.Success" OnClick="Call">Accept</MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+@code {
+    [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
+    [Parameter]
+    public CertificateValidationEventArgs? record { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (record == null)
+            throw new ArgumentNullException(nameof(record));
+        if (MudDialog == null)
+            throw new ArgumentNullException(nameof(MudDialog));
+        base.OnInitialized();
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+
+    private void Call()
+    {
+        try
+        {
+            MudDialog?.Close(DialogResult.Ok<object?>(null));
+        }
+        catch (Exception e)
+        {
+            Snackbar.Add(e.Message, Severity.Error);
+        }
+    }
+}

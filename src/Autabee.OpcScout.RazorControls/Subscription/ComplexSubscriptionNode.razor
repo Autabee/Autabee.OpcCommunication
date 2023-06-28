@@ -4,16 +4,45 @@
 @using Opc.Ua;
 @foreach (var item in Value)
 {
-    if (item.Value is Dictionary<string, object> dicItem)
+    @if (item.Value is Dictionary<string, object> dicItem)
     {
-        if (dicItem.Count > 0)
+        @if (dicItem.Count > 0)
         {
-            <ComplexSubscriptionNode Value="@dicItem" NodeId="@item.Key" />
+            <tr>
+                @if (item.Key.StartsWith("["))
+                {
+                    <td style="padding-left:@(Depth)em">@($"{NodeId}{item.Key}")</td>
+                }
+                else
+                {
+                    <td style="padding-left:@(Depth)em">@($"{NodeId}.{item.Key}")</td>
+                }
+                <td colspan="5" />
+
+            </tr>
+
+            @if (item.Key.StartsWith("["))
+            {
+                <ComplexSubscriptionNode Value="@dicItem" NodeId=@($"{NodeId}{item.Key}") Depth="@(Depth +1)" />
+            }
+            else
+            {
+                <ComplexSubscriptionNode Value="@dicItem" NodeId=@($"{NodeId}.{item.Key}") Depth="@(Depth +1)" />
+            }
         }
         else
         {
             <tr>
-                <td>@string.Join('.',NodeId,item.Key)</td>
+                @if (item.Key.StartsWith("["))
+                {
+                    <td style="padding-left:@(Depth*4)px">@($"{NodeId}{item.Key}")</td>
+                }
+                else
+                {
+                    <td style="padding-left:@(Depth*4)px">@($"{NodeId}.{item.Key}")</td>
+                }
+
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -21,36 +50,40 @@
             </tr>
         }
     }
-    else if(item.Value is ExtensionObject extension)
+    else if (item.Value is ExtensionObject extension)
     {
-        <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extension)" NodeId="@NodeId" Client="Client" />
+        <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extension)" NodeId="@NodeId" Client="Client" Depth=@(Depth +1) />
     }
     else if (item.Value is ExtensionObject[] extensions)
     {
-        for (int i = 0; i < extensions.Length; i++)
+        @for (int i = 0; i < extensions.Length; i++)
         {
-            <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extensions[i])" NodeId="@($"{NodeId}[{i}]")" Client="Client" />
+            <ComplexSubscriptionNode Value="(Dictionary<string, object>)Client.FormatObject(extensions[i])" NodeId="@($"{NodeId}[{i}]")" Client="Client" Depth="@(Depth +1)" />
         }
 
     }
     else if (item.Value is NodeDataRecord<object> record)
     {
         <tr>
-            <td>@string.Join('.',NodeId,item.Key)</td>
+            <td style="padding-left:@(Depth)em">@(NodeIdName(NodeId, item.Key))</td>
+            <td>@item.Key</td>
             <td></td>
             <td>@(record.Value)</td>
             <td>@(record.TypeName)</td>
             <td></td>
+            <td></td>
         </tr>
     }
-    else 
+    else
     {
         <tr>
-            <td>@string.Join('.',NodeId,item.Key)</td>
+            <td style="padding-left:@(Depth)em">@(NodeIdName(NodeId, item.Key))</td>
+            <td>@item.Key</td>
             <td></td>
             <td>@(item.Value)</td>
+            <td>@(item.Value.GetType().FullName)</td>
             <td></td>
-            <td></td>
+
         </tr>
     }
 }
@@ -63,6 +96,19 @@
     public Dictionary<string, object> Value { get; set; }
     [Parameter]
     public string NodeId { get; set; }
+    [Parameter]
+    public int Depth { get; set; }
 
 
+    public string NodeIdName(string NodeId, string key)
+    {
+        if (key.StartsWith("["))
+        {
+            return $"{NodeId}{key}";
+        }
+        else
+        {
+            return $"{NodeId}.{key}";
+        }
+    }
 }

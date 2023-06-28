@@ -1,16 +1,24 @@
 ﻿@using Autabee.Communication.ManagedOpcClient;
 @using Autabee.Communication.ManagedOpcClient.ManagedNode;
+@using Autabee.OpcScout.RazorControl;
 @using Autabee.OpcScout.Data;
 @using Autabee.OpcScout.MBRazorControl.Dialoges;
-@using Autabee.OpcScout.RazorControl
+@using Autabee.Utility.Logger;
 @using Opc.Ua;
 @using Autabee.Utility.Messaging;
 @using System.Text.Json;
 @using System.Linq;
+@using Serilog.Core;
+@using Autabee.Communication.ManagedOpcClient.Utilities;
+@using Microsoft.Extensions.Configuration
+@inject IJSRuntime JS
 
 @inject OpcScoutPersistentData controlBackend
+@inject NavigationManager NavigationManager
+@inject IConfiguration config;
 @inject IJSRuntime _jsRuntime
-@inject InMemoryLog logger
+@inject Logger logger
+@inject InMemoryLog messageStore;
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @page "/Opc/Manipulation"
@@ -34,39 +42,49 @@
 
 
     <div class="ReadWrite Viewport mid-ViewPort">
-        <h3>Logs</h3>
-        @*<div class="Viewportheader">
-        <button @onclick="()=>OpenLog()">logs</button>
-        <button @onclick="()=>OpenReadWrite()">read/write</button>
-        </div>*@
+        <h3>Utilities</h3>
+        <div class="Viewportheader">
+            <button @onclick="()=>OpenLog()">logs</button>
+            <button @onclick="()=>OpenReadWrite()">read/write</button>
+            <button @onclick="()=>OpenSharper()">sharper</button>
+        </div>
 
         <div class="InnerItem">
-            @*@if (log){*@
-            @foreach (var item in logger.Messages.Where(o => (((ushort)o.message.Level & (ushort)MessageFilter.Debug) != 0)).Reverse())
+            @if (activeControl == ActiveControl.log)
             {
-                <div class="logitem logitem-@item.message.Level.ToString()">
-                    <span class="logitemtime">[@item.message.Time.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
-                    <span class=@item.MessageClass>@item.message.ToString()</span>
-                    @if (item.MultiLine || item.message.ToString().Length > 70)
-                    {
-                        @if (item.ShowFullMessage)
+                @foreach (var item in messageStore.Messages.AsEnumerable().Reverse())
+                {
+                    <div class="logitem logitem-@item.message.Level.ToString()">
+                        <span class="logitemtime">[@item.message.Timestamp.TimeOfDay.ToString("hh':'mm':'ss") @item.message.Level.ToString()]</span>
+                        <span class=@item.MessageClass>@item.message.RenderMessage()</span>
+                        @if (item.MultiLine || item.message.RenderMessage().Length > 80)
                         {
-                            <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
-                        }
-                        else
-                        {
-                            <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
+                            @if (item.ShowFullMessage)
+                            {
+                                <button @onclick="()=>item.ShowFullMessage=false"><icon class="mdi mdi-eye" /></button>
+                            }
+                            else
+                            {
+                                <button @onclick="()=>item.ShowFullMessage=true"><icon class="mdi mdi-eye-off" /></button>
+                            }
+
                         }
 
-                    }
-
-                </div>
+                    </div>
+                }
             }
-            @*}
-            else if (readwrite)
+            else if (activeControl == ActiveControl.readwrite)
             {
-            <ReadWriteNodeCollection/>
-            }*@
+                <NodeReadWrite Clients=@controlBackend.clients Logger=@logger WriteRecord=@controlBackend.ModelReadRecord ReadSettings=@controlBackend.ReadRecord ValueRecordChanged="@ReadRecordChanged" />
+            }
+            else if (activeControl == ActiveControl.sharper)
+            {
+                @if (sharperViewModel.Generating)
+                {
+                    <MudProgressLinear Color="Color.Warning" Indeterminate="true" Class="my-7" />
+                }
+                <SharperView Model="sharperViewModel" />
+            }
         </div>
     </div>
 
@@ -87,21 +105,44 @@
 
 @code {
     public NodeBrowserModel nodeBrowser;
+    public SharperViewModel sharperViewModel;
     public NodeViewModel nodeViewerModel = new NodeViewModel();
     public SubscriptionViewModel subscriptionViewModel;
+    ActiveControl activeControl = ActiveControl.log;
 
-    bool log = true;
-    bool readwrite = false;
+    public enum ActiveControl
+    {
+        log,
+        readwrite,
+        sharper
+    }
 
     protected override void OnInitialized()
     {
         nodeBrowser = new NodeBrowserModel()
             {
                 Clients = controlBackend.clients,
-                Selected = controlBackend.observing
+                Selected = controlBackend.observing,
+                SharperActive = true
             };
-        subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes);
+        subscriptionViewModel = new SubscriptionViewModel(controlBackend.subscriptionNodes, logger);
         if (controlBackend.observing != null) nodeViewerModel.UpdateSelected(this, controlBackend.observing);
+        if (controlBackend.sharperViewModel != null)
+        {
+            sharperViewModel = controlBackend.sharperViewModel;
+
+        }
+        else
+        {
+            sharperViewModel = new SharperViewModel(controlBackend.clients, logger);
+            sharperViewModel.ZipSafeLocation = config["Sharper:ZipSafeLocation"];
+            sharperViewModel.ClearOnZip = config["Sharper:ClearOnZip"]?.Trim().ToLower() == "true";
+            sharperViewModel.ProjectLocationSelectable = config["Sharper:ClearOnZip"]?.Trim().ToLower() != "true";
+            //controlBackend.sharperViewModel = sharperViewModel;
+            sharperViewModel.OnGenerateProcessStarted += (_, _) => InvokeAsync(StateHasChanged);
+            sharperViewModel.OnGenerateProcessCompleted += CompletSharper;
+        }
+        nodeBrowser.OnAddSharperNode += AddSharperNode;
         logger.Information("Open Manipulator");
         base.OnInitialized();
         nodeBrowser.OnSelectedChanged += UpdateSelected;
@@ -111,18 +152,46 @@
         nodeBrowser.OnNodeRead += (sender, args) => { logger.Log(args); };
         nodeBrowser.OnOpenCall += OpenCallDialog;
         nodeBrowser.OnOpenWrite += OpenWriteDialog;
-        logger.MessageUpdate += Logger_MessageUpdate;
+        messageStore.MessageUpdate += Logger_MessageUpdate;
+
+
+    }
+
+    private async void CompletSharper(object sender, string e)
+    {
+        if (config["Sharper:DownloadOnSafe"]?.ToLower() == "true")
+        {
+            var fileName = Path.GetFileName(e);
+            var fileURL = Path.Combine(NavigationManager.BaseUri, Path.GetRelativePath("wwwroot/", e));
+            await JS.InvokeVoidAsync("triggerFileDownload", fileName, fileURL);
+        }
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
+    }
+    private async void ReadRecordChanged( ReadRecordSettings e)
+    {
+        controlBackend.ReadRecord = e;
+        controlBackend.ModelReadRecord = null;
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
+    }
+
+    private async void AddSharperNode(object sender,NodeId node)
+    {
+        activeControl = ActiveControl.sharper;
+        sharperViewModel.AddNode(sender, node);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
 
     private void OpenLog()
     {
-        log = true;
-        readwrite = false;
+        activeControl = ActiveControl.log;
     }
     private void OpenReadWrite()
     {
-        log = false;
-        readwrite = true;
+        activeControl = ActiveControl.readwrite;
+    }
+    private void OpenSharper()
+    {
+        activeControl = ActiveControl.sharper;
     }
 
     private void UpdateSelected(object sender, ScannedNodeModel selected)
@@ -168,11 +237,19 @@
                 var encoding = selected.Client.GetNodeTypeEncoding(selected.Node);
                 var parameters = new DialogParameters { ["record"] = encoding };
                 var dialog = await DialogService.ShowAsync<WriteValueDialoge>("Call", parameters);
+                var result = await dialog.Result;
+            }
+            else
+            {
+                controlBackend.ModelReadRecord = selected;
+                controlBackend.ReadRecord = null; 
+                OpenReadWrite();
+                await InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception e)
         {
-            logger.Log(new Message(text: "Failed to complete write dialoge: {}", parameters: e.Message), e);
+            logger.Log(new Message(exception: e, text: "Failed to complete write dialoge: {}", parameters: e.Message));
             return;
         }
     }

@@ -10,11 +10,13 @@ namespace Autabee.OpcToClass
         public string baseNamespace;
         public string baseLocation;
         public NodeIdCollection nodes = new NodeIdCollection();
-        public Dictionary<object, string> typeOverrides = new Dictionary<object, string>();
+        public string zipStoreLocation;
+        public bool clearOnZip;
+        public Dictionary<string, string> typeOverrides = new Dictionary<string, string>();
         /// <summary>
         /// Namespace Prefix
         /// </summary>
-        public string nsPrefix = "ns_";
+        public string nameSpacePrefix = "ns_";
 
         public GeneratorSettings(string baseLocation, string baseNamespace)
         {

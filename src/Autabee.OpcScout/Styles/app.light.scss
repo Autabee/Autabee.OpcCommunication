@@ -11,7 +11,8 @@ $color-main-text:black;
 
 html, body {
     background-color: $color-main-background;
-    color:black;
+    scrollbar-base-color: adjust-color($color-main-background,$lightness: 10);
+    color: black;
 }
 
 
@@ -23,9 +24,20 @@ html, body {
 th {
     background: $color-primary;
 }
-.SubscriptionView tr:nth-child(even), .data-item:nth-child(even), .node-set > *:nth-child(even), .logitem:nth-child(even), .OpcNodeViewer tr:nth-child(even) {
+
+.SubscriptionView tr:nth-child(even),
+.data-item:nth-child(even),
+.node-set > *:nth-child(even),
+.logitem:nth-child(even),
+.OpcNodeViewer tr:nth-child(even),
+.WriteItem:nth-child(even) {
     background: adjust-color($color-main-background,$lightness: 5);
 }
+
+.StructItem {
+    background: adjust-color($color-main-background, $lightness: -10);
+}
+
 
 
 
@@ -62,6 +74,10 @@ input {
     background: $color-secendary;
 }
 
+.Node-Selected >td {
+    color: white;
+    background: $color-secendary;
+}
 
 .Node-Selected:hover {
     color: white;
@@ -71,7 +87,7 @@ input {
 .Node button:hover {
     background-color: adjust-color($color-secendary,$lightness: -10);
 }
-.Node-Selected button:hover {
+.Node-Selected > button:hover {
     color: white;
     background: $color-secendary;
 }
@@ -123,11 +139,13 @@ input {
     color: black;
 }
 
-.SelectEnpoint{
+.Empty {
     background-color: $color-info;
-    color:white;
-    padding:10px;
-    font-size:22px;
+    color: white;
+    padding: 10px;
+    font-size: 22px;
+    text-align: center;
+    font-style: italic;
 }
 
 button.Danger {
