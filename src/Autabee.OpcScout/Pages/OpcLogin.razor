@@ -16,9 +16,10 @@
 @inject ISnackbar Snackbar
 @page "/Opc/Login"
 
-@*@if (Loading) {
+@if (Loading)
+{
     <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
-}*@
+}
 
 
 <table class="loginform NodeTableForm">
@@ -32,7 +33,7 @@
         <td>
             <select style="height:25px; " type="connection record" @onchange="SetEndpoint" placeholder="***">
                 @foreach (var item in savedEndpoints)
-                { 
+                {
                     @if (item != null)
                     {
                         <option value="@item.Name;@item.Server;@item.Description">@item.Name : @item.Server</option>
@@ -62,7 +63,7 @@
 @if (endpoints == null)
 {
     <div class="Empty">
-    Request server for endpoints
+        @searchText
     </div>
 }
 @*else if (editingEndpoint)
@@ -90,7 +91,7 @@ else
                     <td>@endpoint.SecurityMode</td>
                     <td class="node-actions">
                         <button @onclick="()=> SaveAndConnect(endpoint)" class="mdi mdi-content-save Info" title="Connect & Save" />
-                        <button @onclick="()=> Connect(endpoint)" class="mdi mdi-connection Info" title="Try Connect" />
+                        <button @onclick="()=> (Connect(endpoint))" class="mdi mdi-connection Info" title="Try Connect" />
                         @if (!@CertAccepted[endpoints.IndexOf(endpoint)])
                         {
                             <button @onclick="() => AcceptCert(endpoint.ServerCertificate)" class="mdi mdi-certificate Danger" title="Accept Certificate" />
@@ -104,13 +105,15 @@ else
 
 @code {
     AutabeeManagedOpcClient Client;
-    string messageTitle = string.Empty;
-    Dictionary<string, string> messageData = new Dictionary<string, string>();
     string server = string.Empty;
     string username = string.Empty;
     string password = string.Empty;
+    string searchText = "Request server for endpoints";
 
-    Dictionary<string, (string, Action)> Buttons = new Dictionary<string, (string, Action)>();
+    Task<EndpointDescriptionCollection> DiscoveryTask = null;
+    Task ConnectionTask = null;
+
+
     EndpointDescriptionCollection endpoints;
     EndpointDescription selectedEndpoint;
     EndpointRecord dropSelectedEndpoint;
@@ -119,7 +122,7 @@ else
     X509Certificate2 lastCert = null;
     bool AcceptLast;
     bool editingEndpoint = false;
-    //bool Loading = false;
+    bool Loading = false;
     List<EndpointRecord> savedEndpoints = new List<EndpointRecord>();
     IDialogReference dialog = null;
 
@@ -128,7 +131,7 @@ else
         Client = new AutabeeManagedOpcClient(config);
         Client.CertificateValidationNotification += CertificateValidation;
         savedEndpoints = EndpointsConnection.Load();
-        savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints.OrderBy(o => o.Name).ToList() ;
+        savedEndpoints = savedEndpoints == null ? new List<EndpointRecord>() : savedEndpoints.OrderBy(o => o.Name).ToList();
         if (savedEndpoints.Count >= 1)
         {
             dropSelectedEndpoint = savedEndpoints.First();
@@ -152,22 +155,13 @@ else
             return;
         }
 
-        //Buttons.Clear();
-        //Buttons.Add("Reject", ("Danger", delegate () { ClearMessage(); }));
-        //Buttons.Add("Accept", ("Info", delegate ()
-        //{
-        //    AcceptLast = true;
-        //    ClearMessage();
-        //    Connect(selectedEndpoint);
-        //}
-        //));
         lastCert = e.Certificate;
         var parameters = new DialogParameters { ["record"] = e };
         dialog = await DialogService.ShowAsync<AcceptCert>("Accept certificate?", parameters, new DialogOptions()
-        {
+            {
                 MaxWidth = MaxWidth.Medium,
                 FullWidth = true
-        });
+            });
         var result = await dialog.Result;
         dialog.Close();
         dialog = null;
@@ -204,7 +198,7 @@ else
     {
         var endpointRecord = new EndpointRecord()
             {
-                Server = server,
+                Server = endpoint.Server.ApplicationUri,
                 EndpointUrl = endpoint.EndpointUrl,
                 SecurityMode = endpoint.SecurityMode,
                 SecurityPolicyUri = endpoint.SecurityPolicyUri
@@ -214,34 +208,66 @@ else
         Connect(endpoint);
     }
 
-    public void Connect()
+    public async void Connect()
     {
         if (dropSelectedEndpoint != null)
         {
-            //Loading = true;
-            //InvokeAsync(StateHasChanged);
+            if (DiscoveryTask != null)
+            {
+                DiscoveryTask.Dispose();
+            }
 
+            DiscoveryTask = new Task<EndpointDescriptionCollection>(() =>
+            {
                 try
                 {
-                    endpoints = AutabeeManagedOpcClient.GetEndpoints(dropSelectedEndpoint.Server);
-                    CertAccepted = new bool[endpoints.Count];
-                    var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
-                    if (selectedEndpoint != null)
-                    {
-                        logger.Information("attempting to connect with:" + selectedEndpoint.Server.ApplicationUri);
-                        Connect(selectedEndpoint);
-                    }
-                    else
-                    {
-                        Snackbar.Add("unable to find server", Severity.Error);
-                    }
+                    return AutabeeManagedOpcClient.GetEndpoints(dropSelectedEndpoint.Server);
                 }
                 catch (Exception e)
                 {
                     Snackbar.Add(e.Message, Severity.Error);
+                    return null;
                 }
-            //Loading = false; 
-            //InvokeAsync(StateHasChanged);
+            });
+
+            Loading = true;
+            await InvokeAsync(StateHasChanged);
+            DiscoveryTask.Start();
+            await DiscoveryTask;
+            endpoints = DiscoveryTask.Result;
+
+            if ((endpoints == null || endpoints.Count == 0))
+            {
+                searchText = "Opc Server not found";
+                return;
+            }
+            else
+            {
+                UpdateCertificateStatus();
+            }
+
+            try
+            {
+                UpdateCertificateStatus();
+                var selectedEndpoint = endpoints.FirstOrDefault(o => o.SecurityMode == dropSelectedEndpoint.SecurityMode && o.SecurityPolicyUri == dropSelectedEndpoint.SecurityPolicyUri);
+                if (selectedEndpoint != null)
+                {
+                    logger.Information("attempting to connect with:" + selectedEndpoint.Server.ApplicationUri);
+                    await Connect(selectedEndpoint);
+                }
+                else
+                {
+                    Snackbar.Add("unable to find server", Severity.Error);
+                }
+            }
+            catch (Exception e)
+            {
+                Snackbar.Add(e.Message, Severity.Error);
+            }
+
+            DiscoveryTask = null;
+            Loading = false;
+            await InvokeAsync(StateHasChanged);
         }
     }
     public async void Edit()
@@ -289,94 +315,151 @@ else
         }
     }
 
-    public void GetEnpoints()
+    public bool TaskIsNullOrDisposed(Task task)
     {
-        messageTitle = string.Empty;
+        if (task == null) return true;
+        try{
+            if (task.IsCompleted)
+            {
+
+            }
+        }
+        catch (ObjectDisposedException e)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public async void GetEnpoints()
+    {
+        searchText = "Searching Endpoints";
         Stack<string> stackSearch = new Stack<string>();
         if (!Regex.IsMatch(server, @"^((\bopc\.tcp\:\/{2})|(\bhttps\:\/{2}))"))
         {
             stackSearch.Push("https://" + server);
             stackSearch.Push("opc.tcp://" + server);
-
         }
         else
         {
             stackSearch.Push(server);
         }
         string error = string.Empty;
-        do
+
+        if (!TaskIsNullOrDisposed(DiscoveryTask))
         {
-            endpoints = null;
+            //DiscoveryTask.S
+            DiscoveryTask.Dispose();
+        }
+
+        var innerTask =  new Task<EndpointDescriptionCollection>(() =>
+        {
+            EndpointDescriptionCollection endpoints = null;
+            do
+            {
+                try
+                {
+                    var str = stackSearch.Pop();
+                    logger.Information("attempting to retrieve endpoints from: " + str);
+                    endpoints = AutabeeManagedOpcClient.GetEndpoints(str);
+                }
+                catch (Exception e)
+                {
+                    error += "." + e.Message;
+                }
+            } while (stackSearch.Count > 0 && (endpoints == null || endpoints.Count == 0));
+            return endpoints;
+        });
+
+        DiscoveryTask = innerTask;
+        endpoints = null;
+        Loading = true;
+        await InvokeAsync(StateHasChanged);
+        innerTask.Start();
+        try
+        {
+            await innerTask;
+            this.endpoints = innerTask.Result;
+            innerTask.Dispose();
+
+            if ((endpoints == null || endpoints.Count == 0))
+            {
+                searchText = "No Endpoints found";
+                if (!string.IsNullOrWhiteSpace(error)) Snackbar.Add(error.Substring(1), Severity.Error);
+            }
+            else
+            {
+                UpdateCertificateStatus();
+            }
+            Loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            Loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+
+    }
+    public async Task Connect(EndpointDescription endpoint)
+    {
+        selectedEndpoint = endpoint;
+        searchText = $"Connecting to {endpoint.EndpointUrl}";
+        Loading = true;
+        await InvokeAsync(StateHasChanged);
+        if(ConnectionTask != null)
+        {
+            ConnectionTask.Dispose();
+            ConnectionTask = null;
+            await Task.Delay(5);
+        }
+
+        ConnectionTask = new Task(async () =>
+        {
             try
             {
-                var str = stackSearch.Pop();
-                logger.Information("attempting to retrieve endpoints from: " + str);
-                endpoints = AutabeeManagedOpcClient.GetEndpoints(str);
-                UpdateCertificateStatus();
+
+                if (endpoint.SecurityMode == MessageSecurityMode.None)
+                {
+                    await Client.Connect(endpoint);
+                }
+                else
+                {
+                    if (string.IsNullOrEmpty(username)) await Client.Connect(endpoint, null);
+                    else await Client.Connect(endpoint, new UserIdentity(username, password));
+                }
+                if (Client.Connected)
+                {
+                    backend.clients.Add(new ClientCache(Client, new List<ScannedNodeModel>()));
+                    Navigation.NavigateTo("/Opc/Manipulation");
+                }
+                else
+                {
+                    searchText = "Not Connected";
+                }
+
+
             }
             catch (Exception e)
             {
+                if (searchText.Contains("Accept certificate"))
+                {
+                    return;
+                }
 
-                error += "." + e.Message;
-
+                Snackbar.Add(e.Message, Severity.Error);
+                //messageTitle = e.Message;
+                //Buttons.Clear();
+                //Buttons.Add(ClearMessageButton);
             }
-        } while (stackSearch.Count > 0 && (endpoints == null || endpoints.Count == 0));
-
-        if ((endpoints == null || endpoints.Count == 0))
-        {
-            if (string.IsNullOrWhiteSpace(error)) messageTitle = "none found";
-            else messageTitle = error.Substring(1);
-            Buttons.Clear();
-            Buttons.Add(ClearMessageButton);
-        }
-
+        });
+        ConnectionTask.Start();
+        await ConnectionTask;
+        ConnectionTask.Dispose();
+        ConnectionTask = null;
+        Loading = false;
+        await InvokeAsync(StateHasChanged);
     }
-    public async void Connect(EndpointDescription endpoint)
-    {
-        selectedEndpoint = endpoint;
-        messageTitle = string.Empty;
-
-        try
-        {
-            if (endpoint.SecurityMode == MessageSecurityMode.None)
-            {
-                await Client.Connect(endpoint);
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(username)) await Client.Connect(endpoint, null);
-                else await Client.Connect(endpoint, new UserIdentity(username, password));
-            }
-            if (Client.Connected)
-            {
-                backend.clients.Add(new ClientCache(Client, new List<ScannedNodeModel>()));
-                Navigation.NavigateTo("/Opc/Manipulation");
-            }
-            else
-            {
-                messageTitle = "Not Connected";
-                Buttons.Clear();
-                Buttons.Add(ClearMessageButton);
-            }
-
-        }
-        catch (Exception e)
-        {
-            if (messageTitle.Contains("Accept certificate"))
-            {
-                return;
-            }
-
-            Snackbar.Add(e.Message, Severity.Error);
-            //messageTitle = e.Message;
-            //Buttons.Clear();
-            //Buttons.Add(ClearMessageButton);
-        }
-    }
-
-
-    private KeyValuePair<string, (string, Action)> ClearMessageButton
-    => new KeyValuePair<string, (string, Action)>("Okay", ("Info", ClearMessage));
 
     private void UpdateCertificateStatus()
     {
@@ -404,15 +487,6 @@ else
         }
     }
 
-
-    public void ClearMessage()
-    {
-
-        messageTitle = string.Empty;
-        Buttons.Clear();
-        messageData.Clear();
-    }
-
     public void AcceptCert(byte[] certdata)
     {
         try
@@ -427,11 +501,4 @@ else
         }
 
     }
-
-    public void Execute(string button)
-    {
-        Buttons[button].Item2.Invoke();
-    }
-
-
 }

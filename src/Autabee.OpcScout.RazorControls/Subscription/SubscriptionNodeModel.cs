@@ -98,8 +98,25 @@ namespace Autabee.OpcScout.RazorControl.Subscription
 
         public void UpdateMonitoredValue(object value)
         {
-
-            if (value is Dictionary<string, object> dict)
+            if (value == null) 
+            {
+                UpdateTime = DateTime.Now;
+                lock (lockItem)
+                {
+                    if (!editing)
+                    {
+                        MonitoredValue = value;
+                        MonitoredValueString = value == null ? "NULL" : value.ToString();
+                    }
+                    else
+                    {
+                        BackendMonitoredValue = value;
+                        BackendMonitoredValueString = value == null ? "NULL" : value.ToString();
+                    }
+                }
+                complex = false;
+            }
+            else if (value is Dictionary<string, object> dict)
             {
                 UpdateMonitoredValue(dict);
             }

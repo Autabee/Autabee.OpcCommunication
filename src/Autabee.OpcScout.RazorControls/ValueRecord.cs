@@ -19,8 +19,11 @@ namespace Autabee.OpcScout.RazorControl
         }
         public void UpdateValue(object value)
         {
-
-            if (value is Dictionary<string, object> dict)
+            if (value == null)
+            {
+                values = new Dictionary<string, object> { { "Value", "NULL" } };
+            }
+            else if (value is Dictionary<string, object> dict)
             {
                 values = dict;
             }

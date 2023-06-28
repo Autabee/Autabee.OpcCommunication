@@ -27,18 +27,22 @@
     </DialogActions>
 </MudDialog>
 @code {
-    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
     [Parameter]
-    public MethodArguments record { get; set; } = new MethodArguments();
+    public MethodArguments record { get; set; }
     public string[] strValues = new string[0];
 
     protected override void OnInitialized()
     {
+        if (MudDialog == null)
+            throw new ArgumentNullException(nameof(MudDialog));
+
+
         strValues = new string[record.InputArguments.Count];
 
         for (int i = 0; i < strValues.Count(); i++)
         {
-            strValues[i] = record.InputArguments[i].Value == null 
+            strValues[i] = record.InputArguments[i]?.Value == null 
                 ? string.Empty 
                 : record.InputArguments[i].Value.ToString();
         }
@@ -47,7 +51,7 @@
 
     private void Cancel()
     {
-        MudDialog.Cancel();
+        MudDialog?.Cancel();
     }
 
 
