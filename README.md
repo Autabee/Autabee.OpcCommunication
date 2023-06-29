@@ -9,7 +9,7 @@ The autabee opc communicator is a rapper for the opc ua client c# library. It is
 - <b>Opc Scout Controls</b>: A set of predefined controls that can be used in a blazor app
 
 <figure class="image">
-  <img src="https://github.com/[username]/[reponame]/blob/[branch]/scout.png?raw=true" alt="OpcScout">
+  <img src="https://github.com/Autabee/Autabee.OpcCommunication/blob/main/scout.png?raw=true" alt="OpcScout">
   <figcaption>Opc Scout manipulation view (Dark)</figcaption>
 </figure>
 
