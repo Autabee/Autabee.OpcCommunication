@@ -79,6 +79,7 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 
         public Session Session { get => session; }
+        //public Dictionary<NodeId, DataDictionary> NodeDictonary { get; set; }
 
         #region Construction
         public AutabeeManagedOpcClient(string company, string product, string directory, Logger logger = null)
@@ -522,7 +523,14 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private async void InitManagedConnection()
         {
-            await session.LoadDataTypeSystem();
+            try
+            {
+                await session.LoadDataTypeSystem();
+            }
+            catch
+            {
+
+            }
             ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
             session.KeepAlive += Notification_KeepAlive;
             ConnectionUpdated?.Invoke(this, null);
