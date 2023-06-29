@@ -1,3 +1,8 @@
+# Short List
+
+Objects defined in the library that are not part of the OPC UA specification but are used to simplify the usage of the library.
+
+
 | object | usage definition   | 
 | --- | --- | 
 | MonitoredItem | The MonitoredItem that triggered the event |
@@ -5,5 +10,5 @@
 | NodeValueEntry | A NodeEntry that defines an expected datatype. |
 | NodeValueRecord | Contains the value and the origin NodeValueEntry. |
 | MethodNodeEntry | A NodeEntry that defines the arguments needed to call a function |
-| MethodArguments | Collection of types and argument collection associated to a specific method. |
+| MethodArguments | Collection of types and argument collections associated to a specific method. |
 | NodeTypeData | Generic class for decoding a read value to a dictionary. |
