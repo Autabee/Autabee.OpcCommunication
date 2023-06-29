@@ -589,7 +589,7 @@ namespace Autabee.Communication.ManagedOpcClient
         /// </summary>
         private void Notification_KeepAlive(ISession session, KeepAliveEventArgs e)
         {
-            Console.WriteLine("KeepAlivePing");
+            //Console.WriteLine("KeepAlivePing");
             if (KeepAliveNotification != null)
             {
                 KeepAliveNotification.Invoke(session, e);
@@ -850,9 +850,6 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion
 
         #region Typing
-
-
-
         public NodeTypeData GetNodeTypeEncoding(string nodeIdString)
         {
             if (PreparedNodeTypes.TryGetValue(nodeIdString, out string parseString))
@@ -1681,25 +1678,25 @@ namespace Autabee.Communication.ManagedOpcClient
             return monitoredItem;
         }
 
-        public void MonitoredNode(
+        private void MonitoredNode(
                 MonitoredItem monitorItem,
                 MonitoredItemNotificationEventArgs arg,
                 MonitoredNodeValueEventHandler handler)
         {
             var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
-            handler.Invoke(monitorItem, value);
+            handler?.Invoke(monitorItem, value);
         }
 
-        public void MonitoredNode(
+        private void MonitoredNode(
                 MonitoredItem monitorItem,
                 MonitoredItemNotificationEventArgs arg,
                 MonitoredNodeValueRecordEventHandler handler)
         {
             var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
-            handler.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
+            handler?.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
         }
 
-        public void MonitoredNode(
+        private void MonitoredNode(
             MonitoredItem monitorItem,
             ValueNodeEntry entry,
             MonitoredItemNotificationEventArgs arg,
@@ -1707,7 +1704,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             if (!entry.IsUDT)
             {
-                handler.Invoke(monitorItem, CreateNodeValue(entry, ((MonitoredItemNotification)arg.NotificationValue).Value.Value));
+                handler?.Invoke(monitorItem, CreateNodeValue(entry, ((MonitoredItemNotification)arg.NotificationValue).Value.Value));
             }
             else
             {
