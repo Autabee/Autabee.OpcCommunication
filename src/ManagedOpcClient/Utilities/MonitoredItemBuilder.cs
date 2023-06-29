@@ -13,34 +13,34 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             int samplingInterval,
             uint queueSize,
             bool discardOldest,
-            MonitoringMode moneteringMode = MonitoringMode.Reporting)
+            MonitoringMode monitoringMode = MonitoringMode.Reporting)
         {
-            MonitoredItem monitoredItem = CreateMoniroredValueItemWithoutName(samplingInterval,
-                queueSize, discardOldest, moneteringMode);
+            MonitoredItem monitoredItem = CreateMonitoredValueItemWithoutName(samplingInterval,
+                queueSize, discardOldest, monitoringMode);
             monitoredItem.DisplayName = nodeEntry.NodeString;
             monitoredItem.StartNodeId = nodeEntry.UnregisteredNodeId;
             return monitoredItem;
         }
 
-        static public MonitoredItem CreateMonitoredValueItem(NodeId nodeId, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode moneteringMode = MonitoringMode.Reporting)
+        static public MonitoredItem CreateMonitoredValueItem(NodeId nodeId, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode monitoringMode = MonitoringMode.Reporting)
         {
-            MonitoredItem monitoredItem = CreateMoniroredValueItemWithoutName(samplingInterval,
-                queueSize, discardOldest, moneteringMode);
+            MonitoredItem monitoredItem = CreateMonitoredValueItemWithoutName(samplingInterval,
+                queueSize, discardOldest, monitoringMode);
             monitoredItem.DisplayName = nodeId.ToString();
             monitoredItem.StartNodeId = nodeId;
             return monitoredItem;
         }
 
-        static public MonitoredItem CreateMonitoredValueItem(string nodeId, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode moneteringMode = MonitoringMode.Reporting)
+        static public MonitoredItem CreateMonitoredValueItem(string nodeId, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode monitoringMode = MonitoringMode.Reporting)
         {
-            MonitoredItem monitoredItem = CreateMoniroredValueItemWithoutName(samplingInterval,
-                queueSize, discardOldest, moneteringMode);
+            MonitoredItem monitoredItem = CreateMonitoredValueItemWithoutName(samplingInterval,
+                queueSize, discardOldest, monitoringMode);
             monitoredItem.DisplayName = nodeId;
             monitoredItem.StartNodeId = nodeId;
             return monitoredItem;
         }
 
-        private static MonitoredItem CreateMoniroredValueItemWithoutName(int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode mode)
+        private static MonitoredItem CreateMonitoredValueItemWithoutName(int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode mode)
         {
             MonitoredItem monitoredItem = new MonitoredItem();
             monitoredItem.AttributeId = Attributes.Value;

@@ -20,20 +20,21 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 {
                     // this error indicates that the server does not have enough simultaneously active continuation points.
                     // This request will need to be resent after the other operations have been completed and their continuation points released.
-                    if (results[i].StatusCode == StatusCodes.BadNoContinuationPoints)
-                    {
-                        unprocessedOperations.Add(nodesToBrowse[i]);
+                    switch (((uint)results[i].StatusCode)){
+                        case StatusCodes.BadNoContinuationPoints:
+                            unprocessedOperations.Add(nodesToBrowse[i]);
+                            break;
+                        default:
+                            break;
                     }
-
-                    continue;
                 }
-                if (results[i].References.Count == 0)
-                {
-                    continue;
-                }
-                if (results[i].ContinuationPoint != null)
+                else if (results[i].ContinuationPoint != null)
                 {
                     continuationPoints.Add(results[i].ContinuationPoint);
+                }
+                else if (results[i].References.Count == 0)
+                {
+                    continue;
                 }
             }
             return (unprocessedOperations, continuationPoints);
@@ -80,14 +81,14 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             return revisedContinuationPoints;
         }
 
-        public static ReferenceDescriptionCollection GetDescriptions(BrowseResponse results) => GetDescriptions(
-            results.Results);
+        public static ReferenceDescriptionCollection GetDescriptions(BrowseResponse results) 
+            => GetDescriptions(results.Results);   
 
-        public static ReferenceDescriptionCollection GetDescriptions(BrowseResult results) => 
-            results.References;
+        public static ReferenceDescriptionCollection GetDescriptions(BrowseResult results) 
+            => results.References;
 
-        public static ReferenceDescriptionCollection GetDescriptions(BrowseNextResponse results) => GetDescriptions(
-            results.Results);
+        public static ReferenceDescriptionCollection GetDescriptions(BrowseNextResponse results) 
+            => GetDescriptions(results.Results);
 
         public static ReferenceDescriptionCollection GetDescriptions(BrowseResultCollection results)
         {

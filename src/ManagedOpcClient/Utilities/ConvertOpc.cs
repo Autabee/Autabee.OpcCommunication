@@ -349,7 +349,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
         }
         public static string NodeTypeString(Node node)
         {
-            string data = "unkwon";
+            string data = "unknown";
             if (node is VariableNode varNode)
             {
                 data = NodeTypeString(varNode.DataType);
@@ -407,7 +407,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 }
             }
 
-            return "unkown";
+            return "unknown";
         }
     }
 }
