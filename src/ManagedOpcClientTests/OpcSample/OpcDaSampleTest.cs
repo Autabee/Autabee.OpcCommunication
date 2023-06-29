@@ -7,6 +7,7 @@ using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
 using Opc.Ua;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Xml.XPath;
 using Xunit;
@@ -115,6 +116,8 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             var types = communicator.ReadValue("ns=2;s=1:FC1001?SetPoint/ValuePrecision");
             Assert.True(types.GetType() == typeof(double));
         }
+
+
         [SkippableFact]
         public void ReadNode2()
         {
@@ -132,6 +135,89 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var root  = communicator.BrowseRoot();
             communicator.BrowseNodes(root);
+        }
+
+        [SkippableFact]
+        public void ScanNodes()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var collection = new NodeIdCollection()
+            {
+                new NodeId("ns=2;s=1:FC1001?SetPoint/ValuePrecision"),
+                new NodeId("ns=2;s=1:FC1001?SetPoint/ValuePr")
+            };
+
+
+            var types = communicator.ScanNodeExistances(collection);
+            Assert.True(types[0]);
+            Assert.False(types[1]);
+        }
+        [SkippableFact]
+        public void ScanNodes2()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var collection = new string[]
+            {
+                "ns=2;s=1:FC1001?SetPoint/ValuePrecision",
+                "ns=2;s=1:FC1001?SetPoint/ValuePr"
+            };
+
+
+            var types = communicator.ScanNodeExistances(collection);
+            Assert.True(types[0]);
+            Assert.False(types[1]);
+        }
+
+        [SkippableFact]
+        public void ScanValueNodes()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var collection = new string[]
+            {
+                "ns=2;s=1:FC1001?SetPoint/ValuePrecision",
+                "ns=2;s=1:FC1001?SetPoint/ValuePr"
+            };
+
+
+            var types = communicator.ScanValueNodeExistances(collection);
+            Assert.True(types[0]);
+            Assert.False(types[1]);
+        }
+
+        [SkippableFact]
+        public void ScanMethodNodes()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+
+            var collection = new string[]
+            {
+                "ns=2;s=1:FC1001?SetPoint/ValuePrecision",
+                "ns=2;s=1:FC1001?SetPoint/ValuePr"
+            };
+
+
+            var types = communicator.ScanMethodNodeExistances(collection);
+            Assert.False(types[0]);
+            Assert.False(types[1]);
+        }
+
+        [SkippableFact]
+        public void ScanNode()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.True(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePrecision"));
+            Assert.False(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePr"));
+        }
+
+        [SkippableFact]
+        public void ScanNode2()
+        {
+            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.True(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePrecision"));
+            Assert.False(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePr"));
         }
     }
 }

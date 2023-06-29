@@ -99,7 +99,7 @@ namespace Autabee.Communication.ManagedOpcClient
 #if NET48_OR_GREATER || NET5_0_OR_GREATER
             builder = builder.AddExtension(GetLocalIpData(configuration.ApplicationUri));
 #endif
-            
+
             var clientCertificate = builder.CreateForRSA();
 
             clientCertificate.AddToStore(
@@ -169,7 +169,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Extended Functions
         public static ReferenceDescriptionCollection BrowseRoot(this AutabeeManagedOpcClient client)
-            => Browse.GetDescriptions( client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetChildrenBrowseDescription(ObjectIds.RootFolder) }));
+            => Browse.GetDescriptions(client.BrowseNodes(new BrowseDescriptionCollection() { Browse.GetChildrenBrowseDescription(ObjectIds.RootFolder) }));
 
 
         public static ReferenceDescription GetParent(this AutabeeManagedOpcClient client, NodeId nodeId)
@@ -192,7 +192,7 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 
 
-        
+
         #endregion
 
         #region Typing
@@ -291,7 +291,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         #region Methods
 
-        public static MethodArguments GetMethodArguments(this AutabeeManagedOpcClient client,  string nodeIdString)
+        public static MethodArguments GetMethodArguments(this AutabeeManagedOpcClient client, string nodeIdString)
             => client.GetMethodArguments(new NodeId(nodeIdString));
         public static IList<object> CallMethod(this AutabeeManagedOpcClient client, string objectNodeString, string methodNodeString, params object[] inputArguments)
             => client.CallMethod(
@@ -353,9 +353,9 @@ namespace Autabee.Communication.ManagedOpcClient
             return client.CallMethods(methodRequests);
         }
         #endregion
-        
+
         #region PubSub
-        
+
         public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
                 TimeSpan publishingInterval,
                 ValueNodeEntry nodeEntry,
@@ -392,7 +392,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 MonitoredNodeValueEventHandler handler = null) => client.AddMonitoredItem(
                 client.GetSubscription(publishingInterval),
                 new NodeId(nodeId),
-                handler); 
+                handler);
         public static MonitoredItem AddMonitoredItem(this AutabeeManagedOpcClient client,
                 int publishingIntervalMilliSec,
                 string nodeId,
@@ -414,6 +414,86 @@ namespace Autabee.Communication.ManagedOpcClient
         public static Subscription GetSubscription(this AutabeeManagedOpcClient client, TimeSpan publishingInterval) => client.GetSubscription(publishingInterval.Milliseconds);
         #endregion
 
+        #region Scanning
+        public static bool ScanNodeExistance(this AutabeeManagedOpcClient client, string nodeId)
+            => client.ScanNodeExistance(new NodeId(nodeId));
+        public static bool ScanNodeExistance(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId)
+            => client.ScanNodeExistance(ExpandedNodeId.ToNodeId(nodeId, client.Session.NamespaceUris));
+        public static bool ScanNodeExistance(this AutabeeManagedOpcClient client, NodeEntry nodeId)
+            => client.ScanNodeExistance(nodeId.GetNodeId());
 
+
+
+        public static bool ScanTypNodeExistance(this AutabeeManagedOpcClient client, string nodeId, NodeClass nodeClass)
+            => client.ScanTypeNodeExistance(new NodeId(nodeId), nodeClass);
+        public static bool ScanTypeNodeExistance(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId, NodeClass nodeClass)
+            => client.ScanTypeNodeExistance(ExpandedNodeId.ToNodeId(nodeId, client.Session.NamespaceUris), nodeClass);
+        public static bool ScanTypeNodeExistance(this AutabeeManagedOpcClient client, NodeEntry nodeId, NodeClass nodeClass)
+            => client.ScanTypeNodeExistance(nodeId.GetNodeId(), nodeClass);
+
+
+        public static bool ScanValueNodeExistance(this AutabeeManagedOpcClient client, NodeId nodeId)
+            => client.ScanTypeNodeExistance(nodeId, NodeClass.Variable);
+        public static bool ScanValueNodeExistance(this AutabeeManagedOpcClient client, string nodeId)
+            => client.ScanTypeNodeExistance(nodeId, NodeClass.Variable);
+        public static bool ScanValueNodeExistance(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId)
+            => client.ScanTypeNodeExistance(nodeId, NodeClass.Variable);
+        public static bool ScanValueNodeExistance(this AutabeeManagedOpcClient client, NodeEntry nodeId)
+            => client.ScanTypeNodeExistance(nodeId, NodeClass.Variable);
+
+
+
+        public static bool ScanMethodNodeExistance(this AutabeeManagedOpcClient client, NodeId nodeId)
+            => client.ScanTypeNodeExistance(nodeId, NodeClass.Method);
+        public static bool ScanMethodNodeExistance(this AutabeeManagedOpcClient client, string nodeId)
+            => client.ScanTypeNodeExistance(new NodeId(nodeId), NodeClass.Method);
+        public static bool ScanMethodNodeExistance(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId)
+            => client.ScanTypeNodeExistance(ExpandedNodeId.ToNodeId(nodeId, client.Session.NamespaceUris), NodeClass.Method);
+        public static bool ScanMethodNodeExistance(this AutabeeManagedOpcClient client, NodeEntry nodeId)
+            => client.ScanTypeNodeExistance(nodeId.GetNodeId(), NodeClass.Method);
+
+
+
+        public static bool[] ScanNodeExistances(this AutabeeManagedOpcClient client, IEnumerable<string> nodeIdCollection)
+        {
+            var collection = new NodeIdCollection();
+            collection.AddRange(nodeIdCollection.Select(k => new NodeId(k)));
+            return client.ScanNodeExistances(collection);
+        }
+        public static bool[] ScanNodeExistances(this AutabeeManagedOpcClient client, ExpandedNodeIdCollection nodeIdCollection)
+        {
+            var collection = new NodeIdCollection();
+            collection.AddRange(nodeIdCollection.Select(k => ExpandedNodeId.ToNodeId(k, client.Session.NamespaceUris)));
+            return client.ScanNodeExistances(collection);
+        }
+
+
+        public static bool[] ScanTypeNodeExistances(this AutabeeManagedOpcClient client, IEnumerable<string> nodeIdCollection, NodeClass nodeClass)
+        {
+            var collection = new NodeIdCollection();
+            collection.AddRange(nodeIdCollection.Select(k => new NodeId(k)));
+            return client.ScanTypeNodeExistances(collection, nodeClass);
+        }
+        public static bool[] ScanTypeNodeExistances(this AutabeeManagedOpcClient client, ExpandedNodeIdCollection nodeIdCollection, NodeClass nodeClass)
+        {
+            var collection = new NodeIdCollection();
+            collection.AddRange(nodeIdCollection.Select(k => ExpandedNodeId.ToNodeId(k, client.Session.NamespaceUris)));
+            return client.ScanTypeNodeExistances(collection, nodeClass);
+        }
+
+        public static bool[] ScanValueNodeExistances(this AutabeeManagedOpcClient client, NodeIdCollection nodeIdCollection)
+            => client.ScanTypeNodeExistances(nodeIdCollection, NodeClass.Variable);
+        public static bool[] ScanValueNodeExistances(this AutabeeManagedOpcClient client, IEnumerable<string> nodeIdCollection)
+            => client.ScanTypeNodeExistances(nodeIdCollection, NodeClass.Variable);
+        public static bool[] ScanValueNodeExistances(this AutabeeManagedOpcClient client, ExpandedNodeIdCollection nodeIdCollection)
+            => client.ScanTypeNodeExistances(nodeIdCollection, NodeClass.Variable);
+
+        public static bool[] ScanMethodNodeExistances(this AutabeeManagedOpcClient client, NodeIdCollection nodeIdCollection)
+            => client.ScanTypeNodeExistances(nodeIdCollection, NodeClass.Method);
+        public static bool[] ScanMethodNodeExistances(this AutabeeManagedOpcClient client, IEnumerable<string> nodeIdCollection)
+            => client.ScanTypeNodeExistances(nodeIdCollection, NodeClass.Method);
+        public static bool[] ScanMethodNodeExistances(this AutabeeManagedOpcClient client, ExpandedNodeIdCollection nodeIdCollection)
+            => client.ScanTypeNodeExistances(nodeIdCollection, NodeClass.Method);
+        #endregion
     }
 }
