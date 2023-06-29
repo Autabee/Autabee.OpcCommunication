@@ -149,7 +149,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             };
 
 
-            var types = communicator.ScanNodeExistances(collection);
+            var types = communicator.ScanNodeExistences(collection);
             Assert.True(types[0]);
             Assert.False(types[1]);
         }
@@ -165,7 +165,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             };
 
 
-            var types = communicator.ScanNodeExistances(collection);
+            var types = communicator.ScanNodeExistences(collection);
             Assert.True(types[0]);
             Assert.False(types[1]);
         }
@@ -182,7 +182,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             };
 
 
-            var types = communicator.ScanValueNodeExistances(collection);
+            var types = communicator.ScanValueNodeExistences(collection);
             Assert.True(types[0]);
             Assert.False(types[1]);
         }
@@ -199,7 +199,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             };
 
 
-            var types = communicator.ScanMethodNodeExistances(collection);
+            var types = communicator.ScanMethodNodeExistences(collection);
             Assert.False(types[0]);
             Assert.False(types[1]);
         }

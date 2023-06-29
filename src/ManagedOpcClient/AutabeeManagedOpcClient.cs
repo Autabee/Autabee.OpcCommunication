@@ -1852,7 +1852,7 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion
 
         #region Scanning
-        public bool[] ScanNodeExistances(NodeIdCollection nodeIdCollection)
+        public bool[] ScanNodeExistences(NodeIdCollection nodeIdCollection)
         {
             if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new bool[0];
             Func<bool[]> task = delegate ()
@@ -1863,7 +1863,7 @@ namespace Autabee.Communication.ManagedOpcClient
             return HandleTask(task);
         }
 
-        public bool[] ScanTypeNodeExistances(NodeIdCollection nodeIdCollection, NodeClass nodeClass)
+        public bool[] ScanTypeNodeExistences(NodeIdCollection nodeIdCollection, NodeClass nodeClass)
         {
             if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new bool[0];
             Func<bool[]> task = delegate ()
