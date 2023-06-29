@@ -20,8 +20,8 @@ using System.Xml.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
-    public delegate void MonitoredNodeValueRecordEventHandler(object sender, NodeValueRecord e);
-    public delegate void MonitoredNodeValueEventHandler(MonitoredItem nodeId, object e);
+    public delegate void MonitoredNodeValueRecordEventHandler(MonitoredItem sender, NodeValueRecord e);
+    public delegate void MonitoredNodeValueEventHandler(MonitoredItem sender, object e);
 
     public class AutabeeManagedOpcClient
     {
@@ -79,6 +79,7 @@ namespace Autabee.Communication.ManagedOpcClient
         }
 
         public Session Session { get => session; }
+        //public Dictionary<NodeId, DataDictionary> NodeDictonary { get; set; }
 
         #region Construction
         public AutabeeManagedOpcClient(string company, string product, string directory, Logger logger = null)
@@ -522,7 +523,14 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private async void InitManagedConnection()
         {
-            await session.LoadDataTypeSystem();
+            try
+            {
+                await session.LoadDataTypeSystem();
+            }
+            catch
+            {
+
+            }
             ApplicationDescription = FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
             session.KeepAlive += Notification_KeepAlive;
             ConnectionUpdated?.Invoke(this, null);
@@ -581,7 +589,7 @@ namespace Autabee.Communication.ManagedOpcClient
         /// </summary>
         private void Notification_KeepAlive(ISession session, KeepAliveEventArgs e)
         {
-            Console.WriteLine("KeepAlivePing");
+            //Console.WriteLine("KeepAlivePing");
             if (KeepAliveNotification != null)
             {
                 KeepAliveNotification.Invoke(session, e);
@@ -842,9 +850,6 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion
 
         #region Typing
-
-
-
         public NodeTypeData GetNodeTypeEncoding(string nodeIdString)
         {
             if (PreparedNodeTypes.TryGetValue(nodeIdString, out string parseString))
@@ -1177,7 +1182,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
             else
             {
-                WriteValue(nodeId,value.First().Value);
+                WriteValue(nodeId, value.First().Value);
             }
         }
 
@@ -1212,7 +1217,7 @@ namespace Autabee.Communication.ManagedOpcClient
             await WriteValuesAsync(CreateWriteCollection(list), ct);
         }
 
-        
+
         private static WriteValue CreateWriteValue(NodeId nodeId, object value)
         {
 
@@ -1226,7 +1231,7 @@ namespace Autabee.Communication.ManagedOpcClient
                         Value = dvalue,
                         AttributeId = Attributes.Value
                     };
-                    
+
                 }
                 else
                 {
@@ -1237,9 +1242,10 @@ namespace Autabee.Communication.ManagedOpcClient
                         AttributeId = Attributes.Value
                     };
                 }
-                
+
             }
-            catch (Exception e){
+            catch (Exception)
+            {
                 throw;
             }
         }
@@ -1393,7 +1399,8 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 Node methodNode = ReadNode(nodeId);
 
-                if (methodNode.NodeClass != NodeClass.Method) { 
+                if (methodNode.NodeClass != NodeClass.Method)
+                {
                     throw new ServiceResultException(StatusCodes.BadNodeClassInvalid);
                 }
 
@@ -1605,14 +1612,18 @@ namespace Autabee.Communication.ManagedOpcClient
             bool globalCall = false,
             MonitoredNodeValueRecordEventHandler handler = null)
         {
+            if (handler == null && !globalCall)
+            {
+                throw new ArgumentNullException(nameof(handler), "Either handler or globalCall must be set");
+            }
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, samplingInterval, queueSize, discardOldest);
             if (handler != null)
             {
-                monitoredItem.Notification += (sender, arg) => MonitoredNode(nodeEntry, arg, handler);
+                monitoredItem.Notification += (sender, arg) => MonitoredNode(sender, nodeEntry, arg, handler);
             }
             if (globalCall)
             {
-                monitoredItem.Notification += (sender, arg) => MonitoredNode(nodeEntry, arg, NodeChangedNotification);
+                monitoredItem.Notification += (sender, arg) => MonitoredNode(sender, nodeEntry, arg, NodeChangedNotification);
             }
 
             return monitoredItem;
@@ -1625,6 +1636,10 @@ namespace Autabee.Communication.ManagedOpcClient
                 bool globalCall = false,
                 MonitoredNodeValueEventHandler handler = null)
         {
+            if (handler == null && !globalCall)
+            {
+                throw new ArgumentNullException(nameof(handler), "Either handler or globalCall must be set");
+            }
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, samplingInterval, queueSize, discardOldest);
             if (handler != null)
             {
@@ -1663,34 +1678,33 @@ namespace Autabee.Communication.ManagedOpcClient
             return monitoredItem;
         }
 
-        public void MonitoredNode(
+        private void MonitoredNode(
                 MonitoredItem monitorItem,
                 MonitoredItemNotificationEventArgs arg,
                 MonitoredNodeValueEventHandler handler)
         {
             var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
-            handler.Invoke(monitorItem, value);
+            handler?.Invoke(monitorItem, value);
         }
 
-        public void MonitoredNode(
+        private void MonitoredNode(
                 MonitoredItem monitorItem,
                 MonitoredItemNotificationEventArgs arg,
                 MonitoredNodeValueRecordEventHandler handler)
         {
             var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
-            handler.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
+            handler?.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
         }
 
-        public void MonitoredNode(
+        private void MonitoredNode(
+            MonitoredItem monitorItem,
             ValueNodeEntry entry,
             MonitoredItemNotificationEventArgs arg,
             MonitoredNodeValueRecordEventHandler handler)
         {
             if (!entry.IsUDT)
             {
-                handler.Invoke(
-                    this,
-                    CreateNodeValue(entry, ((MonitoredItemNotification)arg.NotificationValue).Value.Value));
+                handler?.Invoke(monitorItem, CreateNodeValue(entry, ((MonitoredItemNotification)arg.NotificationValue).Value.Value));
             }
             else
             {
@@ -1698,7 +1712,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 ExtensionObject obj = ((ExtensionObject)((MonitoredItemNotification)arg.NotificationValue).Value.Value);
                 if (obj.Encoding == ExtensionObjectEncoding.Binary)
                 {
-                    handler.Invoke(this, entry.CreateRecord(ConstructEncodable(entry, (byte[])obj.Body)));
+                    handler.Invoke(monitorItem, entry.CreateRecord(ConstructEncodable(entry, (byte[])obj.Body)));
                 }
                 else
                 {
@@ -1837,5 +1851,63 @@ namespace Autabee.Communication.ManagedOpcClient
         }
         #endregion
 
+        #region Scanning
+        public bool[] ScanNodeExistences(NodeIdCollection nodeIdCollection)
+        {
+            if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new bool[0];
+            Func<bool[]> task = delegate ()
+            {
+                session.ReadNodes(nodeIdCollection, out var nodes, out IList<ServiceResult> statusResults);
+                return statusResults.Select(o => StatusCode.IsGood(o.Code)).ToArray();
+            };
+            return HandleTask(task);
+        }
+
+        public bool[] ScanTypeNodeExistences(NodeIdCollection nodeIdCollection, NodeClass nodeClass)
+        {
+            if (nodeIdCollection is null || nodeIdCollection.Count == 0) return new bool[0];
+            Func<bool[]> task = delegate ()
+            {
+                var results = new bool[nodeIdCollection.Count];
+                session.ReadNodes(nodeIdCollection, out var nodes, out IList<ServiceResult> statusResults);
+                for (int i = 0; i < nodeIdCollection.Count; i++)
+                {
+                    results[i] = StatusCode.IsGood(statusResults[i].StatusCode) && nodes[i].NodeClass == nodeClass;
+                }
+                return results;
+            };
+            return HandleTask(task);
+        }
+
+        public bool ScanNodeExistance(NodeId nodeId)
+        {
+            if (nodeId == null) return false;
+            try
+            {
+                session.ReadNode(nodeId);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public bool ScanTypeNodeExistance(NodeId nodeId, NodeClass nodeClass)
+        {
+            if (nodeId == null) return false;
+            try
+            {
+                var node = session.ReadNode(nodeId);
+                return node.NodeClass == nodeClass;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+
+        #endregion
     }
 }
