@@ -21,7 +21,7 @@ namespace Autabee.OpcScout
             MessageUpdate?.Invoke(this,log);
             if (logEvent.Level >= LogEventLevel.Warning)
             {
-                snackbar.Add(log.ToString(), (Severity)(int)logEvent.Level);
+                snackbar.Add(logEvent.RenderMessage(), (Severity)(int)logEvent.Level);
             }
         }
     }
