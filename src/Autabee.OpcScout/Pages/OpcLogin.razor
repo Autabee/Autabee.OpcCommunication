@@ -125,6 +125,7 @@ else
     bool Loading = false;
     List<EndpointRecord> savedEndpoints = new List<EndpointRecord>();
     IDialogReference dialog = null;
+    bool connected = false;
 
     protected override void OnInitialized()
     {
@@ -144,6 +145,11 @@ else
 
     private async void CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
     {
+        await InvokeAsync(() => LocalCertificateValidation(sender, e));
+    }
+
+    private async void LocalCertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
+    {
         if (dialog != null)
         {
             return;
@@ -157,6 +163,7 @@ else
 
         lastCert = e.Certificate;
         var parameters = new DialogParameters { ["record"] = e };
+
         dialog = await DialogService.ShowAsync<AcceptCert>("Accept certificate?", parameters, new DialogOptions()
             {
                 MaxWidth = MaxWidth.Medium,
@@ -172,13 +179,13 @@ else
                 //Loading  = true;
                 StateHasChanged();
                 AcceptLast = true;
-                await InvokeAsync(() => Connect(selectedEndpoint));
-
+                await Connect(selectedEndpoint);
+                await Connect(selectedEndpoint);
             }
             catch (Exception)
             {
                 //Loading = false;
-                await InvokeAsync(StateHasChanged);
+                StateHasChanged();
             }
         }
     }
@@ -318,7 +325,8 @@ else
     public bool TaskIsNullOrDisposed(Task task)
     {
         if (task == null) return true;
-        try{
+        try
+        {
             if (task.IsCompleted)
             {
 
@@ -352,7 +360,7 @@ else
             DiscoveryTask.Dispose();
         }
 
-        var innerTask =  new Task<EndpointDescriptionCollection>(() =>
+        var innerTask = new Task<EndpointDescriptionCollection>(() =>
         {
             EndpointDescriptionCollection endpoints = null;
             do
@@ -407,7 +415,7 @@ else
         searchText = $"Connecting to {endpoint.EndpointUrl}";
         Loading = true;
         await InvokeAsync(StateHasChanged);
-        if(ConnectionTask != null)
+        if (ConnectionTask != null)
         {
             ConnectionTask.Dispose();
             ConnectionTask = null;
@@ -432,6 +440,7 @@ else
                 {
                     backend.clients.Add(new ClientCache(Client, new List<ScannedNodeModel>()));
                     Navigation.NavigateTo("/Opc/Manipulation");
+                    connected = true;
                 }
                 else
                 {
