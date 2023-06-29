@@ -43,7 +43,7 @@ However when you are using a string based address you can request to get a regis
 These nodes come in the flavors:
     - MethodNode: a node that is used to call a method on the server
     - ValueNode: a node that is used to read or write a value on the server
-> :warning: **Warning**
+> **Warning**
 > A ValueNodeEntry is for one connection only. There is a reconnect register procedure build in. So when you reconnect it registers a new registered Id. So this mean that if you want to read a node on 2 different connections you need to use 2 ValueNodeEntry's, one or each connection. (with current implementation)
 
 To read a node using a NodeEntry you can use the following example:
@@ -92,3 +92,21 @@ The sharper is build into the opc scout. So when you are connected to a server. 
 
 ### Why do you use Serilog?
 It's a great logging framework that is easy to use and has a lot of options. It's also easy to extend. And since this is the logging tool of choice for the company it originally is made for, we kept it in.
+
+### How do I run Opc Scout?
+Easiest way is by running the folowing compose file on the computer you want to run it on:
+```yml
+version: '3.3'
+services:
+    opcscout:
+        volumes:
+            - scoutdata:/app/data
+        ports:
+            - 8000:80
+        image: autabee/opcscout:beta
+volumes:
+    scoutdata:
+```
+Or you can run the exe in the opcscout-web.zip downloadable from [here](https://github.com/Autabee/Autabee.OpcCommunication/releases).
+Or you can build the App or Web locally.
+
