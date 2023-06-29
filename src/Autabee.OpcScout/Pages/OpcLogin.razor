@@ -145,22 +145,26 @@ else
 
     private async void CertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
     {
-        await InvokeAsync(() => LocalCertificateValidation(sender, e));
-    }
-
-    private async void LocalCertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
-    {
         if (dialog != null)
         {
             return;
         }
-        if (lastCert != null && lastCert.Thumbprint == e.Certificate.Thumbprint && AcceptLast)
+        else if (lastCert != null && lastCert.Thumbprint == e.Certificate.Thumbprint && AcceptLast)
         {
             e.Accept = AcceptLast;
             e.AcceptAll = AcceptLast;
             return;
         }
 
+
+        else {
+            await InvokeAsync(() => LocalCertificateValidation(sender, e));
+        }
+    }
+
+    private async void LocalCertificateValidation(CertificateValidator sender, CertificateValidationEventArgs e)
+    {
+        
         lastCert = e.Certificate;
         var parameters = new DialogParameters { ["record"] = e };
 
