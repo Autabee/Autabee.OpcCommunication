@@ -1,3 +1,9 @@
+---
+layout: default
+title: short-list
+navigation_weight: 2
+---
+
 # Short Lists
 
 ## Object Definitions

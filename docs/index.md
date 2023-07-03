@@ -1,3 +1,9 @@
+---
+layout: default
+title: Home
+navigation_weight: 1
+---
+
 # Autabee Opc Communicator
 The autabee opc communicator is a rapper for the opc ua client c# library. It is made with the intention of making de development of an opc client easier. the whole scope of this repository has 4 parts:
 - <b>Autabee Managed Opc Client</b>: The client interface used for communicating with an OPC Server
@@ -9,10 +15,10 @@ The autabee opc communicator is a rapper for the opc ua client c# library. It is
 ### How can I connect to an OPC Server?
 in the case that you have an opc ApplicationConfiguration you can use the following code:
 ```csharp
-    var logger = new Logger();
-    var client = new Autabee.Communication.ManagedOpcClient(GetConfig(),logger);
+var logger = new Logger();
+var client = new Autabee.Communication.ManagedOpcClient(GetConfig(),logger);
 
-    await client.Connect("opc.tcp://localhost:4840");
+await client.Connect("opc.tcp://localhost:4840");
 ```
 
 Otherwise use the following code:
@@ -23,7 +29,8 @@ public async Task<> ConnectToServer()
     string company = "company that the client is from";
     string product = "name of the client";
     string directory = "directory there the config need to be saved";
-    var client = new Autabee.Communication.ManagedOpcClient(company,product,directory,logger);
+    var client = new Autabee.Communication.ManagedOpcClient(company,
+                        product,directory,logger);
     
     await client.Connect("opc.tcp://localhost:4840");
     return client;
@@ -35,8 +42,8 @@ There are multiple ways but the 2 main are either via NodeId or NodeEntry.
 
 NodeId in opc is the address of a value on the server. This can easily be called as followed:
 ```csharp
-    var result = await client.ReadNode("ns=2;s=Demo.Dynamic.Scalar.Boolean");
-    var result = await client.ReadNode(new NodeId("ns=2;s=Demo.Dynamic.Scalar.Boolean"));
+var result = await client.ReadNode("ns=2;s=Demo.Dynamic.Scalar.Boolean");
+var result = await client.ReadNode(new NodeId("ns=2;s=Demo.Dynamic.Scalar.Boolean"));
 ```
 
 However when you are using a string based address you can request to get a registered node id. using this node for reading is slightly faster when you repeatedly call that node id. This is where NodeEntry comes in. As they store both the unregistered and the registered node id for you. So when you call a node multiple times you can use the registered node id to speed up the process.
@@ -66,9 +73,7 @@ var subscription = await client.CreateSubscription(intervalInMilliSeconds);
 
 Then you can add a node to the subscription. using either a string, NodeId or NodeEntry. This can be done as followed:
 ```csharp
-await client.AddMonitoredNode(subscription, 
-                              node, 
-                              EventHandler);
+await client.AddMonitoredNode(subscription, node, EventHandler);
 ```
 where eventHandler is a function that is called when the value of the node changes. This function has the following signature for string and nodeIds:
 ```csharp
