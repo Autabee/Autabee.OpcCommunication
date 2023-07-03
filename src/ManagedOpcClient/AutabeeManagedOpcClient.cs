@@ -330,7 +330,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     userIdentity,
                     null);
 
-                InitManagedConnection();
+                await InitManagedConnection();
             }
             catch (Exception)
             {
@@ -392,6 +392,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     await Connect(applicationConfiguration, endpoint, userIdentity);
                 }
+                
             }
             catch (Exception)
             {
@@ -512,7 +513,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     60_000,
                     mUserIdentity,
                     null);
-                InitManagedConnection();
+                await InitManagedConnection();
             }
             catch (Exception)
             {
@@ -521,7 +522,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
         }
 
-        private async void InitManagedConnection()
+        private async Task InitManagedConnection()
         {
             try
             {
@@ -984,7 +985,7 @@ namespace Autabee.Communication.ManagedOpcClient
         public NodeValueRecord ReadValue(ValueNodeEntry nodeEntry)
         {
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
-            var body = ReadValue(nodeEntry.GetNodeId());
+            var body = (session.ReadValue(nodeEntry.GetNodeId())).Value;
             return CreateNodeValue(nodeEntry, body);
         }
 
