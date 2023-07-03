@@ -29,7 +29,8 @@ public async Task<> ConnectToServer()
     string company = "company that the client is from";
     string product = "name of the client";
     string directory = "directory there the config need to be saved";
-    var client = new Autabee.Communication.ManagedOpcClient(company,product,directory,logger);
+    var client = new Autabee.Communication.ManagedOpcClient(company,
+                        product,directory,logger);
     
     await client.Connect("opc.tcp://localhost:4840");
     return client;
