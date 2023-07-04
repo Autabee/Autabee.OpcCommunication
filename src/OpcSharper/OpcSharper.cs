@@ -34,7 +34,7 @@ namespace Autabee.OpcSharper
 
 
             logger?.Information("Generate Project at, {0}", Path.Combine(Directory.GetCurrentDirectory(), settings.baseLocation) );
-#if skip
+
             OpcToCSharpGenerator.GenerateCsharpProject(settings);
 
 
@@ -57,7 +57,7 @@ namespace Autabee.OpcSharper
             ReferenceDescriptionCollection found = new ReferenceDescriptionCollection();
             NodeCollection foundTypes = new NodeCollection();
             foreach (var item in settings.nodes)
-                refdesc.AddRange(service.BrowseNode(item));
+                refdesc.AddRange(service.BrowseNode(item).References);
             found.AddRange(refdesc);
 
 
@@ -67,7 +67,7 @@ namespace Autabee.OpcSharper
 
                 foreach (var item in refdesc)
                 {
-                    refdisc.AddRange(service.BrowseNode(item));
+                    refdisc.AddRange(service.BrowseNode(item).References);
                 }
 
                 refdesc.Clear();
@@ -93,7 +93,7 @@ namespace Autabee.OpcSharper
 
             OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
             OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, settings);
-#endif
+
             try
             {
                 string path = GetSharperZip(settings);
