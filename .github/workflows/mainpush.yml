@@ -31,8 +31,16 @@ jobs:
     name: "Publish to nuget"
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+      - name: restore workloads
+        run: dotnet workload install maui-windows --ignore-failed-sources
+      - name: Restore dependencies
+        run: dotnet restore ./src
       - name: Build
         run: dotnet build ./src --configuration Release --no-restore
+        
       - name: Publish opc client to NuGet
         continue-on-error: true
         uses: alirezanet/publish-nuget@v3.0.4
@@ -58,6 +66,14 @@ jobs:
     name: "Publish to GitHub"
     runs-on: windows-latest
     steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+      - name: restore workloads
+        run: dotnet workload install maui-windows --ignore-failed-sources
+      - name: Restore dependencies
+        run: dotnet restore ./src
+        
       # - name: zip windowsx64
       #   run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0/win10-x64 ./opcscout-windowsx64-app.zip
       - name: publish web minimal
