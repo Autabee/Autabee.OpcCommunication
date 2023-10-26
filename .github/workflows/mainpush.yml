@@ -96,8 +96,6 @@ jobs:
 
       - name: publish web portable osx-x64
         run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r osx-x64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/osx-x64
-      - name: publish web portable osx-arm
-        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r osx-arm --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm
       - name: publish web portable osx-arm64
         run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r osx-arm64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm64
 
@@ -119,8 +117,6 @@ jobs:
         run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/linux-arm ./opcscout-web-linux-arm-self-contained.zip
       - name: zip web portable osx-x64
         run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/osx-x64 ./opcscout-web-osx-x64-self-contained.zip
-      - name: zip web portable osx-arm
-        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm ./opcscout-web-osx-arm-self-contained.zip
       - name: zip web portable osx-arm64
         run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm64 ./opcscout-web-osx-arm64-self-contained.zip
       
@@ -143,7 +139,6 @@ jobs:
             opcscout-web-linux-arm64-self-contained.zip
             opcscout-web-linux-arm-self-contained.zip
             opcscout-web-osx-x64-self-contained.zip
-            opcscout-web-osx-arm-self-contained.zip
             opcscout-web-osx-arm64-self-contained.zip
   
   push_to_registry:
