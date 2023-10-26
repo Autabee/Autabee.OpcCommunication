@@ -11,6 +11,7 @@ env:
 jobs:
   build:
     runs-on: windows-latest
+    name: "build and test"
     steps:
       - uses: actions/checkout@v3
       - name: Setup .NET
@@ -21,13 +22,17 @@ jobs:
         run: dotnet restore ./src
       - name: Build
         run: dotnet build ./src --configuration Release --no-restore
-      - name: publish web
-        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release
-      # - name: publish app
-      #   run: dotnet publish ./src/Autabee.OpcScoutApp -f net6.0-windows10.0.19041.0 -c Release /p:RuntimeIdentifierOverride=win10-x64
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal ./src
 
+  publish_to_nuget:
+    needs:
+        - build
+    name: "Publish to nuget"
+    runs-on: windows-latest
+    steps:
+      - name: Build
+        run: dotnet build ./src --configuration Release --no-restore
       - name: Publish opc client to NuGet
         continue-on-error: true
         uses: alirezanet/publish-nuget@v3.0.4
@@ -47,11 +52,63 @@ jobs:
             INCLUDE_SYMBOLS: true
             NO_BUILD: true
 
+  publish_to_github:
+    needs:
+        - build
+    name: "Publish to GitHub"
+    runs-on: windows-latest
+    steps:
       # - name: zip windowsx64
       #   run: powershell Compress-Archive ./src/Autabee.OpcScoutApp/bin/Release/net6.0-windows10.0.19041.0/win10-x64 ./opcscout-windowsx64-app.zip
-      - name: zip web
-        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/Release/net6.0/publish ./opcscout-web.zip
-      - name: publish git
+      - name: publish web minimal
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -o ./src/Autabee.OpcScoutWeb/bin/publish/minimal
+      - name: publish web portable win-64
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r win-x64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/win-64
+      - name: publish web portable win-86
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r win-x86 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/win-86
+      - name: publish web portable win-arm
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r win-arm --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/win-arm
+      - name: publish web portable win-arm64
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r win-arm64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/win-arm64
+
+      - name: publish web portable linux-64
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r linux-x64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/linux-64
+      - name: publish web portable linux-arm64
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r linux-arm64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/linux-arm64
+      - name: publish web portable linux-arm
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r linux-arm --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/linux-arm
+
+      - name: publish web portable osx-x64
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r osx-x64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/osx-x64
+      - name: publish web portable osx-arm
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r osx-arm --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm
+      - name: publish web portable osx-arm64
+        run: dotnet publish ./src/Autabee.OpcScoutWeb -c Release -r osx-arm64 --self-contained true -o ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm64
+
+      - name: zip web minimal
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/minimal ./opcscout-web.zip
+      - name: zip web portable win-64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/win-64 ./opcscout-web-win-64-self-contained.zip
+      - name: zip web portable win-86
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/win-86 ./opcscout-web-win-86-self-contained.zip
+      - name: zip web portable win-arm
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/win-arm ./opcscout-web-win-arm-self-contained.zip
+      - name: zip web portable win-arm64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/win-arm64 ./opcscout-web-win-arm64-self-contained.zip
+      - name: zip web portable linux-64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/linux-64 ./opcscout-web-linux-64-self-contained.zip
+      - name: zip web portable linux-arm64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/linux-arm64 ./opcscout-web-linux-arm64-self-contained.zip
+      - name: zip web portable linux-arm
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/linux-arm ./opcscout-web-linux-arm-self-contained.zip
+      - name: zip web portable osx-x64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/osx-x64 ./opcscout-web-osx-x64-self-contained.zip
+      - name: zip web portable osx-arm
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm ./opcscout-web-osx-arm-self-contained.zip
+      - name: zip web portable osx-arm64
+        run: powershell Compress-Archive ./src/Autabee.OpcScoutWeb/bin/publish/osx-arm64 ./opcscout-web-osx-arm64-self-contained.zip
+      
+      - name: publish web
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
@@ -61,9 +118,18 @@ jobs:
           files: |
             LICENSE.txt
             opcscout-web.zip
-        #    opcscout-windowsx64-app.zip
-
-
+            opcscout-web-win-64-self-contained.zip
+            opcscout-web-win-86-self-contained.zip
+            opcscout-web-win-arm-self-contained.zip
+            opcscout-web-win-arm64-self-contained.zip
+            opcscout-web-linux-64-self-contained.zip
+            opcscout-web-linux-64-self-contained.zip
+            opcscout-web-linux-arm64-self-contained.zip
+            opcscout-web-linux-arm-self-contained.zip
+            opcscout-web-osx-x64-self-contained.zip
+            opcscout-web-osx-arm-self-contained.zip
+            opcscout-web-osx-arm64-self-contained.zip
+  
   push_to_registry:
     needs:
      - build
