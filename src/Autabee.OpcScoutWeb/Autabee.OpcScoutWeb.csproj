@@ -7,13 +7,28 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <RootNamespace>Autabee.OpcScout</RootNamespace>
         <AssemblyName>opcscout</AssemblyName>
+        <PackageIcon>autabee.png</PackageIcon>
+        <SignAssembly>False</SignAssembly>
+        <ApplicationIcon>autabee.ico</ApplicationIcon>
     </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="autabee.ico" />
+    </ItemGroup>
 
 
     <ItemGroup>
         <EmbeddedResource Include="autabeeopcscout.Config.xml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </EmbeddedResource>
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <None Include="..\..\autabee.png">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
     </ItemGroup>
 
     <ItemGroup>
