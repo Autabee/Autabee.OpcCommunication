@@ -24,13 +24,13 @@ Objects defined in the library that are not part of the OPC UA specification but
 
 | method | usage definition   |
 | --- | --- |
-| ReadValue(s) | Reads a single or multiple values from the server and returns it based on the function you are calling |
-| WriteValue(s) | Writes a single or multiple values to the server |
-| CallMethod(s) | Calls a single or multiple methods on the server and returns their values |
+| ReadValue | Reads a single or multiple values from the server and returns it based on the function you are calling |
+| WriteValue | Writes a single or multiple values to the server |
+| CallMethod | Calls a single or multiple methods on the server and returns their values |
 | CreateSubscription | create a subscription that release their values in a amount of milliseconds |
-| AddMonitoredItem(s) | add a single or multiple nodes to an exiting subscription |
-| RegisterNodeId(s) | Registers a single or multiple nodes for a session |
-| UnregisterNodeId(s) | Unregisters a single or multiple nodes for a session |
-| ScanNodeExistence(s) | Scans the existence of a single or multiple nodes on the server |
-| Scan[Type]NodeExistence(s) | Scans the existence of a single or multiple nodes on the server with a specified node class |
+| AddMonitoredItem | add a single or multiple nodes to an exiting subscription |
+| RegisterNodeId | Registers a single or multiple nodes for a session |
+| UnregisterNodeId | Unregisters a single or multiple nodes for a session |
+| ScanNodeExistence | Scans the existence of a single or multiple nodes on the server |
+| Scan[Type]NodeExistence | Scans the existence of a single or multiple nodes on the server with a specified node class |
 
