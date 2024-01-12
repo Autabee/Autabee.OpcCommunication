@@ -11,7 +11,7 @@ env:
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: windows-2022
     name: "build and test"
     steps:
       - uses: actions/checkout@v3
@@ -25,6 +25,6 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore ./src
       - name: Build
-        run: dotnet build ./src --configuration Release --no-restore
+        run: dotnet build ./src --configuration Release --no-restore -p:TargetFramework=net6.0-windows10.0.19041
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal ./src
