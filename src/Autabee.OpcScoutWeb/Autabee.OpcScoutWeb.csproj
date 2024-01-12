@@ -7,7 +7,14 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
         <RootNamespace>Autabee.OpcScout</RootNamespace>
         <AssemblyName>opcscout</AssemblyName>
+        <PackageIcon>autabee.png</PackageIcon>
+        <SignAssembly>False</SignAssembly>
+        <ApplicationIcon>autabee.ico</ApplicationIcon>
     </PropertyGroup>
+
+    <ItemGroup>
+      <Content Include="autabee.ico" />
+    </ItemGroup>
 
 
     <ItemGroup>
@@ -16,9 +23,17 @@
         </EmbeddedResource>
     </ItemGroup>
 
+
     <ItemGroup>
-        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
-        <PackageReference Include="MudBlazor" Version="6.5.0" />
+      <None Include="..\..\autabee.png">
+        <Pack>True</Pack>
+        <PackagePath>\</PackagePath>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.19.5" />
+        <PackageReference Include="MudBlazor" Version="6.11.0" />
         <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
         <PackageReference Include="Serilog.Sinks.DelegatingText" Version="1.0.0" />
         <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />

@@ -12,17 +12,16 @@ jobs:
   build:
 
     runs-on: windows-latest
-
+    name: "build and test"
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-    - name: restore workloads
-      run: | 
-        dotnet workload install maui-windows --ignore-failed-sources
-    - name: Restore dependencies
-      run: dotnet restore ./src
-    - name: Build
-      run: dotnet build ./src --no-restore
-    - name: Test
-      run: dotnet test ./src --no-build --verbosity normal
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+      - name: restore workloads
+        run: dotnet workload install maui-windows --ignore-failed-sources
+      - name: Restore dependencies
+        run: dotnet restore ./src
+      - name: Build
+        run: dotnet build ./src --configuration Release --no-restore
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal ./src

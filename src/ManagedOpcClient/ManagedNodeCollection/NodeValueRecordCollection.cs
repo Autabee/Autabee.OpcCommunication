@@ -1,6 +1,4 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
-using Newtonsoft.Json.Linq;
-using Opc.Ua;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,13 +6,13 @@ using System.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 {
-    public class NodeValueRecordCollection : ValueNodeEntryCollection
+    public class NodeValueRecordCollection : ValueNodeEntryCollection, IEnumerable<NodeValueRecord>
     {
         internal List<NodeValueRecord> nodeValueRecords = new List<NodeValueRecord>();
-        public IEnumerable<object> Values 
-        { 
-            get => nodeValueRecords.Select(o => o.Value); 
-            set => UpdateValues(value); 
+        public IEnumerable<object> Values
+        {
+            get => nodeValueRecords.Select(o => o.Value);
+            set => UpdateValues(value);
         }
 
         public new NodeValueRecord this[int index]
@@ -29,7 +27,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 base[index] = value.NodeEntry;
             }
         }
-        
+
 
         public void Add(NodeValueRecord nodeValue)
         {
@@ -75,7 +73,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 throw new AggregateException(excptions);
             }
         }
-       
+
         public void AddRange(NodeValueRecord[] nodes)
         {
             foreach (var node in nodes)
@@ -84,7 +82,20 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
             }
         }
 
+        public void AddRange(NodeValueRecordCollection nodes)
+        {
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                Add(nodes[i]);
+            }
+        }
+
         public new IEnumerator GetEnumerator()
+        {
+            return nodeValueRecords.GetEnumerator();
+        }
+
+        IEnumerator<NodeValueRecord> IEnumerable<NodeValueRecord>.GetEnumerator()
         {
             return nodeValueRecords.GetEnumerator();
         }

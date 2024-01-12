@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 {
-    public class ValueNodeEntryCollection : IEnumerable
+    public class ValueNodeEntryCollection : IEnumerable<ValueNodeEntry>
     {
         protected List<ValueNodeEntry> nodeEntries = new List<ValueNodeEntry>();
         protected NodeIdCollection nodeIds = new NodeIdCollection();
@@ -84,6 +84,14 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
         public void AddRange(ValueNodeEntry[] nodes)
             =>  nodes.ToList().ForEach(Add);
 
+        public void AddRange(ValueNodeEntryCollection nodes)
+        {
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                Add(nodes[i]);
+            }
+        }
+
         public List<ValueNodeEntry> NodeEntries => nodeEntries;
 
         public NodeIdCollection NodeIds => nodeIds;
@@ -124,10 +132,6 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
             array.SetValue(nodeEntries[index], index);
         }
 
-        public IEnumerator GetEnumerator()
-        {
-            return nodeEntries.GetEnumerator();
-        }
 
         internal NodeId ConnectedSessionId { get; set; }
         internal void SessionDisconnected(object sender, EventArgs args)
@@ -181,6 +185,16 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 }
                 throw new AggregateException(exps);
             }
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            return nodeEntries.GetEnumerator();
+        }
+
+        IEnumerator<ValueNodeEntry> IEnumerable<ValueNodeEntry>.GetEnumerator()
+        {
+            return nodeEntries.GetEnumerator();
         }
     }
 }
