@@ -95,11 +95,11 @@ In a lot of cases opc sharper is not needed as you have access to a UA-ModelComp
 The sharper is build into the opc scout. So when you are connected to a server. you can use the sharper to generate the code for you. This code can then be used within your own project.
 
 
-### Why do you use Serilog?
+### Why do we use Serilog?
 It's a great logging framework that is easy to use and has a lot of options. It's also easy to extend. And since this is the logging tool of choice for the company it originally is made for, we kept it in.
 
 ### How do I run Opc Scout?
-Easiest way is by running the folowing compose file on the computer you want to run it on:
+There are multiple ways to run the opc scout. The easiest way is to run it via docker. This can be done with the following docker-compose file:
 ```yml
 version: '3.3'
 services:
@@ -112,6 +112,14 @@ services:
 volumes:
     scoutdata:
 ```
-Or you can run the exe in the opcscout-web.zip downloadable from [here](https://github.com/Autabee/Autabee.OpcCommunication/releases).
-Or you can build the App or Web locally.
+This will run the opc scout on port 8000.
+
+However not everyone is able to run containers. So there is also a way to run it locally. This can be done by either downloading the latest release from [here](https://github.com/Autabee/Autabee.OpcCommunication/releases) or by building it yourself. When you have the files you can run the following command:
+```bash
+dotnet run --project src/Autabee.OpcScoutWeb/AutabeeOpcScoutWeb.csproj
+```
+or (only tested on windows)
+```bash
+dotnet run --project src/Autabee.OpcScoutApp/AutabeeOpcScoutApp.csproj
+```
 
