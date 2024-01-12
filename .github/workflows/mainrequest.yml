@@ -22,8 +22,6 @@ jobs:
           dotnet workload install android --ignore-failed-sources
           dotnet workload install maui --ignore-failed-sources
           dotnet workload install maui-windows --ignore-failed-sources
-      - name: Restore Dependencies
-        run: dotnet restore your-project.csproj
       - name: Restore dependencies
         run: dotnet restore ./src
       - name: Build
