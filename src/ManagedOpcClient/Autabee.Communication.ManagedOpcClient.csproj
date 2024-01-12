@@ -19,9 +19,9 @@
 		</ItemGroup>
 
 		<ItemGroup>
-				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.372.56" />
-				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.4.372.56" />
-				<PackageReference Include="Serilog" Version="3.0.1" />
+				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.4.372.106" />
+				<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.4.372.106" />
+				<PackageReference Include="Serilog" Version="3.1.1" />
 		</ItemGroup>
 
 		<ItemGroup>
@@ -33,5 +33,9 @@
 						<Pack>True</Pack>
 						<PackagePath>\</PackagePath>
 				</None>
+		</ItemGroup>
+
+		<ItemGroup>
+		  <PackageReference Update="Microsoft.SourceLink.GitHub" Version="8.0.0" />
 		</ItemGroup>
 </Project>
