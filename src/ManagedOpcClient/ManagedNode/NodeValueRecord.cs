@@ -10,6 +10,12 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             Value = value;
         }
 
+        public NodeValueRecord(string nodeId, object value)
+        {
+            NodeEntry = new ValueNodeEntry(nodeId, value.GetType());
+            Value = value;
+        }
+
         public ValueNodeEntry NodeEntry { get; protected set; }
         public object Value { get; set; }
 

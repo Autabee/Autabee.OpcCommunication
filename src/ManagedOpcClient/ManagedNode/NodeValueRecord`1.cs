@@ -12,6 +12,9 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
         public NodeValueRecord(ValueNodeEntry nodeEntry, T value) : base(nodeEntry, value)
         {
         }
+        public NodeValueRecord(string nodeId, T value) : base(new ValueNodeEntry(nodeId,value.GetType()), value)
+        {
+        }
 
         public new ValueNodeEntry<T> NodeEntry { get => base.NodeEntry as ValueNodeEntry<T>; }
         public new T Value { get => (T)base.Value; }
