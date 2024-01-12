@@ -5,11 +5,11 @@ The autabee opc communicator is a rapper for the opc ua client c# library. It is
 - <b>Opc Sharper</b>: A script generator for communicating to nodes. For explicit calling of nodes.
 - <b>Opc Scout</b>: An example client build on top of Blazor where it either runs in a maui <b>App</b> or via a <b>Wpp</b> client. This client is used to test the functionality of the opc communicator, be an example of how to use the client and also as a functional DA client.
 > :warning: **Warning**
-> Application need to be build on your own computer due to certification.
+> **App** need to be build on your own computer due to certification.
 - <b>Opc Scout Controls</b>: A set of predefined controls that can be used in a blazor app
 
 <figure class="image">
-  <img src="https://github.com/[username]/[reponame]/blob/[branch]/scout.png?raw=true" alt="OpcScout">
+  <img src="https://github.com/Autabee/Autabee.OpcCommunication/blob/main/scout.png?raw=true" alt="OpcScout">
   <figcaption>Opc Scout manipulation view (Dark)</figcaption>
 </figure>
 

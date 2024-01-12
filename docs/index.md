@@ -97,3 +97,21 @@ The sharper is build into the opc scout. So when you are connected to a server. 
 
 ### Why do you use Serilog?
 It's a great logging framework that is easy to use and has a lot of options. It's also easy to extend. And since this is the logging tool of choice for the company it originally is made for, we kept it in.
+
+### How do I run Opc Scout?
+Easiest way is by running the folowing compose file on the computer you want to run it on:
+```yml
+version: '3.3'
+services:
+    opcscout:
+        volumes:
+            - scoutdata:/app/data
+        ports:
+            - 8000:80
+        image: autabee/opcscout:beta
+volumes:
+    scoutdata:
+```
+Or you can run the exe in the opcscout-web.zip downloadable from [here](https://github.com/Autabee/Autabee.OpcCommunication/releases).
+Or you can build the App or Web locally.
+
