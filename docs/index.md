@@ -112,14 +112,14 @@ services:
 volumes:
     scoutdata:
 ```
-This will run the opc scout on port 8000. You can also run it locally. 
+This will run the opc scout on port 8000.
 
 However not everyone is able to run containers. So there is also a way to run it locally. This can be done by either downloading the latest release from [here](https://github.com/Autabee/Autabee.OpcCommunication/releases) or by building it yourself. When you have the files you can run the following command:
 ```bash
-dotnet run --project src/OpcScout/OpcScoutWeb.csproj
+dotnet run --project src/Autabee.OpcScoutWeb/AutabeeOpcScoutWeb.csproj
 ```
-or 
+or (only tested on windows)
 ```bash
-dotnet run --project src/OpcScout/OpcScoutApp.csproj
+dotnet run --project src/Autabee.OpcScoutApp/AutabeeOpcScoutApp.csproj
 ```
 
