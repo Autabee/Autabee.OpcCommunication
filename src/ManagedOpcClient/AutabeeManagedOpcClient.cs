@@ -335,7 +335,6 @@ namespace Autabee.Communication.ManagedOpcClient
             catch (Exception)
             {
                 mApplicationConfig.CertificateValidator.CertificateValidation -= Notification_CertificateValidation;
-                //handle Exception here
                 throw;
             }
         }
