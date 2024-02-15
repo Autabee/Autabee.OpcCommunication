@@ -266,7 +266,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             Uri uri = new Uri(serverUrl);
             DiscoveryClient client = DiscoveryClient.Create(uri);
-            EndpointDescriptionCollection endpoints = client.GetEndpoints(null);
+            EndpointDescriptionCollection endpoints = client.GetEndpoints(new StringCollection() { serverUrl });
 
             return endpoints;
         }
