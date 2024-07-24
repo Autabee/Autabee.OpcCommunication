@@ -84,16 +84,4 @@
       <ProjectReference Include="..\Autabee.OpcScout\Autabee.OpcScout.BlazorView.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.70" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Microsoft.Maui.Controls" Version="8.0.70" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Microsoft.Maui.Controls.Compatibility" Version="8.0.70" />
-    </ItemGroup>
-
 </Project>

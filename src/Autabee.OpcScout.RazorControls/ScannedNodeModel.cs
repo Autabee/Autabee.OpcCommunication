@@ -52,7 +52,7 @@ namespace Autabee.OpcScout.RazorControl
             DeSelectEvent?.Invoke(this, new EventArgs());
         }
 
-        public void GetChildren()
+        public async void GetChildren()
         {
             NodeImage = NodeImageId.Loading;
             RetrievingChildren = true;
@@ -61,14 +61,18 @@ namespace Autabee.OpcScout.RazorControl
                 NodeImage = NodeImageId.Loading;
                 StateUpdated?.Invoke(this, new EventArgs());
                 var token = CancellationToken.None;
-                var descriptions = Autabee.Communication.ManagedOpcClient.Utilities.Browse.GetDescriptions(Client.BrowseNode(Node.NodeId));
+                var results = await Client.AsyncBrowseNode(Node.NodeId, CancellationToken.None);
 
-                var splitted = SplitList(descriptions);
+                var descriptions = Autabee.Communication.ManagedOpcClient.Utilities.Browse.GetDescriptions(results);
+
                 NodeCollection childNodes = new NodeCollection();
-                foreach (ReferenceDescriptionCollection split in splitted)
+
+                foreach (var refrence in descriptions)
                 {
-                    childNodes.AddRange(Client.ReadNodes(split));
+                    childNodes.Add(new Node(refrence));
                 }
+
+
                 var count = descriptions.Count();
                 Children = new ScannedNodeModel[count];
                 for (int i = 0; i < count; i++)
@@ -102,6 +106,6 @@ namespace Autabee.OpcScout.RazorControl
             }
             return list;
         }
-        
+
     }
 }
