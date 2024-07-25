@@ -31,18 +31,18 @@
         <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
         <AssemblyName>opcscout</AssemblyName>
         <Company>Autabee</Company>
-        
-        
+
+
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0-windows10.0.19041.0|AnyCPU'">
-      <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0-windows10.0.19041.0|AnyCPU'">
-      <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+        <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
     </PropertyGroup>
-    
+
     <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows' and '$(Configuration)' == 'Release'">
         <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
         <PackageCertificateThumbprint>55F63D1750799DF2679879F27489E4F1E749015E</PackageCertificateThumbprint>
@@ -67,33 +67,22 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="autabeeopcscout.Config.xml" />
+        <None Remove="autabeeopcscout.Config.xml" />
     </ItemGroup>
 
     <ItemGroup>
-      <EmbeddedResource Include="autabeeopcscout.Config.xml">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </EmbeddedResource>
+        <EmbeddedResource Include="autabeeopcscout.Config.xml">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </EmbeddedResource>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Autabee.OpcScout\Autabee.OpcScout.BlazorView.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Microsoft.AspNetCore.Components.WebView.Maui" Version="8.0.70" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Microsoft.Maui.Controls" Version="8.0.70" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Update="Microsoft.Maui.Controls.Compatibility" Version="8.0.70" />
+        <ProjectReference Include="..\Autabee.OpcScout\Autabee.OpcScout.BlazorView.csproj" />
+        <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+        <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="$(MauiVersion)" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.0" />
     </ItemGroup>
 
 </Project>
