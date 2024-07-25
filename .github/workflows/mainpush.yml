@@ -145,14 +145,14 @@ jobs:
             opcscout-web.zip
             opcscout-web-win-64-self-contained.zip
             opcscout-web-win-86-self-contained.zip
-            opcscout-web-win-arm-self-contained.zip
-            opcscout-web-win-arm64-self-contained.zip
+            # opcscout-web-win-arm-self-contained.zip
+            # opcscout-web-win-arm64-self-contained.zip
             opcscout-web-linux-64-self-contained.zip
             opcscout-web-linux-64-self-contained.zip
-            opcscout-web-linux-arm64-self-contained.zip
-            opcscout-web-linux-arm-self-contained.zip
+            # opcscout-web-linux-arm64-self-contained.zip
+            # opcscout-web-linux-arm-self-contained.zip
             opcscout-web-osx-x64-self-contained.zip
-            opcscout-web-osx-arm64-self-contained.zip
+            # opcscout-web-osx-arm64-self-contained.zip
   
   push_to_registry:
     needs:
