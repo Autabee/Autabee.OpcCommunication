@@ -208,7 +208,7 @@ else
     {
         var endpointRecord = new EndpointRecord()
             {
-                Server = endpoint.Server.ApplicationUri,
+                Server = endpoint.EndpointUrl,
                 EndpointUrl = endpoint.EndpointUrl,
                 SecurityMode = endpoint.SecurityMode,
                 SecurityPolicyUri = endpoint.SecurityPolicyUri
@@ -396,7 +396,7 @@ else
             if ((endpoints == null || endpoints.Count == 0))
             {
                 searchText = "No Endpoints found";
-                if (!string.IsNullOrWhiteSpace(error)) Snackbar.Add(error.Substring(1), Severity.Error);
+                if (!string.IsNullOrWhiteSpace(searchText)) Snackbar.Add(searchText, Severity.Error);
             }
             else
             {

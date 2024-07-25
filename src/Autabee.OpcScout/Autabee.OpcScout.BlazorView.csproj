@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Autabee.OpcScout</RootNamespace>
   </PropertyGroup>
@@ -22,11 +22,11 @@
   <ItemGroup>
     <PackageReference Include="Autabee.Utility.Logger.Serilog" Version="1.0.2" />
     <PackageReference Include="Autabee.Utility.Messaging" Version="1.0.1" />
-    <PackageReference Include="Blazor.ContextMenu" Version="1.17.0" />
+    <PackageReference Include="Blazor.ContextMenu" Version="2.1.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
-    <PackageReference Include="MudBlazor" Version="6.12.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.26" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
+    <PackageReference Include="MudBlazor" Version="7.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.7" />
+    <PackageReference Include="Serilog" Version="4.0.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -53,7 +53,7 @@
         <Exec Command="dotnet tool restore" StandardOutputImportance="high" />
     </Target>
     <Target Name="PreBuild" AfterTargets="ToolRestore">
-        <Exec Command="dotnet tool run webcompiler -r Styles -o wwwroot/css -z disable" StandardOutputImportance="high" />
+        <Exec Command="webcompiler -r Styles -o wwwroot/css -z disable" StandardOutputImportance="high" />
     </Target>
 
 </Project>

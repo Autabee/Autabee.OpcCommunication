@@ -174,6 +174,7 @@
     await InvokeAsync(StateHasChanged).ConfigureAwait(false);
   }
 
+
   private async void AddSharperNode(object sender, NodeId node)
   {
     activeControl = ActiveControl.sharper;
@@ -205,7 +206,7 @@
     var parameters = new DialogParameters { ["record"] = selected.arguments };
     var dialog = await DialogService.ShowAsync<MethodInput>("Call", parameters);
     var result = await dialog.Result;
-    if (!result.Cancelled)
+    if (!result.Canceled)
     {
       try
       {
