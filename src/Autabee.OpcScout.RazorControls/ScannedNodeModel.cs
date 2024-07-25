@@ -17,7 +17,19 @@ namespace Autabee.OpcScout.RazorControl
         public bool open = false;
         public string NodeClassType { get; set; } = "Node";
         public AutabeeManagedOpcClient Client { get; }
-        public Node Node { get; }
+        protected Node node;
+        public Node Node
+        {
+            get => node; protected set
+            {
+                if (node.NodeId == value.NodeId)
+                {
+                    node = value;
+                    StateUpdated?.Invoke(this, new EventArgs());
+                }
+
+            }
+        }
         public NodeImageId NodeImage { get; private set; }
         public ReferenceDescription Reference { get; }
         public bool RetrievedChildren { get; private set; }
@@ -26,7 +38,7 @@ namespace Autabee.OpcScout.RazorControl
         public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel parent = null)
         {
             Client = client;
-            Node = node;
+            node = node;
             this.Reference = Reference;
             if (node is MethodNode mnode)
             {
@@ -65,14 +77,8 @@ namespace Autabee.OpcScout.RazorControl
 
                 var descriptions = Autabee.Communication.ManagedOpcClient.Utilities.Browse.GetDescriptions(results);
 
-                NodeCollection childNodes = new NodeCollection();
-
-                foreach (var refrence in descriptions)
-                {
-                    childNodes.Add(new Node(refrence));
-                }
-
-
+                NodeCollection childNodes = new NodeCollection(descriptions.Select(o => new Node(o)));
+                
                 var count = descriptions.Count();
                 Children = new ScannedNodeModel[count];
                 for (int i = 0; i < count; i++)
@@ -80,6 +86,42 @@ namespace Autabee.OpcScout.RazorControl
                     Children[i] = new ScannedNodeModel(Client, descriptions[i], childNodes[i], this);
                 }
                 NodeImage = Reference.GetNodeImage();
+                StateUpdated?.Invoke(this, new EventArgs());
+
+                int index = 0;
+                var splitted = SplitList(descriptions);
+                foreach (ReferenceDescriptionCollection split in splitted)
+                {
+                    try
+                    {
+                        var nodes = await Client.AsyncReadNodes(split, CancellationToken.None);
+                        foreach (var item in nodes)
+                        {
+                            Children[index++].Node = item;
+                        }
+                    }
+                    // catch if node read has triggered and exception. 
+                    catch (Exception ex) 
+                    {
+                        foreach (var desc in split)
+                        {
+                            try
+                            {
+                                Children[index].Node = Client.ReadNode(desc);
+                            }
+                            catch
+                            {
+                                //  could not read specific node
+                            }
+                            finally
+                            {
+                                index++;
+                            }
+                        }
+                    }
+                }
+
+
                 RetrievedChildren = true;
                 DoneGettingChildren?.Invoke(this, new EventArgs());
             }
