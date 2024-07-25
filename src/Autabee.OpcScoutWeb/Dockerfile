@@ -13,6 +13,7 @@ COPY ["Autabee.OpcScout/Autabee.OpcScout.BlazorView.csproj", "Autabee.OpcScout/"
 COPY ["Autabee.OpcScout.MBRazorControl/Autabee.OpcScout.MBRazorControl.csproj", "Autabee.OpcScout.MBRazorControl/"]
 COPY ["Autabee.OpcScout.RazorControls/Autabee.OpcScout.RazorControl.csproj", "Autabee.OpcScout.RazorControls/"]
 COPY ["ManagedOpcClient/Autabee.Communication.ManagedOpcClient.csproj", "ManagedOpcClient/"]
+RUN dotnet tool install Excubo.WebCompiler --global
 RUN dotnet restore "Autabee.OpcScoutWeb/Autabee.OpcScoutWeb.csproj"
 COPY . .
 WORKDIR "/src/Autabee.OpcScoutWeb"
