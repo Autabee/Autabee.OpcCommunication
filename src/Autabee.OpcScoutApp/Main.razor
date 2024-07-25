@@ -1,18 +1,19 @@
-﻿<MudDialogProvider />
-<MudSnackbarProvider/>
+﻿<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 <Router AppAssembly="mainType.Assembly">
-	<Found Context="routeData">
-		<RouteView RouteData="@routeData" DefaultLayout="mainType" />
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="mainType" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-	</Found>
-	<NotFound>
-		<LayoutView Layout="mainType">
-			<p role="alert">Sorry, there's nothing at this address.</p>
-		</LayoutView>
-	</NotFound>
+    </Found>
+    <NotFound>
+        <LayoutView Layout="mainType">
+            <p role="alert">Sorry, there's nothing at this address.</p>
+        </LayoutView>
+    </NotFound>
 </Router>
 
 
-@code{
-	Type mainType = typeof(Autabee.OpcScout.Shared.MainLayout);
+@code {
+    Type mainType = typeof(Autabee.OpcScout.Shared.MainLayout);
 }
