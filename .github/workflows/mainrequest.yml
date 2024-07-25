@@ -6,7 +6,8 @@ on:
 env:
   DOTNET_NOLOGO: true                     
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true 
-  DOTNET_CLI_TELEMETRY_OPTOUT: true     
+  DOTNET_CLI_TELEMETRY_OPTOUT: true   
+  DOTNET_VERSION: '8.0.x'  
 
 jobs:
   build:
@@ -18,7 +19,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v2
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Install webCompiler
         run: dotnet tool install Excubo.WebCompiler --global
       - name: Install MAUI Workloads
