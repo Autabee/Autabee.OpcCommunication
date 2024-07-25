@@ -20,8 +20,6 @@ jobs:
         uses: actions/setup-dotnet@v2
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - name: Install webCompiler
-        run: dotnet tool install Excubo.WebCompiler --global
       - name: Install MAUI Workloads
         run: |
           #dotnet workload install android --ignore-failed-sources
