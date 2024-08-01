@@ -4,34 +4,34 @@
 @using System.Text.Json;
 @using Autabee.Communication.ManagedOpcClient.Utilities;
 
-<tr class="@ScannedNodeModel.NodeClassType" >
-    
-        <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="ScannedNodeModel" WrapperTag="td">
+<tr class="@ScannedNodeModel.NodeClassType">
 
-            @if (ScannedNodeModel.RetrievedChildren
-            && ScannedNodeModel.Children.Length == 0
-            || ScannedNodeModel.Node.NodeClass == NodeClass.Method)
-            {
+    <ContextMenuTrigger MenuId="OpcBrowserNodeContext" Data="ScannedNodeModel" WrapperTag="td">
+
+        @if (ScannedNodeModel.RetrievedChildren
+        && ScannedNodeModel.Children.Length == 0
+        || ScannedNodeModel.Node.NodeClass == NodeClass.Method)
+        {
             <span class="node-caret" style="margin-left:@depthString"></span>
-            }
-            else if (ScannedNodeModel.open)
-            {
+        }
+        else if (ScannedNodeModel.open)
+        {
             <span class="node-caret caret-down" style="margin-left:@depthString" @onclick="Close" />
-            }
-            else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
-            {
+        }
+        else if (!openedOnce || !ScannedNodeModel.RetrievedChildren)
+        {
             <span class="node-caret caret" style="margin-left:@depthString" @onclick="Open" />
-            }
-            else
-            {
+        }
+        else
+        {
             <span class="node-caret caret-close" style="margin-left:@depthString" @onclick="Open" />
-            }
-            <span class="node-img" style="grid-area:node-img; height:100%">
-                <NodeImage Value="ScannedNodeModel.NodeImage" />
-            </span>
-            <span class="node-text" style="grid-area:node-text">@ScannedNodeModel.Node.DisplayName</span>
-        </ContextMenuTrigger>
-    
+        }
+        <span class="node-img" style="grid-area:node-img; height:100%">
+            <NodeImage Value="ScannedNodeModel.NodeImage" />
+        </span>
+        <span class="node-text" style="grid-area:node-text">@ScannedNodeModel.Node.DisplayName</span>  
+    </ContextMenuTrigger>
+
 
     <td class="node-actions" style="grid-area:node-actions">
 
@@ -52,7 +52,7 @@
             }
 
         }
-        @if (ScannedNodeModel.Node.NodeClass == NodeClass.Method)
+        else if (ScannedNodeModel.Node.NodeClass == NodeClass.Method)
         {
             @if (ScannedNodeModel.arguments.InputArguments.Count == 0)
             {
@@ -134,7 +134,7 @@
         //((MethodNode)ScannedNodeModel.Node).TypeId
         Browser.OpenCall(ScannedNodeModel);
     }
-    
+
     private async void Close()
     {
         ScannedNodeModel.Close();
@@ -167,7 +167,7 @@
         ScannedNodeModel.NodeClassType = "Node";
         InvokeAsync(StateHasChanged);
     }
-    
+
     private async void UpdateState(object sender, EventArgs data)
     {
         InvokeAsync(StateHasChanged);
