@@ -11,7 +11,7 @@ namespace Autabee.OpcScout.RazorControl
 {
     public class ScannedNodeModel
     {
-        public readonly ScannedNodeModel parent;
+        public readonly ScannedNodeModel? parent;
 
         public ScannedNodeModel[] Children = new ScannedNodeModel[0];
         public bool open = false;
@@ -20,14 +20,14 @@ namespace Autabee.OpcScout.RazorControl
         protected Node node;
         public Node Node
         {
-            get => node; protected set
+            get => node; 
+            protected set
             {
                 if (node.NodeId == value.NodeId)
                 {
                     node = value;
                     StateUpdated?.Invoke(this, new EventArgs());
                 }
-
             }
         }
         public NodeImageId NodeImage { get; private set; }
@@ -35,10 +35,10 @@ namespace Autabee.OpcScout.RazorControl
         public bool RetrievedChildren { get; private set; }
         public bool RetrievingChildren { get; private set; }
 
-        public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel parent = null)
+        public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel? parent = null)
         {
             Client = client;
-            node = node;
+            this.node = node;
             this.Reference = Reference;
             if (node is MethodNode mnode)
             {
@@ -112,6 +112,7 @@ namespace Autabee.OpcScout.RazorControl
                             catch
                             {
                                 //  could not read specific node
+                                Children[index].Node = new Node(desc);
                             }
                             finally
                             {
