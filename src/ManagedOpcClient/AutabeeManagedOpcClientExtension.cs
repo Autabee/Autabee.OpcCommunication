@@ -267,8 +267,6 @@ namespace Autabee.Communication.ManagedOpcClient
             => client.ReadValue(node.NodeId, type);
         public static object ReadValue(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId, Type type = null)
             => client.ReadValue((NodeId)nodeId, type);
-        public static object ReadValue(this AutabeeManagedOpcClient client, ValueNodeEntry nodeIdString)
-           => client.ReadValue(nodeIdString.GetNodeId(), nodeIdString.Type);
 
         public static T ReadValue<T>(this AutabeeManagedOpcClient client, string nodeIdString)
             => client.ReadValue<T>(new NodeId(nodeIdString));
