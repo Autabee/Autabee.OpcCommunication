@@ -261,16 +261,19 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion Typing
 
         #region ReadValue
-        public static object ReadValue(this AutabeeManagedOpcClient client, string nodeIdString)
-            => client.ReadValue(new NodeId(nodeIdString));
-        public static object ReadValue(this AutabeeManagedOpcClient client, Node node)
-            => client.ReadValue(node.NodeId);
-
+        public static object ReadValue(this AutabeeManagedOpcClient client, string nodeIdString, Type type = null)
+            => client.ReadValue(new NodeId(nodeIdString), type);
+        public static object ReadValue(this AutabeeManagedOpcClient client, Node node, Type type = null)
+            => client.ReadValue(node.NodeId, type);
         public static object ReadValue(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId, Type type = null)
             => client.ReadValue((NodeId)nodeId, type);
 
         public static T ReadValue<T>(this AutabeeManagedOpcClient client, string nodeIdString)
             => client.ReadValue<T>(new NodeId(nodeIdString));
+        public static T ReadValue<T>(this AutabeeManagedOpcClient client, NodeEntry nodeIdString)
+            => client.ReadValue<T>(nodeIdString.GetNodeId());
+        public static T ReadValue<T>(this AutabeeManagedOpcClient client, ValueNodeEntry<T> nodeIdString)
+            => client.ReadValue<T>(nodeIdString.GetNodeId());
         #endregion
 
         #region ReadNode
