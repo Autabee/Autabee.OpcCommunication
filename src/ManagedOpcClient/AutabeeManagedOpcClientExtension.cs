@@ -1,13 +1,13 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Communication.ManagedOpcClient.Utilities;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Opc.Ua.Configuration;
 using Opc.Ua.Export;
 using Opc.Ua.Security.Certificates;
+using Serilog;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace Autabee.Communication.ManagedOpcClient
     {
         #region Defaults
         public static ApplicationConfiguration GetClientConfiguration(
-            string company, string product, string directory, Serilog.Core.Logger logger = null)
+            string company, string product, string directory, ILogger logger = null)
         {
             var error = new System.Collections.Generic.List<Exception>();
             if (string.IsNullOrWhiteSpace(company)) error.Add(new ArgumentNullException(nameof(company)));
@@ -57,9 +57,9 @@ namespace Autabee.Communication.ManagedOpcClient
             return configuration.ApplicationConfiguration;
         }
 
-        internal static void CreateDefaultConfiguration(string company, string product, string directory, Serilog.Core.Logger logger, string combined)
+        internal static void CreateDefaultConfiguration(string company, string product, string directory, ILogger logger, string combined)
         {
-            logger?.Warning("File {0} not found. recreating it using embedded default.", null, combined);
+            logger.Warning("File {0} not found. recreating it using embedded default.", null, combined);
             using (Stream resource = Assembly.GetExecutingAssembly().GetManifestResourceStream("Autabee.Communication.ManagedOpcClient.DefaultOpcClient.Config.xml"))
             {
                 using (StreamReader reader = new StreamReader(resource))
@@ -69,7 +69,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     result = result.Replace("companyref", company);
                     Directory.CreateDirectory(directory);
                     File.WriteAllText(combined, result);
-                    logger?.Warning("File {0} Created and updated with ({1}, {2}).", null, combined, product, company);
+                    logger.Warning("File {0} Created and updated with ({1}, {2}).", null, combined, product, company);
 
                 }
             }
