@@ -144,7 +144,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 }
                 else
                 {
-                    registeredNodes.Add(new NodeId("temp"));
+                    registeredNodes.Add(new NodeId("ns=2;s=temp"));
                     newNodesToRegister.Add(nodesToRegister[i]);
                 }
             }
@@ -155,7 +155,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 for (int i = 0; i < registeredNodes.Count; i++)
                 {
-                    if (registeredNodes[i].Identifier.ToString() == "temp")
+                    if (registeredNodes[i].Identifier.ToString() == "ns=2;s=temp")
                     {
                         registeredNodes[i] = newRegister.Pop();
                     }
