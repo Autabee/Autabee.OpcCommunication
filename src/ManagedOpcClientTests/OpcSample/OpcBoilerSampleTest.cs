@@ -1,4 +1,5 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
+using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.OpcCommunicator;
 using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.Utility.Logger;
