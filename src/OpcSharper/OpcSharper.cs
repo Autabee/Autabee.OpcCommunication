@@ -3,7 +3,7 @@ using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.OpcToClass;
 using Opc.Ua;
-using Serilog.Core;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,7 +15,7 @@ namespace Autabee.OpcSharper
 {
     public static class OpcSharper
     {
-        public static void GenerateProject(AutabeeManagedOpcClient service, GeneratorSettings settings, Logger logger = null)
+        public static void GenerateProject(AutabeeManagedOpcClient service, GeneratorSettings settings, ILogger logger = null)
         {
             List<Exception> exceptions = new List<Exception>();
             if (settings == null)
