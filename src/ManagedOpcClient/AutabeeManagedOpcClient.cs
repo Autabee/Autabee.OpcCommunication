@@ -33,7 +33,7 @@ namespace Autabee.Communication.ManagedOpcClient
         private Session session;
         private string sessionName;
         private List<Subscription> subscriptions = new List<Subscription>();
-        private ILogger logger;
+        private ILogger? logger;
 
         public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
         public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
@@ -82,7 +82,7 @@ namespace Autabee.Communication.ManagedOpcClient
         //public Dictionary<NodeId, DataDictionary> NodeDictonary { get; set; }
 
         #region Construction
-        public AutabeeManagedOpcClient(string company, string product, string directory, ILogger logger = null)
+        public AutabeeManagedOpcClient(string company, string product, string directory, ILogger? logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
@@ -92,14 +92,14 @@ namespace Autabee.Communication.ManagedOpcClient
                                      directory,
                                      logger);
         }
-        public AutabeeManagedOpcClient(Stream stream, ILogger logger = null)
+        public AutabeeManagedOpcClient(Stream stream, ILogger? logger = null)
         {
             this.logger = logger;
             // Create's the application configuration (containing the certificate) on construction
             mApplicationConfig = AutabeeManagedOpcClientExtension.CreateDefaultClientConfiguration(stream);
         }
 
-        public AutabeeManagedOpcClient(ApplicationConfiguration opcAppConfig, ILogger logger = null)
+        public AutabeeManagedOpcClient(ApplicationConfiguration opcAppConfig, ILogger? logger = null)
         {
             this.logger = logger;
             mApplicationConfig = opcAppConfig;
@@ -447,7 +447,7 @@ namespace Autabee.Communication.ManagedOpcClient
             session.Dispose();
             session = null;
             connectionState = OpcConnectionStatus.Disconnected;
-            ConnectionStatusChanged?.Invoke(this, new OpcConnectionStatusChangedEventArgs(OpcConnectionStatus.Disconnected, null, "Session Closed"));
+            ConnectionStatusChanged?.Invoke(this, new OpcConnectionStatusChangedEventArgs(OpcConnectionStatus.Disconnected, StatusCodes.BadDisconnect, "Session Closed"));
             ConnectionUpdated?.Invoke(this, null);
             nodeIdCache.Clear();
             connectionState = OpcConnectionStatus.Disconnected;
