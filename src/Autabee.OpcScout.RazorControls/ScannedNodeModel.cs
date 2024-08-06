@@ -20,14 +20,14 @@ namespace Autabee.OpcScout.RazorControl
         protected Node node;
         public Node Node
         {
-            get => node; protected set
+            get => node; 
+            protected set
             {
                 if (node.NodeId == value.NodeId)
                 {
                     node = value;
                     StateUpdated?.Invoke(this, new EventArgs());
                 }
-
             }
         }
         public NodeImageId NodeImage { get; private set; }
@@ -114,6 +114,7 @@ namespace Autabee.OpcScout.RazorControl
                             catch
                             {
                                 //  could not read specific node
+                                Children[index].Node = new Node(desc);
                             }
                             finally
                             {
