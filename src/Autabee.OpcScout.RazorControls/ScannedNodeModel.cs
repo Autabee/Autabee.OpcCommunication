@@ -35,6 +35,8 @@ namespace Autabee.OpcScout.RazorControl
         public bool RetrievedChildren { get; private set; }
         public bool RetrievingChildren { get; private set; }
 
+        public bool IsRootNode => parent == null;
+
         public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel? parent = null)
         {
             Client = client;

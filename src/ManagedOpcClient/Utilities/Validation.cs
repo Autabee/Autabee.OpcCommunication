@@ -1,4 +1,5 @@
-﻿using Opc.Ua;
+﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Opc.Ua;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,11 +32,16 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
 
         public static void ValidateResponse(IEnumerable<StatusCode> response)
         {
-            string message = response.Where(o => StatusCode.IsNotGood(o.Code))
-                .Aggregate(string.Empty, (accumulator, result) =>
-                accumulator += $"{result} : {StatusCodes.GetBrowseName(result.Code)}" + Environment.NewLine);
+            var expections = new List<Exception>();
+            for (int i = 0; i < response.Count(); i++)
+            {
+                if (StatusCode.IsBad(response.ElementAt(i)))
+                {
+                    expections.Add(new ServiceResultException(response.ElementAt(i).Code, $"{i}: {response.ElementAt(i)}", null));
+                }
+            }
 
-            if (message.Length > 0) throw new ServiceResultException(message);
+            if (expections.Count > 0) throw new AggregateException(expections);
         }
         public static void ValidateResponse(BrowseDescriptionCollection browseDescriptions, BrowseResultCollection results, DiagnosticInfoCollection diagnostics)
         {
