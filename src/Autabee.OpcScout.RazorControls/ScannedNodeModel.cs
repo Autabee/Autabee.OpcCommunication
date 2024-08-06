@@ -11,7 +11,7 @@ namespace Autabee.OpcScout.RazorControl
 {
     public class ScannedNodeModel
     {
-        public readonly ScannedNodeModel parent;
+        public readonly ScannedNodeModel? parent;
 
         public ScannedNodeModel[] Children = new ScannedNodeModel[0];
         public bool open = false;
@@ -35,10 +35,12 @@ namespace Autabee.OpcScout.RazorControl
         public bool RetrievedChildren { get; private set; }
         public bool RetrievingChildren { get; private set; }
 
-        public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel parent = null)
+        public bool IsRootNode => parent == null;
+
+        public ScannedNodeModel(AutabeeManagedOpcClient client, ReferenceDescription Reference, Node node, ScannedNodeModel? parent = null)
         {
             Client = client;
-            node = node;
+            this.node = node;
             this.Reference = Reference;
             if (node is MethodNode mnode)
             {
