@@ -1,10 +1,19 @@
-﻿using Opc.Ua;
+﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
+using Opc.Ua;
+using Opc.Ua.Client;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Xml;
 
 namespace Autabee.Communication.ManagedOpcClient.Utilities
 {
+    public class DecodeFactory : Dictionary<string, Func<IDecoder, string, object>>
+    {
+
+    }
+
     public static class ConvertOpc
     {
         public static object Read(this IDecoder decoder, string type, string name)
@@ -76,10 +85,68 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 "opc:QualifiedNameArray" => decoder.ReadQualifiedNameArray(name),
 
 
-                _ => throw new Exception("Unknown type"),
+                _ => throw new Exception("Unknown type")
             };
 
         }
+
+        public static Dictionary<string, Func<IDecoder, string, object>> GetDecodeFactoryItems()
+        {
+            return new Dictionary<string, Func<IDecoder, string, object>>()
+            {
+                {"opc:Boolean", (IDecoder decoder, string name) => decoder.ReadBoolean(name) },
+                {"opc:Byte", (IDecoder decoder, string name) => decoder.ReadByte(name) },
+                {"opc:SByte", (IDecoder decoder, string name) => decoder.ReadSByte(name) },
+                {"opc:UInt16", (IDecoder decoder, string name) => decoder.ReadUInt16(name) },
+                {"opc:UInt32", (IDecoder decoder, string name) => decoder.ReadUInt32(name) },
+                {"opc:UInt64", (IDecoder decoder, string name) => decoder.ReadUInt64(name) },
+                {"opc:Int16", (IDecoder decoder, string name) => decoder.ReadInt16(name) },
+                {"opc:Int32", (IDecoder decoder, string name) => decoder.ReadInt32(name) },
+                {"opc:Int64", (IDecoder decoder, string name) => decoder.ReadInt64(name) },
+                {"opc:Float", (IDecoder decoder, string name) => decoder.ReadFloat(name) },
+                {"opc:Double", (IDecoder decoder, string name) => decoder.ReadDouble(name) },
+                {"opc:String", (IDecoder decoder, string name) => decoder.ReadString(name) },
+                {"opc:ByteString", (IDecoder decoder, string name) => decoder.ReadByteString(name) },
+                {"opc:Guid", (IDecoder decoder, string name) => decoder.ReadGuid(name) },
+                {"opc:DateTime", (IDecoder decoder, string name) => decoder.ReadDateTime(name) },
+                {"opc:LocalizedText", (IDecoder decoder, string name) => decoder.ReadLocalizedText(name) },
+                {"opc:NodeId", (IDecoder decoder, string name) => decoder.ReadNodeId(name) },
+                {"opc:ExpandedNodeId", (IDecoder decoder, string name) => decoder.ReadExpandedNodeId(name) },
+                {"opc:StatusCode", (IDecoder decoder, string name) => decoder.ReadStatusCode(name) },
+                {"opc:XmlElement", (IDecoder decoder, string name) => decoder.ReadXmlElement(name) },
+                {"opc:ExtensionObject", (IDecoder decoder, string name) => decoder.ReadExtensionObject(name) },
+                {"opc:DataValue", (IDecoder decoder, string name) => decoder.ReadDataValue(name) },
+                {"opc:Variant", (IDecoder decoder, string name) => decoder.ReadVariant(name) },
+                {"opc:DiagnosticInfo", (IDecoder decoder, string name) => decoder.ReadDiagnosticInfo(name) },
+                {"opc:QualifiedName", (IDecoder decoder, string name) => decoder.ReadQualifiedName(name) },
+                {"opc:BooleanArray", (IDecoder decoder, string name) => decoder.ReadBooleanArray(name) },
+                {"opc:SByteArray", (IDecoder decoder, string name) => decoder.ReadSByteArray(name) },
+                {"opc:ByteArray", (IDecoder decoder, string name) => decoder.ReadByteArray(name) },
+                {"opc:UInt16Array", (IDecoder decoder, string name) => decoder.ReadUInt16Array(name) },
+                {"opc:UInt32Array", (IDecoder decoder, string name) => decoder.ReadUInt32Array(name) },
+                {"opc:UInt64Array", (IDecoder decoder, string name) => decoder.ReadUInt64Array(name) },
+                {"opc:Int16Array", (IDecoder decoder, string name) => decoder.ReadInt16Array(name) },
+                {"opc:Int32Array", (IDecoder decoder, string name) => decoder.ReadInt32Array(name) },
+                {"opc:Int64Array", (IDecoder decoder, string name) => decoder.ReadInt64Array(name) },
+                {"opc:FloatArray", (IDecoder decoder, string name) => decoder.ReadFloatArray(name) },
+                {"opc:DoubleArray", (IDecoder decoder, string name) => decoder.ReadDoubleArray(name) },
+                {"opc:StringArray", (IDecoder decoder, string name) => decoder.ReadStringArray(name) },
+                {"opc:ByteStringArray", (IDecoder decoder, string name) => decoder.ReadByteStringArray(name) },
+                {"opc:GuidArray", (IDecoder decoder, string name) => decoder.ReadGuidArray(name) },
+                {"opc:DateTimeArray", (IDecoder decoder, string name) => decoder.ReadDateTimeArray(name) },
+                {"opc:LocalizedTextArray", (IDecoder decoder, string name) => decoder.ReadLocalizedTextArray(name) },
+                {"opc:NodeIdArray", (IDecoder decoder, string name) => decoder.ReadNodeIdArray(name) },
+                {"opc:ExpandedNodeIdArray", (IDecoder decoder, string name) => decoder.ReadExpandedNodeIdArray(name) } ,
+                {"opc:StatusCodeArray", (IDecoder decoder, string name) => decoder.ReadStatusCodeArray(name) },
+                {"opc:XmlElementArray", (IDecoder decoder, string name) => decoder.ReadXmlElementArray(name) },
+                {"opc:ExtensionObjectArray", (IDecoder decoder, string name) => decoder.ReadExtensionObjectArray(name) },
+                {"opc:DataValueArray", (IDecoder decoder, string name) => decoder.ReadDataValueArray(name) },
+                {"opc:VariantArray", (IDecoder decoder, string name) => decoder.ReadVariantArray(name) },
+                {"opc:DiagnosticInfoArray", (IDecoder decoder, string name) => decoder.ReadDiagnosticInfoArray(name) },
+                {"opc:QualifiedNameArray", (IDecoder decoder, string name) => decoder.ReadQualifiedNameArray(name) },
+            };
+        }
+
         public static void Write(this IEncoder encode, string type, string name, object value)
         {
             switch (type)

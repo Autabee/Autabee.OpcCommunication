@@ -20,7 +20,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             {
                 return new NodeValueRecord<T>(this, default);
             }
-            else throw new ArgumentException($"Type mismatch for {NodeString}: {typeof(T)} != {value.GetType()}");
+            else throw new ArgumentException($"Type mismatch for {NodeString}: {typeof(T)} != {value?.GetType()}");
         }
         public NodeValueRecord CreateRecord<K>(K value)
         {
