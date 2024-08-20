@@ -44,7 +44,7 @@ namespace Autabee.OpcToClass
             }
             else if (type.Contains("opc:"))
             {
-                return $"Write{type.Split(':')[1]}(\"{name}\",this.{name})";
+                return $"Write{type.Split(':')[1]}(\"{name}\", this.{name})";
             }
 
             return "Unknown()";
@@ -257,22 +257,45 @@ namespace Autabee.OpcToClass
         private static Dictionary<string, string> GenerateClassFileConents(XmlDocument xmlDocument, GeneratorSettings settings)
         {
             Dictionary<string, string> scripts = new Dictionary<string, string>();
-            foreach (XmlNode value in xmlDocument.GetElementsByTagName("opc:StructuredType"))
+            foreach (XmlNode typedict in xmlDocument.GetElementsByTagName("opc:TypeDictionary"))
             {
-                var name = GetCorrectedName(value);
-                var split = name.Split('.');
-                var namespaceName = string.Join('.' + settings.nameSpacePrefix, split.Take(split.Length - 1));
-                namespaceName = string.IsNullOrWhiteSpace(namespaceName)
-                  ? settings.baseNamespace
-                  : settings.baseNamespace + '.' + settings.nameSpacePrefix + namespaceName;
+                string targetNamespace = typedict.Attributes["TargetNamespace"].Value;
+                foreach (XmlNode value in typedict.ChildNodes)
+                {
+                    if (value.Name == "opc:StructuredType")
+                    {
+                        var name = GetCorrectedName(value);
+                        var split = name.Split('.');
+                        var namespaceName = string.Join('.' + settings.nameSpacePrefix, split.Take(split.Length - 1));
+                        namespaceName = string.IsNullOrWhiteSpace(namespaceName)
+                          ? settings.baseNamespace
+                          : settings.baseNamespace + '.' + settings.nameSpacePrefix + namespaceName;
 
-                var scriptContent = "using Opc.Ua;\n\n"
-                    + "namespace " + namespaceName + "\n{";
-                scriptContent += GenerateClass(settings.nameSpacePrefix, value, split.Last()).Replace("\n", "\n\t");
-                scriptContent += "\n}";
+                        var scriptContent = "using Opc.Ua;\n\n"
+                            + "namespace " + namespaceName + "\n{";
+                        scriptContent += GenerateClass(settings.nameSpacePrefix, value, split.Last(), targetNamespace).Replace("\n", "\n\t");
+                        scriptContent += "\n}";
 
-                scripts[name] = scriptContent;
+                        scripts[name] = scriptContent;
+                    }
+                    if (value.Name == "opc:EnumeratedType")
+                    {
+                        var name = GetCorrectedName(value);
+                        var split = name.Split('.');
+                        var namespaceName = string.Join('.' + settings.nameSpacePrefix, split.Take(split.Length - 1));
+                        namespaceName = string.IsNullOrWhiteSpace(namespaceName)
+                          ? settings.baseNamespace
+                          : settings.baseNamespace + '.' + settings.nameSpacePrefix + namespaceName;
 
+                        var scriptContent = "using Opc.Ua;\n\n"
+                            + "namespace " + namespaceName + "\n{";
+                        scriptContent += GenerateEnum(settings.nameSpacePrefix, value, split.Last()).Replace("\n", "\n\t");
+                        scriptContent += "\n}";
+
+                        scripts[name] = scriptContent;
+                    }
+
+                }
             }
             return scripts;
         }
@@ -316,7 +339,26 @@ namespace Autabee.OpcToClass
         //  return scripts;
         //}
 
-        private static string GenerateClass(string nsPrefix, XmlNode value, string className)
+        private static string GenerateEnum(string nsPrefix, XmlNode value, string className)
+        {
+            string classData = "\npublic enum " + className
+                        + "\n{";
+            foreach (XmlNode field in value.ChildNodes)
+            {
+                if (field.Name == "opc:EnumeratedValue")
+                {
+                    var fieldName = GetCorrectedName(field);
+                    
+                    classData += $"\n\t{fieldName} = {field.Attributes["Value"].Value},";
+                }
+            }
+            classData = classData.Remove(classData.Length - 1);
+            classData += "\n}";
+            return classData;
+
+        }
+
+            private static string GenerateClass(string nsPrefix, XmlNode value, string className, string targetNamespace)
         {
             string classData = "\npublic class " + className + " : EncodeableObject"
                         + "\n{";
@@ -326,11 +368,11 @@ namespace Autabee.OpcToClass
                 {
                     var fieldName = GetCorrectedName(field);
                     var fieldType = GetCorrectedTypeName(field, nsPrefix);
-                    classData += "\n\tpublic " + fieldType + " " + fieldName + " { get; set;}";
+                    classData += "\n\tpublic " + fieldType + " " + fieldName + " { get; set; }";
                 }
             }
 
-            classData += $"\n\tpublic override ExpandedNodeId TypeId => ExpandedNodeId.Parse(\"{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\");";
+            classData += $"\n\tpublic override ExpandedNodeId TypeId => new ExpandedNodeId(\"TE_\\\"{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\\\"\", \"{targetNamespace}\");";
 
             if (value.NamespaceURI == "http://opcfoundation.org/BinarySchema/")
             {
