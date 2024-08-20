@@ -1248,19 +1248,21 @@ namespace Autabee.Communication.ManagedOpcClient
         public void WriteValue(NodeId nodeId, IEncodeable value)
         {
             WriteValueCollection writeCollection = new WriteValueCollection();
-            var encoder = new BinaryEncoder(session.MessageContext);
-            value.Encode(encoder);
-            //var buffer = encoder.CloseAndReturnBuffer();
-            var encoded = new ExtensionObject(value.TypeId, encoder.CloseAndReturnBuffer());
-            //encoded.Body = ;
-            //encoded.E= ExtensionObjectEncoding.Binary
-            //encoded.TypeId = value.TypeId;
-
+            ExtensionObject encoded = GetBinaryExtensionObject(value, this.session.MessageContext);
             writeCollection.Add(CreateWriteValue(nodeId, encoded));
             WriteValues(writeCollection);
         }
 
+        static public ExtensionObject GetBinaryExtensionObject(IEncodeable value, ISession session)
+         => GetBinaryExtensionObject(value, session.MessageContext);
 
+        static public ExtensionObject GetBinaryExtensionObject(IEncodeable value, IServiceMessageContext context)
+        {
+            var encoder = new BinaryEncoder(context);
+            value.Encode(encoder);
+            var encoded = new ExtensionObject(value.TypeId, encoder.CloseAndReturnBuffer());
+            return encoded;
+        }
 
         [Obsolete("Use a non dictonary value write or better a IEncodable object write for structs to remove dictionary reformating.")]
         public void WriteValue(NodeId nodeId, Dictionary<string, object> value)
@@ -1357,30 +1359,29 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
-        private static WriteValue CreateWriteValue(NodeId nodeId, ExtensionObject value)
+        private WriteValue CreateWriteValue(NodeId nodeId, ExtensionObject value)
         {
-
-            try
+            return new WriteValue()
             {
-
-
-                return new WriteValue()
-                {
-                    NodeId = nodeId,
-                    Value = new DataValue(new Variant(value)),
-                    AttributeId = Attributes.Value
-                };
-
-
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+                NodeId = nodeId,
+                Value = new DataValue(new Variant(value)),
+                AttributeId = Attributes.Value
+            };
         }
 
-        private static WriteValue CreateWriteValue(NodeValueRecord record)
+        private WriteValue CreateWriteValue(NodeValueRecord record)
         {
+            if (record.Value is EncodeableObject eo)
+            {
+                ExtensionObject obj = GetBinaryExtensionObject(eo, this.session.MessageContext);
+                return new WriteValue()
+                {
+                    NodeId = record.NodeEntry.GetNodeId(),
+                    Value = new DataValue(new Variant(obj)),
+                    AttributeId = Attributes.Value
+                };
+            }
+
             return new WriteValue()
             {
                 NodeId = record.NodeEntry.GetNodeId(),
@@ -1389,7 +1390,7 @@ namespace Autabee.Communication.ManagedOpcClient
             };
         }
 
-        private static WriteValueCollection CreateWriteCollection(NodeValueRecordCollection list)
+        private WriteValueCollection CreateWriteCollection(NodeValueRecordCollection list)
             => new WriteValueCollection(list.nodeValueRecords.Select(o => CreateWriteValue(o)));
 
         #endregion Entry Read
