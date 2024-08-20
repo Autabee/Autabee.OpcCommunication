@@ -40,7 +40,6 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                     expections.Add(new ServiceResultException(response.ElementAt(i).Code, $"{i}: {response.ElementAt(i)}", null));
                 }
             }
-
             if (expections.Count > 0) throw new AggregateException(expections);
         }
         public static void ValidateResponse(BrowseDescriptionCollection browseDescriptions, BrowseResultCollection results, DiagnosticInfoCollection diagnostics)

@@ -117,7 +117,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             return new NodeTypeData(this);
         }
 
-        public Dictionary<string, object> Decode(IDecoder decoder)
+        public Dictionary<string, object> Decode(IDecoder decoder, DecodeFactory factory)
         {
             var dict = new Dictionary<string, object>();
             for (int i = 0; i < ChildData.Count; i++)
@@ -144,17 +144,24 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             {
                 if (child.Primitive)
                 {
-                    return decoder.Read(child.TypeName, child.Name);
+                    if (factory.TryGetValue(child.TypeName, out var decodeFunc))
+                    {
+                        return decodeFunc(decoder, child.Name);
+                    }
+                    else
+                    {
+                        return decoder.Read(child.TypeName, child.Name);
+                    }
                 }
                 else
                 {
-                    return child.Decode(decoder);
+                    return child.Decode(decoder, factory);
                 }
             }
         }
 
 
-        public Dictionary<string, object> Decode(object encodedItem)
+        public Dictionary<string, object> Decode(IEncodeable encodedItem)
         {
             var dict = new Dictionary<string, object>();
             for (int i = 0; i < ChildData.Count; i++)
