@@ -205,7 +205,7 @@ namespace Autabee.OpcToClass
 
         static public void GenerateCsharpProject(GeneratorSettings settings)
         {
-            
+
 
             Directory.CreateDirectory(settings.baseLocation);
 
@@ -348,7 +348,7 @@ namespace Autabee.OpcToClass
                 if (field.Name == "opc:EnumeratedValue")
                 {
                     var fieldName = GetCorrectedName(field);
-                    
+
                     classData += $"\n\t{fieldName} = {field.Attributes["Value"].Value},";
                 }
             }
@@ -358,7 +358,7 @@ namespace Autabee.OpcToClass
 
         }
 
-            private static string GenerateClass(string nsPrefix, XmlNode value, string className, string targetNamespace)
+        private static string GenerateClass(string nsPrefix, XmlNode value, string className, string targetNamespace)
         {
             string classData = "\npublic class " + className + " : EncodeableObject"
                         + "\n{";
@@ -372,7 +372,11 @@ namespace Autabee.OpcToClass
                 }
             }
 
-            classData += $"\n\tpublic override ExpandedNodeId TypeId => new ExpandedNodeId(\"TE_\\\"{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\\\"\", \"{targetNamespace}\");";
+            // To Do This does not work always as systems somtimes use struct name with or without qoutations.
+            // example: `"value"` vs `value`.
+            // might need to read the node itself to get the correct name.
+
+            classData += $"\n\tpublic override ExpandedNodeId TypeId => new ExpandedNodeId(\"TE_{value.Attributes["Name"].Value.Replace("\"", "\\\"")}\", \"{targetNamespace}\");";
 
             if (value.NamespaceURI == "http://opcfoundation.org/BinarySchema/")
             {
@@ -489,7 +493,7 @@ namespace Autabee.OpcToClass
                 {
                     nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nameSpacePrefix);
 
-                    if (nodetype.Contains("Unknown") )
+                    if (nodetype.Contains("Unknown"))
                     {
                         var value = client.ReadValue(nodeData);
                         if (typeof(NodeTypeData).IsInstanceOfType(value) || typeof(EncodeableObject).IsInstanceOfType(value))
@@ -497,7 +501,7 @@ namespace Autabee.OpcToClass
                             if (settings.typeOverrides.TryGetValue(varNode.DataType.Identifier.ToString(), out nodetype))
                             {
                                 var compare = referenceNode.NodeId.ToString() + "[";
-                                if (referenceNodes.FirstOrDefault(o => o.NodeId.ToString().StartsWith(compare)) != null) 
+                                if (referenceNodes.FirstOrDefault(o => o.NodeId.ToString().StartsWith(compare)) != null)
                                     nodetype += "[]";
                             }
                         }
