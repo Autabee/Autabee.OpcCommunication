@@ -52,7 +52,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 List<NodeValueRecord> newRecords = new List<NodeValueRecord>();
                 for (int i = 0; i < nodeValueRecords.Count(); i++)
                 {
-                    newRecords.Add(nodeEntries[i].CreateRecord(Values.ElementAt(i)));
+                    newRecords.Add(nodeEntries[i].CreateRecord(Values.ElementAt(i), DateTime.UtcNow));
                 }
                 nodeValueRecords = newRecords;
             }
@@ -63,7 +63,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 {
                     try
                     {
-                        base[i].CreateRecord(Values.ElementAt(i));
+                        base[i].CreateRecord(Values.ElementAt(i), DateTime.UtcNow);
                     }
                     catch (Exception e)
                     {

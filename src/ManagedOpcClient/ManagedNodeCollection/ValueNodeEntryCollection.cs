@@ -153,8 +153,15 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
                 communicator.RegisterNodeIds(this);
             }
         }
-        public NodeValueRecordCollection CreateRecords(IEnumerable<object> values)
+        public NodeValueRecordCollection CreateRecords(IEnumerable<object> values, DateTime[] dateTimes = default)
         {
+            if (dateTimes == default)
+            {
+                dateTimes = new DateTime[Count];
+                var now = DateTime.UtcNow;
+                dateTimes = dateTimes.Select(o => now).ToArray();
+            }
+
             if (values.Count() != nodeEntries.Count)
             {
                 throw new Exception("Values count does not match nodeEntries count");
