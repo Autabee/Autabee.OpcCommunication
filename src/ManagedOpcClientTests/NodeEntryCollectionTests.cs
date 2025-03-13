@@ -1,4 +1,5 @@
-﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
+﻿using Autabee.Communication.ManagedOpcClient.Exceptions;
+using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using AutabeeTestFixtures;
 using System;
@@ -72,7 +73,16 @@ namespace Autabee.Communication.OpcCommunicator.Tests
         public void AddFailTest()
         {
             ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
-            Assert.Throws<Exception>(delegate { collection.Add(new ValueNodeEntry<TestUser>("i=1")); });
+            Assert.Throws<InvalidTypeException>(delegate { collection.Add(new ValueNodeEntry<TestUser>("i=1")); });
+        }
+
+        [Fact()]
+        public void AddFailDuplicateInsertionTest()
+        {
+            ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
+            collection.Add(new ValueNodeEntry<float>("i=1"));
+            Assert.Throws<DuplicateException>(delegate { collection.Add(new ValueNodeEntry<float>("i=1")); });
+
         }
     }
 }

@@ -64,7 +64,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
             }
             else
             {
-                throw new Exception(string.Format("Type {} is not an IEncodeable or a primitive", type.FullName));
+                throw new InvalidTypeException(string.Format("Type {0} is not an IEncodeable or a primitive. So not allowed to be used in this collection.", type.FullName), type);
             }
         }
 
