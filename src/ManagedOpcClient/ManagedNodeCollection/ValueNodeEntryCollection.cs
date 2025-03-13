@@ -1,4 +1,5 @@
-﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
+﻿using Autabee.Communication.ManagedOpcClient.Exceptions;
+using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Opc.Ua;
 using Opc.Ua.Client;
 using System;
@@ -44,14 +45,11 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
 
         protected void ValidateNode(ValueNodeEntry node)
         {
-            if (nodeIds.FirstOrDefault(o => o.ToString() == node.NodeString) == null)
+            if (nodeIds.FirstOrDefault(o => o.ToString() == node.NodeString) != null)
             {
-                ValidateType(node.Type);
+                throw new DuplicateException("Duplicate Node being inserted into the collection. This is not allowed.", node);
             }
-            else
-            {
-                throw new Exception("Known nodeString already in collection");
-            }
+            ValidateType(node.Type);
         }
 
         private void ValidateType(Type type)
@@ -66,7 +64,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNodeCollection
             }
             else
             {
-                throw new Exception("Not an allowed Type deffinition");
+                throw new Exception(string.Format("Type {} is not an IEncodeable or a primitive", type.FullName));
             }
         }
 
