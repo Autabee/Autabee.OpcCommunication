@@ -404,16 +404,6 @@ namespace Autabee.Communication.ManagedOpcClient
                 new NodeId(nodeId),
                 handler);
 
-        public static IEnumerable<MonitoredItem> AddMonitoredItems(this AutabeeManagedOpcClient client, TimeSpan publishingInterval, ValueNodeEntryCollection nodeEntrys)
-            => client.AddMonitoredItems(
-                client.GetSubscription(publishingInterval),
-                nodeEntrys);
-
-        public static IEnumerable<MonitoredItem> AddMonitoredItems(this AutabeeManagedOpcClient client, int publishingIntervalMilliSec, ValueNodeEntryCollection nodeEntrys)
-            => client.AddMonitoredItems(
-                client.GetSubscription(publishingIntervalMilliSec),
-                nodeEntrys);
-
         public static Subscription GetSubscription(this AutabeeManagedOpcClient client, TimeSpan publishingInterval) => client.GetSubscription(publishingInterval.Milliseconds);
         #endregion
 

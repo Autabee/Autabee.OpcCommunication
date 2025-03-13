@@ -6,7 +6,7 @@
         <TargetFrameworks>netstandard2.0;net48;net6.0;net8.0</TargetFrameworks>
         <Description>Opc client interface</Description>
         <PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
-        <Version>0.3.8</Version>
+        <Version>0.3.11</Version>
         <Nullable>enable</Nullable>
         <PackageTags>opcua;client;opcua-client</PackageTags>
         <LangVersion>latest</LangVersion>

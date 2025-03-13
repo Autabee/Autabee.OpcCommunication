@@ -30,7 +30,7 @@
   <ItemGroup>
     <PackageReference Include="Autabee.Utility.Messaging" Version="1.0.1" />
     <PackageReference Include="Blazor.ContextMenu" Version="2.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.8" />
     <PackageReference Include="Serilog" Version="4.0.1" />
   </ItemGroup>
 

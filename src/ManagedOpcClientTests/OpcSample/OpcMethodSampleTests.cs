@@ -97,7 +97,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Skip.If(skipServerNotFound, "Server not Found");
             var arguments = communicator.CallMethod("ns=2;i=1", "ns=2;i=3", new object[2]
                     {
-                        (UInt32) 1,
+                        (UInt32) 50,
                         (UInt32) 100,
                     });
             Assert.Equal((uint)50, arguments[0]);

@@ -33,7 +33,7 @@ namespace Autabee.OpcSharper
                 throw new AggregateException(exceptions);
 
 
-            logger?.Information("Generate Project at, {0}", Path.Combine(Directory.GetCurrentDirectory(), settings.baseLocation) );
+            logger?.Information("Generate Project at, {0}", Path.Combine(Directory.GetCurrentDirectory(), settings.baseLocation));
 
             OpcToCSharpGenerator.GenerateCsharpProject(settings);
 
@@ -57,11 +57,14 @@ namespace Autabee.OpcSharper
             ReferenceDescriptionCollection found = new ReferenceDescriptionCollection();
             NodeCollection foundTypes = new NodeCollection();
             foreach (var item in settings.nodes)
-                refdesc.AddRange(service.BrowseNode(item).References);
+            {
+                var node = service.BrowseNode(item);
+                refdesc.AddRange(node.References);
+            };
             found.AddRange(refdesc);
 
 
-            while (refdesc.Count > 1)
+            while (refdesc.Count >= 1)
             {
                 var refdisc = new ReferenceDescriptionCollection();
 
@@ -105,12 +108,12 @@ namespace Autabee.OpcSharper
                 ZipFile.CreateFromDirectory(settings.baseLocation, path);
                 if (settings.clearOnZip)
                 {
-                    Directory.Delete(settings.baseLocation,true);
+                    Directory.Delete(settings.baseLocation, true);
                 }
             }
             catch
             {
-                
+
             }
         }
 

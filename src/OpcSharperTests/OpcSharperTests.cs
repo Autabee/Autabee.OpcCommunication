@@ -75,7 +75,7 @@ namespace Tests
     private static SharperTestSettings GetSettings(string file)
     {
       Skip.If(!File.Exists(file)
-                      , "Boiler.json not found");
+                      , $"{file} not found");
       SharperTestSettings settings;
       using (StreamReader r = new StreamReader(file))
       {

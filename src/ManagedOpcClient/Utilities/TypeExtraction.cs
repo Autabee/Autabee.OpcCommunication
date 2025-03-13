@@ -39,28 +39,60 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             return value;
         }
 
-
-
-
         public static object FormatObject(this AutabeeManagedOpcClient autabeeManagedOpcClient, ExtensionObject eoValue)
         {
             if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
                 || eoValue.Encoding == ExtensionObjectEncoding.None)
                 return eoValue.Body;
 
+            IServiceMessageContext context = autabeeManagedOpcClient.Session.MessageContext;
+            if (autabeeManagedOpcClient.Session.Factory.EncodeableTypes.TryGetValue(eoValue.TypeId, out Type value))
+            {
+                var encodingObject = ((IEncodeable)value.GetConstructor([]).Invoke([]));
+                switch (eoValue.Encoding)
+                {
+                    case ExtensionObjectEncoding.Binary:
+                        encodingObject.Decode(new BinaryDecoder((byte[])eoValue.Body, context));
+                        break;
+                    case ExtensionObjectEncoding.Xml:
+                        encodingObject.Decode(new XmlDecoder((XmlElement)eoValue.Body, context));
+                        break;
+                    case ExtensionObjectEncoding.Json:
+                        encodingObject.Decode(new JsonDecoder((string)eoValue.Body, context));
+                        break;
+                    default:
+                        throw new Exception("Unknown encoding");
+                };
+                return encodingObject;
+            }
+
             var type = autabeeManagedOpcClient.GetTypeEncoding(GetCorrectedTypeName(eoValue));
             return eoValue.Encoding switch
             {
-                ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, autabeeManagedOpcClient.Session.MessageContext)),
-                ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, autabeeManagedOpcClient.Session.MessageContext)),
-                ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, autabeeManagedOpcClient.Session.MessageContext)),
+                ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, context), autabeeManagedOpcClient.DecodeFactory),
+                ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, context), autabeeManagedOpcClient.DecodeFactory),
+                ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, context), autabeeManagedOpcClient.DecodeFactory),
                 _ => throw new Exception("Unknown encoding"),
             };
         }
 
-        public static Dictionary<string, NodeTypeData> UpdateNodeType(List<XmlDocument> xmls)
+
+        public struct TypePrapration
+        {
+            public Dictionary<string, NodeTypeData> preparedStructs;
+            public DecodeFactory typeFactory;
+        }
+        public static TypePrapration UpdateNodeType(List<XmlDocument> xmls)
         {
             var dict = new Dictionary<string, NodeTypeData>();
+            var decoders = new DecodeFactory();
+            TypePrapration typePrapration = new TypePrapration()
+            {
+                preparedStructs = dict,
+                typeFactory = decoders
+            };
+
+            
             var arraylist = new List<string>();
             foreach (var item in xmls)
             {
@@ -95,6 +127,24 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                     }
                     dict.Add(nodeType.Name, nodeType);
                 }
+                foreach (XmlNode child in item.GetElementsByTagName("opc:EnumeratedType"))
+                {
+                    string typename = GetCorrectedName(child);
+                    
+                    var lenght = int.Parse(child.Attributes["LengthInBits"].Value);
+                    if (lenght == 16)
+                    {
+                        decoders.Add(typename, (IDecoder decoder, string name) => decoder.ReadInt16(name));
+                    }
+                    else if (lenght == 32)
+                    {
+                        decoders.Add(typename, (IDecoder decoder, string name) => decoder.ReadInt32(name));
+                    }
+                    else if (lenght == 64)
+                    {
+                        decoders.Add(typename, (IDecoder decoder, string name) => decoder.ReadInt64(name));
+                    }
+                }
             }
 
             foreach (var item in dict)
@@ -102,7 +152,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 var type = item.Value;
                 AddChildren(dict, type);
             }
-            return dict;
+            return typePrapration;
         }
 
         public static void AddChildren(Dictionary<string, NodeTypeData> dict, NodeTypeData type)
@@ -305,7 +355,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
         }
 
 
-        public static Dictionary<string, NodeTypeData> GetNodeTypeDataCashe(Session session, List<XmlDocument> xmls)
+        public static TypePrapration GetNodeTypeDataCashe(Session session, List<XmlDocument> xmls)
         {
             xmls.Clear();
             xmls.AddRange(session.GetServerTypeSchema(true).Select(o => { var temp = new XmlDocument(); temp.LoadXml(o); return temp; }));

@@ -48,6 +48,27 @@ namespace Autabee.Communication.OpcCommunicator.Tests
         }
 
         [Fact()]
+        public void CreateMultipleRecods()
+        {
+            ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
+            collection.Add(new ValueNodeEntry<float>("i=1"));
+            collection.Add(new ValueNodeEntry<Guid>("i=2"));
+            
+            Guid g = Guid.NewGuid();
+            var records = collection.CreateRecords(
+
+                new object[]
+                {
+                    0.0f,
+                    g
+                });
+
+            Assert.True(records.Count == 2);
+            Assert.True((float)records[0].Value == 0.0 && records[0].ValueType == typeof(float));
+            Assert.True((Guid)records[1].Value == g && records[1].ValueType == typeof(Guid));
+        }
+
+        [Fact()]
         public void AddFailTest()
         {
             ValueNodeEntryCollection collection = new ValueNodeEntryCollection();

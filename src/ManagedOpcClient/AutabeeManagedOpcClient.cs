@@ -1,22 +1,18 @@
 ﻿using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Communication.ManagedOpcClient.Utilities;
-using Newtonsoft.Json.Linq;
 using Opc.Ua;
 using Opc.Ua.Client;
-using Opc.Ua.Export;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using System.Xml.Linq;
+using static Autabee.Communication.ManagedOpcClient.Utilities.TypeExtraction;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
@@ -35,9 +31,12 @@ namespace Autabee.Communication.ManagedOpcClient
         private List<Subscription> subscriptions = new List<Subscription>();
         private ILogger? logger;
 
+        public List<Assembly> RegisteredTypeAssemblys { get; private set; } = new List<Assembly>();
+        public List<Type> RegisteredTypes { get; private set; } = new List<Type>();
         public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
         public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
-        public Dictionary<string, NodeTypeData> PreparedTypes { get; private set; } = new Dictionary<string, NodeTypeData>();
+        public DecodeFactory DecodeFactory { get; private set; } = new DecodeFactory();
+        public Dictionary<string, NodeTypeData> PreparedStructTypes { get; private set; } = new Dictionary<string, NodeTypeData>();
 
         private Dictionary<string, NodeId> nodeIdCache = new Dictionary<string, NodeId>();
 
@@ -391,7 +390,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 {
                     await Connect(applicationConfiguration, endpoint, userIdentity);
                 }
-                
+
             }
             catch (Exception)
             {
@@ -539,7 +538,7 @@ namespace Autabee.Communication.ManagedOpcClient
             wasConnected = true;
             subscriptions.Clear();
 
-            UpdateNodeTypeDataCache(session, PreparedTypes, Xmls);
+            UpdateNodeTypeDataCache(session, Xmls);
         }
 
 
@@ -850,11 +849,29 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion
 
         #region Typing
+        public void AddTypeAssemby(Assembly assembly)
+        {
+            RegisteredTypeAssemblys.Add(assembly);
+            if (session != null)
+            {
+                session.MessageContext.Factory.AddEncodeableTypes(assembly);
+            }
+        }
+
+        public void AddTypes(Type type)
+        {
+            RegisteredTypes.Add(type);
+            if (session != null)
+            {
+                session.MessageContext.Factory.AddEncodeableType(type);
+            }
+        }
+
         public NodeTypeData GetNodeTypeEncoding(string nodeIdString)
         {
             if (PreparedNodeTypes.TryGetValue(nodeIdString, out string parseString))
             {
-                return PreparedTypes[parseString];
+                return PreparedStructTypes[parseString];
             }
             try
             {
@@ -869,9 +886,9 @@ namespace Autabee.Communication.ManagedOpcClient
                 var readType = readValue.GetValue(null).GetType();
                 parseString = readType.FullName;
                 var nodeTypeData = new NodeTypeData(readType);
-                if (!PreparedTypes.ContainsKey(parseString))
+                if (!PreparedStructTypes.ContainsKey(parseString))
                 {
-                    PreparedTypes.Add(parseString, nodeTypeData);
+                    PreparedStructTypes.Add(parseString, nodeTypeData);
                 }
                 PreparedNodeTypes.Add(nodeIdString, parseString);
                 return nodeTypeData;
@@ -881,7 +898,7 @@ namespace Autabee.Communication.ManagedOpcClient
         public NodeTypeData GetTypeEncoding(string parseString)
         {
             NodeTypeData value;
-            if (PreparedTypes.TryGetValue(parseString, out value))
+            if (PreparedStructTypes.TryGetValue(parseString, out value))
             {
                 return value;
             }
@@ -889,17 +906,20 @@ namespace Autabee.Communication.ManagedOpcClient
             throw new Exception("Type not found");
         }
 
-        private static void UpdateNodeTypeDataCache(Session session, Dictionary<string, NodeTypeData> PreparedTypes, List<XmlDocument> xmls)
+        private void UpdateNodeTypeDataCache(Session session, List<XmlDocument> xmls)
         {
-            Dictionary<string, NodeTypeData> dict = TypeExtraction.GetNodeTypeDataCashe(session, xmls);
-            foreach (var o in dict)
+            TypePrapration dict = TypeExtraction.GetNodeTypeDataCashe(session, xmls);
+            foreach (var o in dict.preparedStructs)
             {
-                if (PreparedTypes.ContainsKey(o.Key)) PreparedTypes.Remove(o.Key);
-                PreparedTypes.Add(o.Key, o.Value);
+                if (PreparedStructTypes.ContainsKey(o.Key)) PreparedStructTypes.Remove(o.Key);
+                PreparedStructTypes.Add(o.Key, o.Value);
+            }
+            foreach (var o in dict.typeFactory)
+            {
+                if (DecodeFactory.ContainsKey(o.Key)) DecodeFactory.Remove(o.Key);
+                DecodeFactory.Add(o.Key, o.Value);
             }
         }
-
-
 
         private static string? GetContFieldEnum(int id, Type type)
         {
@@ -919,53 +939,122 @@ namespace Autabee.Communication.ManagedOpcClient
             return field?.Name;
         }
 
-        public object GetCorrectValue(object value)
+        public object GetCorrectValue(object value, NodeId nodeId)
         {
             if (value is ExtensionObject eoValue)
             {
-                return FormatObject(eoValue);
+                return FormatObject(eoValue, nodeId);
             }
             else if (value is ExtensionObject[] eoValues)
             {
-                return eoValues.Select(FormatObject).ToArray();
+                return eoValues.Select(o => FormatObject(o, nodeId)).ToArray();
             }
             return value;
         }
 
-        public object FormatObject(ExtensionObject eoValue)
+        public object FormatObject(ExtensionObject eoValue, NodeId nodeId)
         {
             if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
                 || eoValue.Encoding == ExtensionObjectEncoding.None)
                 return eoValue.Body;
 
-            var type = GetTypeEncoding(GetCorrectedTypeName(eoValue));
+            if (session.Factory.EncodeableTypes.TryGetValue(eoValue.TypeId, out Type value))
+            {
+                var encodingObject = ((IEncodeable)value.GetConstructor([]).Invoke([]));
+                switch (eoValue.Encoding)
+                {
+                    case ExtensionObjectEncoding.Binary:
+                        encodingObject.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext));
+                        break;
+                    case ExtensionObjectEncoding.Xml:
+                        encodingObject.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext));
+                        break;
+                    case ExtensionObjectEncoding.Json:
+                        encodingObject.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext));
+                        break;
+                    default:
+                        throw new Exception("Unknown encoding");
+                };
+                return encodingObject;
+            }
+
+            NodeTypeData type = GetTypeEncoding(GetCorrectedTypeName(eoValue, nodeId));
             return eoValue.Encoding switch
             {
-                ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext)),
-                ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext)),
-                ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext)),
+                ExtensionObjectEncoding.Binary => type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext), DecodeFactory),
+                ExtensionObjectEncoding.Xml => type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext), DecodeFactory),
+                ExtensionObjectEncoding.Json => type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext), DecodeFactory),
                 _ => throw new Exception("Unknown encoding"),
             };
         }
 
+        public object FormatObject(ExtensionObject eoValue, EncodeableObject type)
+        {
+            if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
+                || eoValue.Encoding == ExtensionObjectEncoding.None)
+                return eoValue.Body;
 
 
-        static string GetCorrectedName(XmlNode value)
+            switch (eoValue.Encoding)
+            {
+                case ExtensionObjectEncoding.Binary:
+                    type.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext));
+                    break;
+                case ExtensionObjectEncoding.Xml:
+                    type.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext));
+                    break;
+                case ExtensionObjectEncoding.Json:
+                    type.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext));
+                    break;
+                default:
+                    throw new Exception("Unknown encoding");
+            };
+            return type;
+        }
+
+
+        string GetCorrectedName(XmlNode value)
         {
             return value.Attributes["Name"].Value.Replace("&quot;", string.Empty)
                     .Replace("\"", string.Empty);
         }
-        static string GetCorrectedTypeName(XmlNode value)
+        string GetCorrectedTypeName(XmlNode value)
         {
             return GetCorrectedTypeName(value.Attributes["TypeName"].Value);
         }
 
-        static string GetCorrectedTypeName(ExtensionObject eoValue)
+        string GetCorrectedTypeName(ExtensionObject eoValue, NodeId nodeId)
         {
-            return eoValue.TypeId.Identifier.ToString().Replace("\"", string.Empty).Replace("TE_", string.Empty);
+
+            if (eoValue.TypeId.IdType != IdType.String)
+            {
+
+                if (PreparedNodeTypes.TryGetValue(nodeId.ToString(), out string parseString))
+                {
+                    return parseString;
+                }
+
+                var node = ReadNode(ExpandedNodeId.ToNodeId(nodeId, session.NamespaceUris));
+                if (node is VariableNode vNode)
+                {
+                    node = ReadNode(vNode.DataType);
+                }
+
+
+                parseString = node.DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+
+                PreparedNodeTypes[nodeId.ToString()] = parseString;
+
+
+                return parseString;
+            }
+            else
+            {
+                return eoValue.TypeId.Identifier.ToString().Replace("\"", string.Empty).Replace("TE_", string.Empty);
+            }
         }
 
-        static string GetCorrectedTypeName(string value)
+        string GetCorrectedTypeName(string value)
         {
             if (value.Contains("tns:"))
             {
@@ -984,8 +1073,8 @@ namespace Autabee.Communication.ManagedOpcClient
         public NodeValueRecord ReadValue(ValueNodeEntry nodeEntry)
         {
             if (nodeEntry == null) throw new ArgumentNullException(nameof(nodeEntry));
-            var body = (session.ReadValue(nodeEntry.GetNodeId())).Value;
-            return CreateNodeValue(nodeEntry, body);
+            var dv = session.ReadValue(nodeEntry.GetNodeId());
+            return CreateNodeValue(nodeEntry, dv.Value, dv.ServerTimestamp);
         }
 
         public NodeValueRecord[] ReadValues(ValueNodeEntryCollection list)
@@ -1076,27 +1165,27 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             if (entry.IsUDT && (tempResult is DataValue dvValue2))
             {
-                return CreateNodeValue(entry, (ExtensionObject)dvValue2.Value);
+                return CreateNodeValue(entry, (ExtensionObject)dvValue2.Value, tempResult.ServerTimestamp);
             }
             else if (entry.IsUDT) throw new Exception("Unknown type");
             else if (tempResult is DataValue dvValue1)
             {
-                return entry.CreateRecord(dvValue1.Value);
+                return entry.CreateRecord(dvValue1.Value, tempResult.ServerTimestamp);
             }
-            else return entry.CreateRecord(tempResult);
+            else return entry.CreateRecord(tempResult, tempResult.ServerTimestamp);
 
         }
-        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, ExtensionObject tempResult)
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, ExtensionObject tempResult, DateTime TimeStamp = default)
         {
-            return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body));
+            return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body), TimeStamp);
         }
-        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult)
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult, DateTime TimeStamp = default)
         {
             return tempResult switch
             {
-                DataValue dvValue => CreateNodeValue(entry, dvValue),
-                ExtensionObject eoValue => CreateNodeValue(entry, eoValue),
-                _ => entry.CreateRecord(tempResult),
+                DataValue dvValue => CreateNodeValue(entry, dvValue, TimeStamp),
+                ExtensionObject eoValue => CreateNodeValue(entry, eoValue, TimeStamp),
+                _ => entry.CreateRecord(tempResult, TimeStamp),
             };
         }
 
@@ -1148,11 +1237,32 @@ namespace Autabee.Communication.ManagedOpcClient
         public void WriteValue(NodeId nodeId, object value)
         {
             WriteValueCollection writeCollection = new WriteValueCollection();
-            writeCollection.Add(CreateWriteValue(nodeId, value));
+            var type = value.GetType();
+            if (type.GetInterfaces().Contains(typeof(IEncodeable))) WriteValue(nodeId, (IEncodeable)value);
+            else
+            {
+                writeCollection.Add(CreateWriteValue(nodeId, value));
+                WriteValues(writeCollection);
+            }
+        }
+        public void WriteValue(NodeId nodeId, IEncodeable value)
+        {
+            WriteValueCollection writeCollection = new WriteValueCollection();
+            ExtensionObject encoded = GetBinaryExtensionObject(value, this.session.MessageContext);
+            writeCollection.Add(CreateWriteValue(nodeId, encoded));
             WriteValues(writeCollection);
         }
 
+        static public ExtensionObject GetBinaryExtensionObject(IEncodeable value, ISession session)
+         => GetBinaryExtensionObject(value, session.MessageContext);
 
+        static public ExtensionObject GetBinaryExtensionObject(IEncodeable value, IServiceMessageContext context)
+        {
+            var encoder = new BinaryEncoder(context);
+            value.Encode(encoder);
+            var encoded = new ExtensionObject(value.TypeId, encoder.CloseAndReturnBuffer());
+            return encoded;
+        }
 
         [Obsolete("Use a non dictonary value write or better a IEncodable object write for structs to remove dictionary reformating.")]
         public void WriteValue(NodeId nodeId, Dictionary<string, object> value)
@@ -1249,9 +1359,29 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
-
-        private static WriteValue CreateWriteValue(NodeValueRecord record)
+        private WriteValue CreateWriteValue(NodeId nodeId, ExtensionObject value)
         {
+            return new WriteValue()
+            {
+                NodeId = nodeId,
+                Value = new DataValue(new Variant(value)),
+                AttributeId = Attributes.Value
+            };
+        }
+
+        private WriteValue CreateWriteValue(NodeValueRecord record)
+        {
+            if (record.Value is EncodeableObject eo)
+            {
+                ExtensionObject obj = GetBinaryExtensionObject(eo, this.session.MessageContext);
+                return new WriteValue()
+                {
+                    NodeId = record.NodeEntry.GetNodeId(),
+                    Value = new DataValue(new Variant(obj)),
+                    AttributeId = Attributes.Value
+                };
+            }
+
             return new WriteValue()
             {
                 NodeId = record.NodeEntry.GetNodeId(),
@@ -1260,7 +1390,7 @@ namespace Autabee.Communication.ManagedOpcClient
             };
         }
 
-        private static WriteValueCollection CreateWriteCollection(NodeValueRecordCollection list)
+        private WriteValueCollection CreateWriteCollection(NodeValueRecordCollection list)
             => new WriteValueCollection(list.nodeValueRecords.Select(o => CreateWriteValue(o)));
 
         #endregion Entry Read
@@ -1269,10 +1399,25 @@ namespace Autabee.Communication.ManagedOpcClient
 
         public object ReadValue(NodeId nodeId, Type type = null)
         {
-            var value = type == null ? (session.ReadValue(nodeId)).Value : session.ReadValue(nodeId, type);
-            return GetCorrectValue(value);
+            object value;
+            if (type == null)
+            {
+                value = (session.ReadValue(nodeId)).Value;
+            }
+            else if (typeof(EncodeableObject) == type.BaseType)
+            {
+                value = (session.ReadValue(nodeId)).Value;
+
+                var tmp = (EncodeableObject)(type.GetConstructor([]).Invoke([]));
+                return FormatObject((ExtensionObject)value, tmp);
+            }
+            else
+            {
+                value = session.ReadValue(nodeId, type);
+            }
+            return GetCorrectValue(value, nodeId);
         }
-        public T ReadValue<T>(NodeId nodeId) => (T)session.ReadValue(nodeId, typeof(T));
+        public T ReadValue<T>(NodeId nodeId) => (T)ReadValue(nodeId, typeof(T));
         public Node ReadNode(NodeId nodeId) => session.ReadNode(nodeId);
 
 
@@ -1542,32 +1687,108 @@ namespace Autabee.Communication.ManagedOpcClient
             MonitoredNodeValueRecordEventHandler handler = null)
         {
             MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, handler: handler);
-            try
-            {
-                subscription.AddItem(monitoredItem);
-                subscription.ApplyChanges();
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            return monitoredItem;
-        }
-        public MonitoredItem AddMonitoredItem(
-                Subscription subscription,
-                NodeId nodeEntry,
-                MonitoredNodeValueEventHandler handler = null)
-        {
-            MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, handler: handler);
             AddMonitoredItem(subscription, monitoredItem);
             return monitoredItem;
         }
-        public IEnumerable<MonitoredItem> AddMonitoredItems(Subscription subscription, ValueNodeEntryCollection nodeEntrys)
+
+        public IEnumerable<MonitoredItem> AddMonitoredItems(
+            Subscription subscription,
+            ValueNodeEntryCollection nodeEntries,
+            bool globalCall = false,
+            IEnumerable<MonitoredNodeValueRecordEventHandler> handlers = null)
         {
-            IEnumerable<MonitoredItem> items = nodeEntrys.NodeEntries.Select(o => CreateMonitoredItem(o));
-            AddMonitoredItems(subscription, items);
-            return items;
+            IEnumerable<MonitoredItem> monitoredItems = new MonitoredItem[nodeEntries.Count];
+            if (handlers == null)
+            {
+                monitoredItems = nodeEntries.Select(o => CreateMonitoredItem(o, globalCall: globalCall));
+            }
+            else
+            {
+
+                if (nodeEntries.Count != handlers.Count()) throw new ArgumentException("The number of handlers must match the number of node ids");
+                var tmp = new MonitoredItem[nodeEntries.Count];
+                for (int i = 0; i < nodeEntries.Count; i++)
+                {
+                    tmp[i] = CreateMonitoredItem(nodeEntries[i], handler: handlers.ElementAt(i));
+                }
+                monitoredItems = tmp;
+            }
+            AddMonitoredItems(subscription, monitoredItems);
+            return monitoredItems;
         }
+        public IEnumerable<MonitoredItem> AddMonitoredItems(
+            Subscription subscription,
+            ValueNodeEntryCollection nodeEntries,
+            bool globalCall = false,
+            MonitoredNodeValueRecordEventHandler handler = null)
+        {
+            IEnumerable<MonitoredItem> monitoredItems = new MonitoredItem[nodeEntries.Count];
+            if (handler == null)
+            {
+                monitoredItems = nodeEntries.Select(o => CreateMonitoredItem(o, globalCall: globalCall));
+            }
+            else
+            {
+                monitoredItems = nodeEntries.Select(o => CreateMonitoredItem(o, handler: handler));
+            }
+            AddMonitoredItems(subscription, monitoredItems);
+            return monitoredItems;
+        }
+
+        public MonitoredItem AddMonitoredItem(
+            Subscription subscription,
+            NodeId nodeId,
+            MonitoredNodeValueEventHandler handler = null)
+        {
+            MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, handler: handler);
+            AddMonitoredItem(subscription, monitoredItem);
+            return monitoredItem;
+        }
+
+        public IEnumerable<MonitoredItem> AddMonitoredItems(
+            Subscription subscription,
+            NodeIdCollection nodeEntries,
+            bool globalCall = false,
+            IEnumerable<MonitoredNodeValueEventHandler> handlers = null)
+        {
+            IEnumerable<MonitoredItem> monitoredItems = new MonitoredItem[nodeEntries.Count];
+            if (handlers == null)
+            {
+                monitoredItems = nodeEntries.Select(o => CreateMonitoredItem(o, globalCall: globalCall));
+            }
+            else
+            {
+
+                if (nodeEntries.Count != handlers.Count()) throw new ArgumentException("The number of handlers must match the number of node ids");
+                var tmp = new MonitoredItem[nodeEntries.Count];
+                for (int i = 0; i < nodeEntries.Count; i++)
+                {
+                    tmp[i] = CreateMonitoredItem(nodeEntries[i],handler: handlers.ElementAt(i));
+                }
+                monitoredItems = tmp;
+            }
+            AddMonitoredItems(subscription, monitoredItems);
+            return monitoredItems;
+        }
+        public IEnumerable<MonitoredItem> AddMonitoredItems(
+            Subscription subscription,
+            NodeIdCollection nodeEntries,
+            bool globalCall = false,
+            MonitoredNodeValueEventHandler handler = null)
+        {
+            IEnumerable<MonitoredItem> monitoredItems = new MonitoredItem[nodeEntries.Count];
+            if (handler == null)
+            {
+                monitoredItems = nodeEntries.Select(o => CreateMonitoredItem(o, globalCall: globalCall));
+            }
+            else
+            {
+                monitoredItems = nodeEntries.Select(o => CreateMonitoredItem(o, handler: handler));
+            }
+            AddMonitoredItems(subscription, monitoredItems);
+            return monitoredItems;
+        }
+
         public void AddMonitoredItem(
                 Subscription subscription,
                 MonitoredItem item)
@@ -1582,6 +1803,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
+
         public void AddMonitoredItems(
                 Subscription subscription,
                 IEnumerable<MonitoredItem> item)
@@ -1596,6 +1818,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
+
         public Subscription GetSubscription(int publishingIntervalMilliSec)
         {
             var subscription = subscriptions.FirstOrDefault(o => o.PublishingInterval == publishingIntervalMilliSec);
@@ -1610,13 +1833,14 @@ namespace Autabee.Communication.ManagedOpcClient
             uint queueSize = 1,
             bool discardOldest = true,
             bool globalCall = false,
+            MonitoringMode monitoringMode = MonitoringMode.Reporting,
             MonitoredNodeValueRecordEventHandler handler = null)
         {
             if (handler == null && !globalCall)
             {
                 throw new ArgumentNullException(nameof(handler), "Either handler or globalCall must be set");
             }
-            MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, samplingInterval, queueSize, discardOldest);
+            MonitoredItem monitoredItem = CreateMonitoredItem(nodeEntry, samplingInterval, queueSize, discardOldest, monitoringMode);
             if (handler != null)
             {
                 monitoredItem.Notification += (sender, arg) => MonitoredNode(sender, nodeEntry, arg, handler);
@@ -1634,13 +1858,14 @@ namespace Autabee.Communication.ManagedOpcClient
                 uint queueSize = 1,
                 bool discardOldest = true,
                 bool globalCall = false,
+                MonitoringMode monitoringMode = MonitoringMode.Reporting,
                 MonitoredNodeValueEventHandler handler = null)
         {
             if (handler == null && !globalCall)
             {
                 throw new ArgumentNullException(nameof(handler), "Either handler or globalCall must be set");
             }
-            MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, samplingInterval, queueSize, discardOldest);
+            MonitoredItem monitoredItem = CreateMonitoredItem(nodeId, samplingInterval, queueSize, discardOldest, monitoringMode);
             if (handler != null)
             {
                 monitoredItem.Notification += (sender, arg) => MonitoredNode(sender, arg, handler);
@@ -1652,26 +1877,26 @@ namespace Autabee.Communication.ManagedOpcClient
 
             return monitoredItem;
         }
-        public static MonitoredItem CreateMonitoredItem(ValueNodeEntry nodeEntry, int samplingInterval, uint queueSize, bool discardOldest)
+        public static MonitoredItem CreateMonitoredItem(ValueNodeEntry nodeEntry, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode monitoringMode = MonitoringMode.Reporting)
         {
             MonitoredItem monitoredItem = new MonitoredItem();
             monitoredItem.DisplayName = nodeEntry.NodeString;
-            monitoredItem.StartNodeId = nodeEntry.UnregisteredNodeId;
+            monitoredItem.StartNodeId = nodeEntry.GetNodeId();
             monitoredItem.AttributeId = Attributes.Value;
-            monitoredItem.MonitoringMode = MonitoringMode.Reporting;
+            monitoredItem.MonitoringMode = monitoringMode;
             monitoredItem.SamplingInterval = samplingInterval;
             monitoredItem.QueueSize = queueSize;
             monitoredItem.DiscardOldest = discardOldest;
             return monitoredItem;
         }
 
-        static public MonitoredItem CreateMonitoredItem(NodeId nodeId, int samplingInterval, uint queueSize, bool discardOldest)
+        static public MonitoredItem CreateMonitoredItem(NodeId nodeId, int samplingInterval, uint queueSize, bool discardOldest, MonitoringMode monitoringMode = MonitoringMode.Reporting)
         {
             MonitoredItem monitoredItem = new MonitoredItem();
             monitoredItem.DisplayName = nodeId.ToString();
             monitoredItem.StartNodeId = nodeId;
             monitoredItem.AttributeId = Attributes.Value;
-            monitoredItem.MonitoringMode = MonitoringMode.Reporting;
+            monitoredItem.MonitoringMode = monitoringMode;
             monitoredItem.SamplingInterval = samplingInterval;
             monitoredItem.QueueSize = queueSize;
             monitoredItem.DiscardOldest = discardOldest;
@@ -1683,7 +1908,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 MonitoredItemNotificationEventArgs arg,
                 MonitoredNodeValueEventHandler handler)
         {
-            var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
+            var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value, monitorItem.ResolvedNodeId);
             handler?.Invoke(monitorItem, value);
         }
 
@@ -1692,7 +1917,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 MonitoredItemNotificationEventArgs arg,
                 MonitoredNodeValueRecordEventHandler handler)
         {
-            var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value);
+            var value = GetCorrectValue(((MonitoredItemNotification)arg.NotificationValue).Value.Value, monitorItem.ResolvedNodeId);
             handler?.Invoke(monitorItem, new NodeValueRecord(new ValueNodeEntry(monitorItem.StartNodeId, value.GetType()), value));
         }
 
@@ -1704,7 +1929,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             if (!entry.IsUDT)
             {
-                handler?.Invoke(monitorItem, CreateNodeValue(entry, ((MonitoredItemNotification)arg.NotificationValue).Value.Value));
+                handler?.Invoke(monitorItem, CreateNodeValue(entry, ((MonitoredItemNotification)arg.NotificationValue).Value.Value, ((MonitoredItemNotification)arg.NotificationValue).Value.ServerTimestamp));
             }
             else
             {
@@ -1712,7 +1937,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 ExtensionObject obj = ((ExtensionObject)((MonitoredItemNotification)arg.NotificationValue).Value.Value);
                 if (obj.Encoding == ExtensionObjectEncoding.Binary)
                 {
-                    handler.Invoke(monitorItem, entry.CreateRecord(ConstructEncodable(entry, (byte[])obj.Body)));
+                    handler.Invoke(monitorItem, entry.CreateRecord(ConstructEncodable(entry, (byte[])obj.Body), ((MonitoredItemNotification)arg.NotificationValue).Value.ServerTimestamp));
                 }
                 else
                 {
