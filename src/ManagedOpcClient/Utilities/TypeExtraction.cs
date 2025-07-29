@@ -304,20 +304,29 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             ReferenceDescriptionCollection refDescColBin;
             ReferenceDescriptionCollection refDescColXml;
             byte[] continuationPoint;
-
-            ResponseHeader BinaryNodes = session.Browse(
-                null,
-                null,
-                ObjectIds.OPCBinarySchema_TypeSystem,
-                0u,
-                BrowseDirection.Forward,
-                ReferenceTypeIds.HierarchicalReferences,
-                true,
-                0,
-                out continuationPoint,
-                out refDescColBin);
-
-            ResponseHeader XMLNodes = session.Browse(
+            ResponseHeader? BinaryNodes = null;
+            ResponseHeader? XMLNodes = null;
+            try
+            {
+                BinaryNodes = session.Browse(
+                    null,
+                    null,
+                    ObjectIds.OPCBinarySchema_TypeSystem,
+                    0u,
+                    BrowseDirection.Forward,
+                    ReferenceTypeIds.HierarchicalReferences,
+                    true,
+                    0,
+                    out continuationPoint,
+                    out refDescColBin);
+            }
+            catch
+            {
+                refDescColBin = new ReferenceDescriptionCollection();
+            }
+            try
+            {
+                XMLNodes = session.Browse(
                 null,
                 null,
                 ObjectIds.XmlSchema_TypeSystem,
@@ -328,7 +337,11 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 0,
                 out continuationPoint,
                 out refDescColXml);
-
+            }
+            catch
+            {
+                refDescColXml = new ReferenceDescriptionCollection();
+            }
             NodeIdCollection nodeIds = new NodeIdCollection();
             foreach (var item in refDescColBin)
             {
