@@ -29,8 +29,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Controls", "Controls", "{FF
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.OpcScoutApp", "Autabee.OpcScoutApp\Autabee.OpcScoutApp.csproj", "{7780C1A9-825E-432D-AB01-B57D27560A43}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Autabee.Mdi", "Autabee.MDI\Autabee.Mdi.csproj", "{4D2345FC-F6C8-4ED7-B61D-A61C0BF61CB7}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,10 +77,6 @@ Global
 		{7780C1A9-825E-432D-AB01-B57D27560A43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7780C1A9-825E-432D-AB01-B57D27560A43}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7780C1A9-825E-432D-AB01-B57D27560A43}.Release|Any CPU.Deploy.0 = Release|Any CPU
-		{4D2345FC-F6C8-4ED7-B61D-A61C0BF61CB7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4D2345FC-F6C8-4ED7-B61D-A61C0BF61CB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4D2345FC-F6C8-4ED7-B61D-A61C0BF61CB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4D2345FC-F6C8-4ED7-B61D-A61C0BF61CB7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -96,7 +90,6 @@ Global
 		{2847C902-3A7A-482C-9DF8-9BFC39128E65} = {7D5C0007-EB98-496C-8202-5ABEE2C9EE31}
 		{7EC16C1E-75CD-414F-B3ED-A1D3A2418192} = {7D5C0007-EB98-496C-8202-5ABEE2C9EE31}
 		{7780C1A9-825E-432D-AB01-B57D27560A43} = {7D5C0007-EB98-496C-8202-5ABEE2C9EE31}
-		{4D2345FC-F6C8-4ED7-B61D-A61C0BF61CB7} = {FF2A403E-668C-4ADA-909B-5C25B6E502C1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {62914C99-63E0-42D9-8ADA-21CE99B730B3}
