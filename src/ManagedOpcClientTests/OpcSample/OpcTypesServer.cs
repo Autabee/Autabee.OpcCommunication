@@ -59,7 +59,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
-            communicator.AddTypeAssemby(typeof(ParkingLotType).Assembly);
+            communicator.AddTypeAssembly(typeof(ParkingLotType).Assembly);
 
             var data = communicator.ReadValue(vehicleInLot) as object[];
 
@@ -78,7 +78,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var LotType = NodeId.Parse("ns=4;i=380");
 
-            communicator.AddTypeAssemby(typeof(ParkingLotType).Assembly);
+            communicator.AddTypeAssembly(typeof(ParkingLotType).Assembly);
 
             communicator.WriteValue(LotType, (int)2 );
 

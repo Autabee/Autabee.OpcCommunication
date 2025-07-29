@@ -31,7 +31,7 @@ namespace Autabee.Communication.ManagedOpcClient
         private List<Subscription> subscriptions = new List<Subscription>();
         private ILogger? logger;
 
-        public List<Assembly> RegisteredTypeAssemblys { get; private set; } = new List<Assembly>();
+        public List<Assembly> RegisteredTypeAssembles { get; private set; } = new List<Assembly>();
         public List<Type> RegisteredTypes { get; private set; } = new List<Type>();
         public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
         public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
@@ -849,9 +849,9 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion
 
         #region Typing
-        public void AddTypeAssemby(Assembly assembly)
+        public void AddTypeAssembly(Assembly assembly)
         {
-            RegisteredTypeAssemblys.Add(assembly);
+            RegisteredTypeAssembles.Add(assembly);
             if (session != null)
             {
                 session.MessageContext.Factory.AddEncodeableTypes(assembly);
