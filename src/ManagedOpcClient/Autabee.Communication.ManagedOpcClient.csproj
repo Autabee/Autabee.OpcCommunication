@@ -6,7 +6,7 @@
         <TargetFrameworks>netstandard2.0;net48;net6.0;net8.0</TargetFrameworks>
         <Description>Opc client interface</Description>
         <PackageProjectUrl>https://github.com/Autabee/Autabee.OpcCommunication/tree/main/src/ManagedOpcClient</PackageProjectUrl>
-        <Version>0.3.13</Version>
+        <Version>0.3.14</Version>
         <Nullable>enable</Nullable>
         <PackageTags>opcua;client;opcua-client</PackageTags>
         <LangVersion>latest</LangVersion>
@@ -20,9 +20,9 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.374.78" />
+        <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Client" Version="1.5.377.21" />
         <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua.Security.Certificates" Version="1.5.374.78" />
-        <PackageReference Include="Serilog" Version="4.0.1" />
+        <PackageReference Include="Serilog" Version="4.3.0" />
     </ItemGroup>
 
     <ItemGroup>
