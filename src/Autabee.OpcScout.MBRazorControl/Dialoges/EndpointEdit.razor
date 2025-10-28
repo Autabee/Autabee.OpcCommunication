@@ -28,7 +28,7 @@
 </MudDialog>
 @code {
     [CascadingParameter] 
-    MudDialogInstance MudDialog { get; set; } = default!;
+    IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter]
     public EndpointRecord record { get; set; } = new EndpointRecord();
 

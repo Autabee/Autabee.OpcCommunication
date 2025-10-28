@@ -1,11 +1,12 @@
-﻿@using Autabee.Communication.ManagedOpcClient.ManagedNode;
+﻿@using MudBlazor
+@using Autabee.Communication.ManagedOpcClient.ManagedNode;
 @using Autabee.Communication.ManagedOpcClient;
 @using Autabee.OpcScout.RazorControl;
 @using Opc.Ua;
 @using Autabee.Communication.ManagedOpcClient.Utilities;
 @inject ISnackbar Snackbar
 
-@if(MudDialog != null && record != null)
+@if (MudDialog != null && (record != null || certificate != null))
 {
     <MudDialog>
         <TitleContent>
@@ -15,9 +16,19 @@
             </MudText>
         </TitleContent>
         <DialogContent>
-            <MudTextField Value="@record.Certificate.FriendlyName" Label="Name" ReadOnly=true />
-            <MudTextField Value="@record.Certificate.Issuer" Label="Issuer" ReadOnly=true/>
-            <MudTextField Value="@record.Certificate.Thumbprint" Label="Thumprint" ReadOnly=true />
+            @if (@record != null)
+            {
+                <MudTextField Value="@record.Certificate.FriendlyName" Label="Name" ReadOnly=true />
+                <MudTextField Value="@record.Certificate.Issuer" Label="Issuer" ReadOnly=true/>
+                <MudTextField Value="@record.Certificate.Thumbprint" Label="Thumprint" ReadOnly=true />
+            }
+            else
+            {
+                <MudTextField Value="@certificate.Certificate.FriendlyName" Label="Name" ReadOnly=true />
+                <MudTextField Value="@certificate.Certificate.Issuer" Label="Issuer" ReadOnly=true />
+                <MudTextField Value="@certificate.Certificate.Thumbprint" Label="Thumprint" ReadOnly=true />
+            }
+            
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="Cancel">Reject</MudButton>
@@ -26,14 +37,15 @@
     </MudDialog>
 }
 @code {
-    [CascadingParameter] MudDialogInstance? MudDialog { get; set; }
+    [CascadingParameter] MudBlazor.IMudDialogInstance? MudDialog { get; set; }
     [Parameter]
     public CertificateValidationEventArgs? record { get; set; }
-
+    [Parameter]
+    public CertificateIdentifier? certificate { get; set; }
     protected override void OnInitialized()
     {
-        if (record == null)
-            throw new ArgumentNullException(nameof(record));
+        if (record == null && certificate == null)
+            throw new Exception("Both record and certificate parameters are null. One must be provided.");
         if (MudDialog == null)
             throw new ArgumentNullException(nameof(MudDialog));
         base.OnInitialized();
