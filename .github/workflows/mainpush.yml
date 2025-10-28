@@ -49,21 +49,24 @@ jobs:
         
       - name: Publish opc client to NuGet
         continue-on-error: true
-        uses: alirezanet/publish-nuget@v3.0.4
+        uses: brandedoutcast/publish-nuget@v2.5.5
         with:
             PROJECT_FILE_PATH: src/ManagedOpcClient/Autabee.Communication.ManagedOpcClient.csproj
             NUGET_KEY: ${{secrets.NUGET_KEY}}
             VERSION_FILE_PATH: src/ManagedOpcClient/Autabee.Communication.ManagedOpcClient.csproj
             INCLUDE_SYMBOLS: true
+            TAG_FORMAT: opc_client_v*
             NO_BUILD: true
+            
       - name: Publish opc sharper to NuGet
         continue-on-error: true
-        uses: alirezanet/publish-nuget@v3.0.4
+        uses: brandedoutcast/publish-nuget@v2.5.5
         with:
             PROJECT_FILE_PATH: src/OpcSharper/Autabee.OpcSharper.csproj
             NUGET_KEY: ${{secrets.NUGET_KEY}}
             VERSION_FILE_PATH: src/OpcSharper/Autabee.OpcSharper.csproj
             INCLUDE_SYMBOLS: true
+            TAG_FORMAT: opc_sharper_v*
             NO_BUILD: true
 
   publish_to_github:
