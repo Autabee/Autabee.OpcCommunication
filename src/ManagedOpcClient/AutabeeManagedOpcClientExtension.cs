@@ -52,7 +52,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
 
             configuration.LoadApplicationConfiguration(combined, false).Wait();
-            configuration.CheckApplicationInstanceCertificate(false, 0).Wait();
+            configuration.CheckApplicationInstanceCertificates(false, 0).Wait();
 
             return configuration.ApplicationConfiguration;
         }
@@ -81,7 +81,7 @@ namespace Autabee.Communication.ManagedOpcClient
             ApplicationInstance configuration = new ApplicationInstance();
             configuration.ApplicationType = ApplicationType.Client;
             configuration.LoadApplicationConfiguration(configStream, false).Wait();
-            configuration.CheckApplicationInstanceCertificate(false, 2048).Wait();
+            configuration.CheckApplicationInstanceCertificates(false, 2048).Wait();
 
             return configuration.ApplicationConfiguration;
         }

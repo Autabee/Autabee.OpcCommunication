@@ -499,13 +499,34 @@ else
         }
     }
 
-    public void AcceptCert(byte[] certdata)
+    public async void AcceptCert(byte[] certdata)
     {
         try
         {
-            X509Certificate2 cert = new X509Certificate2(certdata);
-            var stored = cert.AddToStore("X509Store", "CurrentUser\\Root");
-            UpdateCertificateStatus();
+
+            var parameters = new DialogParameters { ["certificate"] = new CertificateIdentifier(certdata) };
+
+            dialog = await DialogService.ShowAsync<AcceptCert>("Indefinete accept certificate?", parameters, new DialogOptions()
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            });
+            var result = await dialog.Result;
+            dialog.Close();
+            dialog = null;
+            if (!result.Canceled)
+            {
+                try
+                {
+                    await this.Client.AddCertificateToTrustedStore(certdata);
+                    UpdateCertificateStatus();
+                }
+                catch (Exception)
+                {
+                }
+            }
+
+            
         }
         catch
         {

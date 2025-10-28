@@ -31,7 +31,7 @@ namespace Autabee.Communication.ManagedOpcClient
         private List<Subscription> subscriptions = new List<Subscription>();
         private ILogger? logger;
 
-        public List<Assembly> RegisteredTypeAssembles { get; private set; } = new List<Assembly>();
+        public List<Assembly> RegisteredTypeAssemblys { get; private set; } = new List<Assembly>();
         public List<Type> RegisteredTypes { get; private set; } = new List<Type>();
         public List<XmlDocument> Xmls { get; private set; } = new List<XmlDocument>();
         public Dictionary<string, string> PreparedNodeTypes { get; private set; } = new Dictionary<string, string>();
@@ -313,7 +313,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     Guid.NewGuid().GetHashCode().ToString().Substring(0, 4);
 
                 //Update certificate store before connection attempt
-                await mApplicationConfig.CertificateValidator.Update(mApplicationConfig);
+                await mApplicationConfig.CertificateValidator.UpdateAsync(mApplicationConfig);
 
                 if (session != null && session.Disposed != false) { Disconnect(); }
 
@@ -337,6 +337,39 @@ namespace Autabee.Communication.ManagedOpcClient
                 throw;
             }
         }
+
+        public async Task AddCertificateToTrustedStore(byte[] e)
+        {
+            mApplicationConfig.SecurityConfiguration.AddTrustedPeer(e);
+            await AddCertToTrustedPeerStore(e);
+            await mApplicationConfig.CertificateValidator.UpdateAsync(mApplicationConfig);
+
+            
+        }
+
+        private async Task AddCertToTrustedPeerStore(byte[] e)
+        {
+            var cert2 = new CertificateIdentifier(e);
+
+            // check if cert in rejected store
+            if (mApplicationConfig.SecurityConfiguration.RejectedCertificateStore != null)
+            {
+                var rejectedStore = mApplicationConfig.SecurityConfiguration.RejectedCertificateStore.OpenStore();
+                var rejectedCerts = rejectedStore.EnumerateAsync().GetAwaiter().GetResult();
+                foreach (var rejectedCert in rejectedCerts)
+                {
+                    if (cert2.Certificate.Equals(rejectedCert))
+                    {
+                        // remove from rejected store
+                        await rejectedStore.DeleteAsync(cert2.Thumbprint);
+                        break;
+                    }
+                }
+            }
+
+            var result = await (cert2.Certificate).AddToStoreAsync(mApplicationConfig.SecurityConfiguration.TrustedPeerCertificates.StoreType, mApplicationConfig.SecurityConfiguration.TrustedPeerCertificates.StorePath);
+        }
+
 
         /// <summary>
         /// Connection
@@ -524,7 +557,7 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             try
             {
-                await session.LoadDataTypeSystem();
+                await session.FetchTypeTreeAsync(ObjectTypes.BaseObjectType);
             }
             catch
             {
@@ -851,7 +884,7 @@ namespace Autabee.Communication.ManagedOpcClient
         #region Typing
         public void AddTypeAssembly(Assembly assembly)
         {
-            RegisteredTypeAssembles.Add(assembly);
+            RegisteredTypeAssemblys.Add(assembly);
             if (session != null)
             {
                 session.MessageContext.Factory.AddEncodeableTypes(assembly);
@@ -1580,7 +1613,7 @@ namespace Autabee.Communication.ManagedOpcClient
                     List<Type> types = new List<Type>() { null };
 
                     //Read the input/output arguments
-                    session.ReadValues(nodeIds, types, out List<object> values, out List<ServiceResult> serviceResults);
+                    session.ReadValues(nodeIds, types, out IList<object> values, out IList<ServiceResult> serviceResults);
 
                     OpcValidation.ValidateResponse(serviceResults);
 
