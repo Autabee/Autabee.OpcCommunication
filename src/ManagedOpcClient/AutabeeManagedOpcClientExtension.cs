@@ -282,7 +282,7 @@ namespace Autabee.Communication.ManagedOpcClient
         /// </summary>
         /// <param name="client"></param>
         /// <param name="nodeId"></param>
-        /// <returns>count of array, with -1 s not an array</returns>
+        /// <returns>Count of the array, or -1 if the value is not an array.</returns>
         public static int ReadCount(this AutabeeManagedOpcClient client, NodeId nodeId)
         {
             var value = client.ReadValue(nodeId);
