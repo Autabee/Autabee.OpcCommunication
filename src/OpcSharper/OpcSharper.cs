@@ -104,7 +104,7 @@ namespace Autabee.OpcSharper
                         try
                         {
                             var nodes = service.ReadNodes(new ReferenceDescriptionCollection(unfailedNodes));
-                            nodes_to_remove.AddRange(chunk.Where((o, i) => indexFailed.Contains(i.ToString())));
+                            nodesToRemove.AddRange(chunk.Where((o, i) => indexFailed.Contains(i.ToString())));
                             foundTypes.AddRange(nodes);
                         }
                         catch (Exception ex2)
@@ -119,7 +119,7 @@ namespace Autabee.OpcSharper
                                 }
                                 catch (Exception ex3)
                                 {
-                                    nodes_to_remove.Add(item);
+                                    nodesToRemove.Add(item);
                                     logger?.Error(ex3, $"Error reading node {item.NodeId}. Skipping it for reading.");
                                 }
                 
@@ -143,13 +143,13 @@ namespace Autabee.OpcSharper
                 }
                 catch (Exception ex)
                 {
-                    nodes_to_remove.Add(chunk);
+                    nodesToRemove.Add(chunk);
                     logger?.Error(ex, $"Error reading node {chunk.NodeId}. Skipping it for reading.");
                 }
                 
             }
 #endif
-            foreach (var item in nodes_to_remove)
+            foreach (var item in nodesToRemove)
             {
                 logger?.Warning($"Removing node {item.NodeId} from found nodes because it could not be read.");
                 found.Remove(item);
