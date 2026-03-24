@@ -80,7 +80,7 @@ namespace Autabee.OpcSharper
                 logger?.Information(string.Join(Environment.NewLine, refdesc.Select(o => o.NodeId.ToString())));
             }
             found.OrderBy(o => o);
-            var nodes_to_remove = new List<ReferenceDescription>();
+            var nodesToRemove = new List<ReferenceDescription>();
 #if NET6_0_OR_GREATER
             foreach (var chunk in found.ToList().Chunk(50))
             {
