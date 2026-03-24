@@ -92,7 +92,7 @@ namespace Autabee.OpcSharper
                 catch (AggregateException ex)
                 {
                     // example System.AggregateException: One or more errors occurred. (0: BadNotReadable) (3: BadNotReadable) (15: BadNotReadable)
-                    // fiter out nodes that could not be read and log them and reread the rest
+                    // filter out nodes that could not be read and log them and reread the rest
                     var readExceptions = ex.InnerExceptions.ToList();
                     if (readExceptions.Count > 0)
                     {
