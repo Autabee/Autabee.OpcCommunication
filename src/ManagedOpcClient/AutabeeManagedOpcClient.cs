@@ -166,9 +166,7 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private NodeIdCollection RegisterUnCashed(NodeIdCollection nodesToRegister)
         {
-            var task = Task.Run(() => RegisterUnCashedAsync(nodesToRegister, CancellationToken.None));
-            task.Wait();
-            return task.Result;
+            return RegisterUnCashedAsync(nodesToRegister, CancellationToken.None).GetAwaiter().GetResult();
         }
 
         private async Task<NodeIdCollection> RegisterUnCashedAsync(NodeIdCollection nodesToRegister, CancellationToken token)
