@@ -79,7 +79,9 @@ namespace Autabee.OpcSharper
                 logger?.Information($"New Range {refdisc.Count}:");
                 logger?.Information(string.Join(Environment.NewLine, refdesc.Select(o => o.NodeId.ToString())));
             }
-            found.OrderBy(o => o);
+            var ordered = found.OrderBy(o => o.NodeId.ToString()).ToList();
+            found.Clear();
+            found.AddRange(ordered);
             var nodesToRemove = new List<ReferenceDescription>();
 #if NET6_0_OR_GREATER
             foreach (var chunk in found.ToList().Chunk(50))
