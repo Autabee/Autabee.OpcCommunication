@@ -276,6 +276,40 @@ namespace Autabee.Communication.ManagedOpcClient
             => client.ReadValue<T>(nodeIdString.GetNodeId());
         #endregion
 
+        #region ReadCount 
+        /// <summary>
+        /// Reads the count of elements in an array or ExtensionObject array from the specified node.
+        /// </summary>
+        /// <param name="client"></param>
+        /// <param name="nodeId"></param>
+        /// <returns>Count of the array, or -1 if the value is not an array.</returns>
+        public static int ReadCount(this AutabeeManagedOpcClient client, NodeId nodeId)
+        {
+            var value = client.ReadValue(nodeId);
+            if (value is ExtensionObject[] eoValues)
+            {
+                return eoValues.Length;
+            }
+            else if (value is Array arr)
+            {
+                return arr.Length;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        
+        public static int ReadCount(this AutabeeManagedOpcClient client, string nodeIdString)
+            => client.ReadCount(new NodeId(nodeIdString));
+
+        public static int ReadCount(this AutabeeManagedOpcClient client,Node node) 
+            => client.ReadCount(node.NodeId);
+        public static int ReadCount(this AutabeeManagedOpcClient client, ExpandedNodeId nodeId)
+            => client.ReadCount((NodeId)nodeId);
+
+        #endregion
+
         #region ReadNode
         public static Node ReadNode(this AutabeeManagedOpcClient client, string nodeIdString)
             => client.ReadNode(new NodeId(nodeIdString));
