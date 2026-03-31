@@ -15,9 +15,9 @@ jobs:
     runs-on: windows-latest
     name: "build and test"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6.0.2
       - name: Setup .NET
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v5.2.0
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Install MAUI Workloads
