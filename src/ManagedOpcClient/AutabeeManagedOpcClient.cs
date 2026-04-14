@@ -997,9 +997,9 @@ namespace Autabee.Communication.ManagedOpcClient
                 || eoValue.Encoding == ExtensionObjectEncoding.None)
                 return eoValue.Body;
 
-            if (session.Factory.EncodeableTypes.TryGetValue(eoValue.TypeId, out Type value))
+            if (session.Factory.Builder.TryGetEncodeableType(eoValue.TypeId, out var value))
             {
-                var encodingObject = ((IEncodeable)value.GetConstructor([]).Invoke([]));
+                var encodingObject = value.CreateInstance();
                 switch (eoValue.Encoding)
                 {
                     case ExtensionObjectEncoding.Binary:
@@ -1449,6 +1449,18 @@ namespace Autabee.Communication.ManagedOpcClient
 
                 var tmp = (EncodeableObject)(type.GetConstructor([]).Invoke([]));
                 return FormatObject((ExtensionObject)value, tmp);
+            }
+            else if (type.IsArray && typeof(EncodeableObject).IsAssignableFrom(type.GetElementType()))
+            {
+                value = (session.ReadValue(nodeId)).Value;
+                var array = (ExtensionObject[])value;
+                var resultArray = Array.CreateInstance(type.GetElementType(), array.Length);
+                for (int i = 0; i < array.Length; i++)
+                {
+                    var tmp = (EncodeableObject)(type.GetElementType().GetConstructor([]).Invoke([]));
+                    resultArray.SetValue(FormatObject(array[i], tmp), i);
+                }
+                return resultArray;
             }
             else
             {

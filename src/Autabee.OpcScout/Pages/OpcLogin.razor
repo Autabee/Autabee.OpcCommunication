@@ -90,8 +90,8 @@ else
                     <td>@endpoint.SecurityPolicyUri.Substring(43)</td>
                     <td>@endpoint.SecurityMode</td>
                     <td class="node-actions">
-                        <button @onclick="()=> SaveAndConnect(endpoint)" class="mdi mdi-content-save Info" title="Connect & Save" />
-                        <button @onclick="()=> (Connect(endpoint))" class="mdi mdi-connection Info" title="Try Connect" />
+                        <button @onclick="() => SaveAndConnect(endpoint)" class="mdi mdi-content-save Info" title="Connect & Save" />
+                        <button @onclick="() => (Connect(endpoint))" class="mdi mdi-connection Info" title="Try Connect" />
                         @if (!@CertAccepted[endpoints.IndexOf(endpoint)])
                         {
                             <button @onclick="() => AcceptCert(endpoint.ServerCertificate)" class="mdi mdi-certificate Danger" title="Accept Certificate" />
@@ -157,7 +157,8 @@ else
         }
 
 
-        else {
+        else
+        {
             await InvokeAsync(() => LocalCertificateValidation(sender, e));
         }
     }
@@ -169,10 +170,10 @@ else
         var parameters = new DialogParameters { ["record"] = e };
 
         dialog = await DialogService.ShowAsync<AcceptCert>("Accept certificate?", parameters, new DialogOptions()
-            {
-                MaxWidth = MaxWidth.Medium,
-                FullWidth = true
-            });
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        });
         var result = await dialog.Result;
         dialog.Close();
         dialog = null;
@@ -207,12 +208,12 @@ else
     public void SaveAndConnect(EndpointDescription endpoint)
     {
         var endpointRecord = new EndpointRecord()
-            {
-                Server = endpoint.EndpointUrl,
-                EndpointUrl = endpoint.EndpointUrl,
-                SecurityMode = endpoint.SecurityMode,
-                SecurityPolicyUri = endpoint.SecurityPolicyUri
-            };
+        {
+            Server = endpoint.EndpointUrl,
+            EndpointUrl = endpoint.EndpointUrl,
+            SecurityMode = endpoint.SecurityMode,
+            SecurityPolicyUri = endpoint.SecurityPolicyUri
+        };
         savedEndpoints.Add(endpointRecord);
         EndpointsConnection.Save(savedEndpoints);
         Connect(endpoint);
@@ -437,7 +438,7 @@ else
                 else
                 {
                     if (string.IsNullOrEmpty(username)) await Client.Connect(endpoint, null);
-                    else await Client.Connect(endpoint, new UserIdentity(username, password));
+                    else await Client.Connect(endpoint, new UserIdentity(username, password.Select(o => (byte)o).ToArray()));
                 }
                 if (Client.Connected)
                 {

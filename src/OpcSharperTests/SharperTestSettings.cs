@@ -26,7 +26,7 @@ namespace Tests
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
                 return new UserIdentity(new AnonymousIdentityToken());
-            return new UserIdentity(username, password);
+            return new UserIdentity(username, password.Select(o => (byte)o).ToArray());
         }
     }
 }
