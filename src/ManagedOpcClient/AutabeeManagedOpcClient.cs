@@ -166,12 +166,18 @@ namespace Autabee.Communication.ManagedOpcClient
 
         private NodeIdCollection RegisterUnCashed(NodeIdCollection nodesToRegister)
         {
+            return RegisterUnCashedAsync(nodesToRegister, CancellationToken.None).GetAwaiter().GetResult();
+        }
+
+        private async Task<NodeIdCollection> RegisterUnCashedAsync(NodeIdCollection nodesToRegister, CancellationToken token)
+        {
             NodeIdCollection registeredNodes;
             try
             {
                 if (NoSession()) return new NodeIdCollection();
                 //Register nodes
-                var response = session.RegisterNodes(null, nodesToRegister, out registeredNodes);
+                var response = await session.RegisterNodesAsync(null, nodesToRegister, token).ConfigureAwait(false);
+                registeredNodes = response.RegisteredNodeIds;
                 bool failRegister = false;
                 List<Exception> exceptions = new List<Exception>();
 

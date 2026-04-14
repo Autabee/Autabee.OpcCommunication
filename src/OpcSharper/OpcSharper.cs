@@ -79,20 +79,82 @@ namespace Autabee.OpcSharper
                 logger?.Information($"New Range {refdisc.Count}:");
                 logger?.Information(string.Join(Environment.NewLine, refdesc.Select(o => o.NodeId.ToString())));
             }
-            found.OrderBy(o => o);
+            var ordered = found.OrderBy(o => o.NodeId.ToString()).ToList();
+            found.Clear();
+            found.AddRange(ordered);
+            var nodesToRemove = new List<ReferenceDescription>();
 #if NET6_0_OR_GREATER
             foreach (var chunk in found.ToList().Chunk(50))
             {
-                var nodes = service.ReadNodes(new ReferenceDescriptionCollection(chunk));
-                foundTypes.AddRange(nodes);
+                try
+                {
+                    var nodes = service.ReadNodes(new ReferenceDescriptionCollection(chunk));
+                    foundTypes.AddRange(nodes);
+                }
+                catch (AggregateException ex)
+                {
+                    // example System.AggregateException: One or more errors occurred. (0: BadNotReadable) (3: BadNotReadable) (15: BadNotReadable)
+                    // filter out nodes that could not be read and log them and reread the rest
+                    var readExceptions = ex.InnerExceptions.ToList();
+                    if (readExceptions.Count > 0)
+                    {
+                        var indexFailed = readExceptions.Select(e => e.Message.Split(':')[0].Trim()).ToList();
+                        var unfailedNodes = chunk.Where((o, i) => !indexFailed.Contains(i.ToString()));
+                        logger?.Error(ex, $"Error reading nodes. Failed nodes: {string.Join(", ", chunk.Where((o, i) => indexFailed.Contains(i.ToString())))}. Retrying with unfailed nodes.");
+                        try
+                        {
+                            var nodes = service.ReadNodes(new ReferenceDescriptionCollection(unfailedNodes));
+                            nodesToRemove.AddRange(chunk.Where((o, i) => indexFailed.Contains(i.ToString())));
+                            foundTypes.AddRange(nodes);
+                        }
+                        catch (Exception ex2)
+                        {
+                            logger?.Error(ex2, $"Error reading nodes. trying individual node readings.");
+                            foreach (var item in chunk)
+                            {
+                                try
+                                {
+                                    var nodes = service.ReadNode(item);
+                                    foundTypes.Add(nodes);
+                                }
+                                catch (Exception ex3)
+                                {
+                                    nodesToRemove.Add(item);
+                                    logger?.Error(ex3, $"Error reading node {item.NodeId}. Skipping it for reading.");
+                                }
+                
+                            }
+                        }
+                    }
+                    else
+                    {
+                        logger?.Error(ex, $"Error reading nodes. Skipping chunk for reading.");
+                    }
+                }
+                
             }
 #else
             foreach (var chunk in found)
             {
-                var nodes = service.ReadNode(chunk);
-                foundTypes.Add(nodes);
+                try
+                {
+                    var nodes = service.ReadNode(chunk);
+                    foundTypes.Add(nodes);
+                }
+                catch (Exception ex)
+                {
+                    nodesToRemove.Add(chunk);
+                    logger?.Error(ex, $"Error reading node {chunk.NodeId}. Skipping it for reading.");
+                }
+                
             }
 #endif
+            foreach (var item in nodesToRemove)
+            {
+                logger?.Warning($"Removing node {item.NodeId} from found nodes because it could not be read.");
+                found.Remove(item);
+            }
+
 
             OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
             OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, settings);
