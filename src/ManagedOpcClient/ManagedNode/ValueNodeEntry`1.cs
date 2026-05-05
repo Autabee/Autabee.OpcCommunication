@@ -17,10 +17,10 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             }
 
             // last resort expectation of null as default of T, only if T is a reference type or nullable value type
-            T a = default;
+            T? a = default;
             if (value == null && a == null)
             {
-                return new NodeValueRecord<T>(this, default, dateTime);
+                return new NodeValueRecord<T>(this, a, dateTime);
             }
 
             // failed to cast value to T. create failure message.

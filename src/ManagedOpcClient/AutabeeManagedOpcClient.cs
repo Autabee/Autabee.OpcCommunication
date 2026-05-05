@@ -244,7 +244,7 @@ namespace Autabee.Communication.ManagedOpcClient
         #endregion Registration
 
         #region Discovery
-        public ApplicationDescription GetConnectedServer()
+        public ApplicationDescription? GetConnectedServer()
             => session == null ? null : FindServers(session.ConfiguredEndpoint.EndpointUrl.AbsoluteUri)[0];
 
 
@@ -1595,7 +1595,7 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 var response = await session.WriteAsync(null, nodeCollection, ct).ConfigureAwait(true);
                 OpcValidation.ValidateResponse(response.Results);
-                return null;
+                return response;
             };
 
             await HandleTask(task);
