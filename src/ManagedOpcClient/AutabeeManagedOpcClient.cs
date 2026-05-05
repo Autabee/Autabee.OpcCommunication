@@ -1001,22 +1001,9 @@ namespace Autabee.Communication.ManagedOpcClient
             if (session.Factory.Builder.TryGetEncodeableType(eoValue.TypeId, out var value))
             {
                 var encodingObject = value.CreateInstance();
-                switch (eoValue.Encoding)
-                {
-                    case ExtensionObjectEncoding.Binary:
-                        encodingObject.Decode(new BinaryDecoder((byte[])eoValue.Body, session.MessageContext));
-                        break;
-                    case ExtensionObjectEncoding.Xml:
-                        encodingObject.Decode(new XmlDecoder((XmlElement)eoValue.Body, session.MessageContext));
-                        break;
-                    case ExtensionObjectEncoding.Json:
-                        encodingObject.Decode(new JsonDecoder((string)eoValue.Body, session.MessageContext));
-                        break;
-                    default:
-                        throw new Exception("Unknown encoding");
-                }
-                ;
-                return encodingObject;
+                return FormatObject(eoValue, encodingObject);
+
+
             }
 
             NodeTypeData type = GetTypeEncoding(GetCorrectedTypeName(eoValue, nodeId));
@@ -1234,7 +1221,10 @@ namespace Autabee.Communication.ManagedOpcClient
                 return entry.CreateRecord(array, TimeStamp);
             }
 
-            var constructor = entry.Type.GetElementType().GetConstructor(Array.Empty<Type>());
+            var elementType = entry.Type.GetElementType();
+
+
+            var constructor = elementType.GetConstructor(Array.Empty<Type>());
             if (constructor == null)
             {
                 return entry.CreateRecord(tempResult, TimeStamp);
@@ -1251,6 +1241,7 @@ namespace Autabee.Communication.ManagedOpcClient
             }
 
             return entry.CreateRecord(objResult, TimeStamp);
+
 
             //return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body), TimeStamp);
         }

@@ -2,6 +2,7 @@
 using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.Utilities;
 using Autabee.OpcToClass;
+using Newtonsoft.Json;
 using Opc.Ua;
 using Opc.Ua.Client;
 using Serilog;
@@ -79,7 +80,7 @@ namespace Autabee.OpcSharper
                 for (int j = 0; j < definedStructs.Count; j++)
                 {
                     var item = definedStructs[j];
-                    var typename = OpcToCSharpGenerator.GetCorrectedTypeName(item.Attributes["Name"].Value, settings.nameSpacePrefix);
+                    var typename = OpcToCSharpGenerator.GetCorrectedTypeName(item.Attributes["Name"].Value);
                     if (dataSet.structs.TryGetValue(typename, out OpcStructTemplate value))
                     {
                         continue;
@@ -121,8 +122,8 @@ namespace Autabee.OpcSharper
                     var basetype = item.Attributes.GetNamedItem("BaseType");
                     if (basetype == null || basetype.Value == "ua:ExtensionObject") continue;
 
-                    var nameType = OpcToCSharpGenerator.GetCorrectedTypeName(item.Attributes["Name"].Value, settings.nameSpacePrefix);
-                    var nameBaseType = OpcToCSharpGenerator.GetCorrectedTypeName(basetype.Value, settings.nameSpacePrefix);
+                    var nameType = OpcToCSharpGenerator.GetCorrectedTypeName(item.Attributes["Name"].Value);
+                    var nameBaseType = OpcToCSharpGenerator.GetCorrectedTypeName(basetype.Value);
 
                     if (dataSet.structs.TryGetValue(nameType, out OpcStructTemplate currentStruct) && dataSet.structs.TryGetValue(nameBaseType, out OpcStructTemplate baseItem))
                     {
@@ -225,6 +226,8 @@ namespace Autabee.OpcSharper
                         logger?.Error(ex, $"Error reading nodes. Skipping chunk for reading.");
                     }
                 }
+                catch(Exception e) { 
+                }
                 
             }
 #else
@@ -251,7 +254,7 @@ namespace Autabee.OpcSharper
 
 
             OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
-            OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, settings);
+            OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, dataSet, settings);
 
             try
             {
@@ -287,26 +290,18 @@ namespace Autabee.OpcSharper
                 ReferenceTypeIds.HierarchicalReferences,
                 true,
                 0,
-                out var continuationPoint,
+                out var continuationPoint1,
                 out var refDescColBin);
 
             foreach (var item in refDescColBin)
             {
-                var result = service.Session.Browse(
-                    null,
-                    null,
-                    ((NodeId)item.NodeId),
-                    0u,
-                    BrowseDirection.Forward,
-                    ReferenceTypeIds.HierarchicalReferences,
-                    true,
-                    0,
-                        out continuationPoint,
-                        out var types);
+                ReferenceDescriptionCollection types = BrowsFullDirectory(service, item);
+
                 var endoingsToFind = new List<ExpandedNodeId>();
                 var structs = new List<OpcStructTemplate>();
                 for (int i = 0; i < types.Count; i++)
                 {
+
                     if (dataSet.structs.TryGetValue(types[i].BrowseName.ToString().Split(':').Last(), out var structure))
                     {
                         structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
@@ -336,22 +331,13 @@ namespace Autabee.OpcSharper
                 ReferenceTypeIds.HierarchicalReferences,
                 true,
                 0,
-                out continuationPoint,
+                out continuationPoint1,
                 out refDescColBin);
 
             foreach (var item in refDescColBin)
             {
-                var result = service.Session.Browse(
-                    null,
-                    null,
-                    ((NodeId)item.NodeId),
-                    0u,
-                    BrowseDirection.Forward,
-                    ReferenceTypeIds.HierarchicalReferences,
-                    true,
-                    0,
-                        out continuationPoint,
-                        out var types);
+                ReferenceDescriptionCollection types = BrowsFullDirectory(service, item);
+
                 var endoingsToFind = new List<ExpandedNodeId>();
                 var structs = new List<OpcStructTemplate>();
                 for (int i = 0; i < types.Count; i++)
@@ -381,6 +367,35 @@ namespace Autabee.OpcSharper
                 }
             }
         }
+
+        private static ReferenceDescriptionCollection BrowsFullDirectory(AutabeeManagedOpcClient service, ReferenceDescription item)
+        {
+            var result = service.Session.Browse(
+                null,
+                null,
+                ((NodeId)item.NodeId),
+                0u,
+                BrowseDirection.Forward,
+                ReferenceTypeIds.HierarchicalReferences,
+                true,
+                0,
+                    out var continuationPoint,
+                    out var types);
+
+            while (continuationPoint != null)
+            {
+                service.Session.BrowseNext(
+                    null,
+                    false,
+                    continuationPoint,
+                    out continuationPoint,
+                    out var typesNext);
+                types.AddRange(typesNext);
+            }
+
+            return types;
+        }
+
         private static async Task<ExpandedNodeIdCollection> FindDefaultBinaryNodes(Session session, List<NodeId> nodes)
            => await FindDefaultObjectNodes(session, nodes, new string[] { "Default Binary", "DefaultBinary" });
         private static async Task<ExpandedNodeIdCollection> FindDefaultXMLNodes(Session session, List<NodeId> nodes)

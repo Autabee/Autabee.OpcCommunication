@@ -10,6 +10,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Runtime.Serialization;
 using System.Security.Cryptography;
@@ -27,18 +28,29 @@ namespace Autabee.OpcToClass
         {
             var name = GetCorrectedName(node);
             var type = (string)node.Attributes["TypeName"].Value;
-            var typename = GetCorrectedTypeName(node, nsPrefix);
-            return GetDecoder(KnownEnums, decoderName, type, name, typename);
+            var typename = GetCorrectedTypeName(node); ;
+            return GetDecoder(KnownEnums, decoderName, type, name, typename, nsPrefix);
         }
 
-        public static string GetDecoder(Field node, string[] KnownEnums, string decoderName = "decoder")
+        public static string GetDecoder(Field node, string nsPrefix, string[] KnownEnums, string decoderName = "decoder")
         {
-            return GetDecoder(KnownEnums, decoderName, node.TypeName, node.Name, node.Type);
+            return GetDecoder(KnownEnums, decoderName, node.TypeName, node.Name, node.Type, nsPrefix);
+        }
+
+        public static string GetNamespacedType(string type, string nsPrefix)
+        {
+            //F_SystemInfo_DB.GroupSignatures.Group_1.Group_1.Group_1 to 
+            // ns_SystemInfo_DB.ns_GroupSignatures.ns_Group_1.ns_Group_1.Group_1
+            var array = type.Split(':').Last().Replace("\"", "").Split('.');
+            var class_name = array.Last();
+            var namespaces = array.Take(array.Length - 1).Select(o => nsPrefix + o);
+            return namespaces.Count() > 0 ? string.Join(".", namespaces) + "." + class_name : class_name;
+
         }
 
 
 
-        private static string GetDecoder(string[] KnownEnums, string decoderName, string type, string name, string typename)
+        private static string GetDecoder(string[] KnownEnums, string decoderName, string type, string name, string typename, string nsPrefix)
         {
             if (type.Contains("tns:"))
             {
@@ -46,6 +58,7 @@ namespace Autabee.OpcToClass
                 {
                     return $"({typename}){decoderName}.ReadEnumerated(\"{name}\" ,typeof({typename}))";
                 }
+                typename = GetNamespacedType(typename, nsPrefix);
                 return $"{decoderName}.ReadEncodeable(\"{name}\", typeof({typename})) as {typename}";
             }
             else if (type.Contains("opc:"))
@@ -59,11 +72,11 @@ namespace Autabee.OpcToClass
         {
             var type = (string)node.Attributes["TypeName"].Value;
             var name = GetCorrectedName(node);
-            var typename = GetCorrectedTypeName(node, nsPrefix);
-            return GetEncoder(KnownEnums, encoderName, type, name, typename);
+            var typename = GetCorrectedTypeName(node);
+            return GetEncoder(KnownEnums, encoderName, type, name, typename, nsPrefix);
         }
 
-        private static string GetEncoder(string[] KnownEnums, string encoderName, string type, string name, string typename)
+        private static string GetEncoder(string[] KnownEnums, string encoderName, string type, string name, string typename, string nsPrefix)
         {
             if (type.Contains("tns:"))
             {
@@ -71,6 +84,7 @@ namespace Autabee.OpcToClass
                 {
                     return $"{encoderName}.WriteEnumerated(\"{typename}\", this.{name})";
                 }
+                typename = GetNamespacedType(typename, nsPrefix);
                 return $"{encoderName}.WriteEncodeable(\"{name}\", this.{name}, typeof({typename}))";
             }
             else if (type.Contains("opc:"))
@@ -80,9 +94,9 @@ namespace Autabee.OpcToClass
             return $"{encoderName}.Unknown({type})";
         }
 
-        public static string GetEncoder(Field node, string[] KnownEnums, string encoderName = "encoder")
+        public static string GetEncoder(Field node, string[] KnownEnums, string nsPrefix, string encoderName = "encoder")
         {
-            return GetEncoder(KnownEnums, encoderName, node.TypeName, node.Name, node.Type);
+            return GetEncoder(KnownEnums, encoderName, node.TypeName, node.ClassFieldName, node.Type, nsPrefix);
         }
 
 
@@ -91,32 +105,30 @@ namespace Autabee.OpcToClass
             if (value is XmlAttribute attribute)
             {
                 return attribute.Value
-                    .Replace("&quot;", "")
-                    .Replace("\"", "");
+                    .Replace("&quot;", "\"");
             }
             return ((string)value.Attributes["Name"].Value)
-                    .Replace("&quot;", "")
-                    .Replace("\"", "");
+                    .Replace("&quot;", "\"");
         }
 
-        public static string GetCorrectedTypeName(XmlNode value, string nsPrefix)
+        public static string GetCorrectedTypeName(XmlNode value)
         {
-            return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value, nsPrefix);
+            return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
         }
-        public static string GetCorrectedTypeName(object value, string nsPrefix)
+        public static string GetCorrectedTypeName(object value)
         {
             switch (value)
             {
                 case uint numeric:
-                    return GetCorrectedTypeName(numeric, nsPrefix);
+                    return GetCorrectedTypeName(numeric);
                 case string str:
-                    return GetCorrectedTypeName(str, nsPrefix);
+                    return GetCorrectedTypeName(str);
                 default:
                     return $"Unknown<{value}>";
             }
         }
 
-        public static string GetCorrectedTypeName(uint value, string nsPrefix)
+        public static string GetCorrectedTypeName(uint value)
         {
 
             return value switch
@@ -159,9 +171,9 @@ namespace Autabee.OpcToClass
 
         }
 
-        public static string GetCorrectedTypeName(string value, string nsPrefix)
+        public static string GetCorrectedTypeName(string value)
         {
-            if (value.Contains("opc:"))
+            if (value.StartsWith("opc:"))
             {
                 switch (value)
                 {
@@ -193,18 +205,10 @@ namespace Autabee.OpcToClass
             else
             {
                 var temp = value
-                    .Replace("&quot;", "")
-                    .Replace("\"", "")
-                    .Split(':').Last().Split('.');
-                if (temp.Length > 1)
-                {
-                    value = nsPrefix + string.Join($".{nsPrefix}", temp.Take(temp.Length - 1));
-                    value += "." + temp.Last();
-                }
-                else
-                {
-                    value = temp.Last();
-                }
+                    .Replace("&quot;", "\"").Split(':').Last();
+                //var tns = array[0];
+                //var typename = array[1];
+                // typename
                 return value;
 
             }
@@ -426,7 +430,8 @@ namespace Autabee.OpcToClass
                 if (field.Name == "opc:Field")
                 {
                     var fieldName = GetCorrectedName(field);
-                    var fieldType = GetCorrectedTypeName(field, nsPrefix);
+                    var fieldType = GetCorrectedTypeName(field);
+                    fieldType = GetNamespacedType(fieldType, nsPrefix);
                     classData += "\n\tpublic " + fieldType + " " + fieldName + " { get; set; }";
                 }
             }
@@ -523,7 +528,7 @@ namespace Autabee.OpcToClass
             CreateFile(Path.Combine(settings.baseLocation, "AddressSpace.cs"), fileContents);
         }
 
-        static public void GenerateNodeEntryAddressSpace(AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorSettings settings)
+        static public void GenerateNodeEntryAddressSpace(AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorDataSet dataSet, GeneratorSettings settings)
         {
             var fileContents = "using Opc.Ua;\n"
                 + "using Autabee.Communication.ManagedOpcClient.ManagedNode;\n\n"
@@ -550,7 +555,7 @@ namespace Autabee.OpcToClass
 
                 if (referenceNode.TypeDefinition.IdType == IdType.Numeric && nodeData is VariableNode varNode)
                 {
-                    nodetype = GetCorrectedTypeName(varNode.DataType.Identifier, settings.nameSpacePrefix);
+                    nodetype = GetCorrectedTypeName(varNode.DataType.Identifier);
 
                     if (nodetype.Contains("Unknown"))
                     {

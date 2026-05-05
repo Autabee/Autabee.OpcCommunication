@@ -9,5 +9,6 @@ namespace Autabee.OpcToClass
         public string TypeName;
         public string Type;
         public string Value;
+        public string ClassFieldName;
     }
 }
