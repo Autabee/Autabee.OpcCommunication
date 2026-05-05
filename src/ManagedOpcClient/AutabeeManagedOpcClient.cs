@@ -1227,7 +1227,7 @@ namespace Autabee.Communication.ManagedOpcClient
             var constructor = elementType.GetConstructor(Array.Empty<Type>());
             if (constructor == null)
             {
-                return entry.CreateRecord(tempResult, TimeStamp);
+                throw new ArgumentException($"{elementType.FullName} does not have a parameterless constructor");
             }
 
 
@@ -1241,9 +1241,6 @@ namespace Autabee.Communication.ManagedOpcClient
             }
 
             return entry.CreateRecord(objResult, TimeStamp);
-
-
-            //return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body), TimeStamp);
         }
         public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult, DateTime TimeStamp = default)
         {
