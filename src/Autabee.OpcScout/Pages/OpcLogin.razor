@@ -438,7 +438,7 @@ else
                 else
                 {
                     if (string.IsNullOrEmpty(username)) await Client.Connect(endpoint, null);
-                    else await Client.Connect(endpoint, new UserIdentity(username, password.Select(o => (byte)o).ToArray()));
+                    else await Client.Connect(endpoint, new UserIdentity(username, System.Text.Encoding.UTF8.GetBytes(password)));
                 }
                 if (Client.Connected)
                 {
