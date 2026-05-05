@@ -23,7 +23,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
                 return new NodeValueRecord<T>(this, default, dateTime);
             }
 
-            // failed to cast value to T. create failue message.
+            // failed to cast value to T. create failure message.
 
             if ((value is ExtensionObject extensionObject) && typeof(T).GetInterfaces().Any(o => o == typeof(IEncodeable)))
             {
