@@ -16,7 +16,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
                 return new NodeValueRecord<T>(this, wrappedValue, dateTime);
             }
 
-            // last resort expetation of null as default of T, only if T is a reference type or nullable value type
+            // last resort expectation of null as default of T, only if T is a reference type or nullable value type
             T a = default;
             if (value == null && a == null)
             {
