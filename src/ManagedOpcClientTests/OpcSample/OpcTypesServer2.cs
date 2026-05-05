@@ -54,7 +54,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
         [SkippableFact]
-        public void ConnectWithTestServerDefindedTypes()
+        public void ConnectWithTestServerDefinedTypes()
         {
             Skip.If(skipServerNotFound, "Server not Found");
 
