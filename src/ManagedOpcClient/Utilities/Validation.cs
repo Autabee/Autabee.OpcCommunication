@@ -37,7 +37,7 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
             {
                 if (StatusCode.IsBad(response.ElementAt(i)))
                 {
-                    expections.Add(new ServiceResultException(response.ElementAt(i).Code, $"{i}: {response.ElementAt(i)}", null));
+                    expections.Add(new ServiceResultException(response.ElementAt(i).Code, $"{i}: {response.ElementAt(i)}"));
                 }
             }
             if (expections.Count > 0) throw new AggregateException(expections);

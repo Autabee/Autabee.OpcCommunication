@@ -58,8 +58,6 @@ namespace Autabee.OpcSharper
                 xmlDocument.LoadXml(schemas[i]);
                 xmls[i] = xmlDocument;
 
-
-
                 var definedEnums = xmlDocument.GetElementsByTagName("opc:EnumeratedType");
 
                 for (int j = 0; j < definedEnums.Count; j++)

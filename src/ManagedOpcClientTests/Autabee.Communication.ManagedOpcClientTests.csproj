@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	  <TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
+	  <TargetFrameworks>net10.0</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
 
@@ -49,6 +49,10 @@
     <None Update="config\secret.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="OpcSample\private\Krone\" />
   </ItemGroup>
 
 </Project>

@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using static Autabee.Communication.ManagedOpcClient.Utilities.TypeExtraction;
+using static Opc.Ua.RelativePathFormatter;
 
 namespace Autabee.Communication.ManagedOpcClient
 {
@@ -350,7 +351,7 @@ namespace Autabee.Communication.ManagedOpcClient
             await AddCertToTrustedPeerStore(e);
             await mApplicationConfig.CertificateValidator.UpdateAsync(mApplicationConfig);
 
-            
+
         }
 
         private async Task AddCertToTrustedPeerStore(byte[] e)
@@ -1013,7 +1014,8 @@ namespace Autabee.Communication.ManagedOpcClient
                         break;
                     default:
                         throw new Exception("Unknown encoding");
-                };
+                }
+                ;
                 return encodingObject;
             }
 
@@ -1027,7 +1029,7 @@ namespace Autabee.Communication.ManagedOpcClient
             };
         }
 
-        public object FormatObject(ExtensionObject eoValue, EncodeableObject type)
+        public object FormatObject(ExtensionObject eoValue, IEncodeable type)
         {
             if (eoValue.Encoding == ExtensionObjectEncoding.EncodeableObject
                 || eoValue.Encoding == ExtensionObjectEncoding.None)
@@ -1047,7 +1049,8 @@ namespace Autabee.Communication.ManagedOpcClient
                     break;
                 default:
                     throw new Exception("Unknown encoding");
-            };
+            }
+            ;
             return type;
         }
 
@@ -1218,12 +1221,46 @@ namespace Autabee.Communication.ManagedOpcClient
         {
             return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body), TimeStamp);
         }
+        public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, ExtensionObject[] tempResult, DateTime TimeStamp = default)
+        {
+            if (!entry.Type.IsArray)
+            {
+                return entry.CreateRecord(tempResult, TimeStamp);
+            }
+
+            if (tempResult.Length == 0)
+            {
+                var array = Array.CreateInstance(entry.Type.GetElementType(), 0);
+                return entry.CreateRecord(array, TimeStamp);
+            }
+
+            var constructor = entry.Type.GetElementType().GetConstructor(Array.Empty<Type>());
+            if (constructor == null)
+            {
+                return entry.CreateRecord(tempResult, TimeStamp);
+            }
+
+
+            IEncodeable[] objResult = Array.CreateInstance(entry.Type.GetElementType(), tempResult.Length) as IEncodeable[];
+
+            for (int i = 0; i < tempResult.Length; i++)
+            {
+                var obj = (IEncodeable)constructor.Invoke(Array.Empty<object>());
+                FormatObject(tempResult[i], obj);
+                objResult[i] = obj;
+            }
+
+            return entry.CreateRecord(objResult, TimeStamp);
+
+            //return entry.CreateRecord(ConstructEncodable(entry, (byte[])tempResult.Body), TimeStamp);
+        }
         public NodeValueRecord CreateNodeValue(ValueNodeEntry entry, object tempResult, DateTime TimeStamp = default)
         {
             return tempResult switch
             {
                 DataValue dvValue => CreateNodeValue(entry, dvValue, TimeStamp),
                 ExtensionObject eoValue => CreateNodeValue(entry, eoValue, TimeStamp),
+                ExtensionObject[] eaValue => CreateNodeValue(entry, eaValue, TimeStamp),
                 _ => entry.CreateRecord(tempResult, TimeStamp),
             };
         }
@@ -1814,7 +1851,7 @@ namespace Autabee.Communication.ManagedOpcClient
                 var tmp = new MonitoredItem[nodeEntries.Count];
                 for (int i = 0; i < nodeEntries.Count; i++)
                 {
-                    tmp[i] = CreateMonitoredItem(nodeEntries[i],handler: handlers.ElementAt(i));
+                    tmp[i] = CreateMonitoredItem(nodeEntries[i], handler: handlers.ElementAt(i));
                 }
                 monitoredItems = tmp;
             }

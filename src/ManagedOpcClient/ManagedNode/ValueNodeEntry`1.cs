@@ -15,13 +15,40 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             {
                 return new NodeValueRecord<T>(this, wrappedValue, dateTime);
             }
+
+            // last resort expetation of null as default of T, only if T is a reference type or nullable value type
             T a = default;
             if (value == null && a == null)
             {
                 return new NodeValueRecord<T>(this, default, dateTime);
             }
-            else throw new ArgumentException($"Type mismatch for {NodeString}: {typeof(T)} != {value?.GetType()}");
-           
+
+            // failed to cast value to T. create failue message.
+
+            if ((value is ExtensionObject extensionObject) && typeof(T).GetInterfaces().Any(o => o == typeof(IEncodeable)))
+            {
+
+                var element = typeof(T).GetConstructor(Type.EmptyTypes).Invoke(null) as IEncodeable;
+
+
+                throw new ArgumentException($"Extension node mismatch for {NodeString}: {typeof(T)} != {value?.GetType()},\n TypeId: {extensionObject.TypeId} ?= {element.TypeId}");
+            }
+            if ((value is ExtensionObject[] extensionObjects) && typeof(T).IsArray && typeof(T).GetElementType().GetInterfaces().Any(o => o == typeof(IEncodeable)))
+            {
+                var elementtype = typeof(T).GetElementType();
+                var constructor = elementtype.GetConstructor(Type.EmptyTypes);
+                IEncodeable element = constructor.Invoke(null) as IEncodeable;
+                if (extensionObjects.Length > 0)
+                {
+                    throw new ArgumentException($"Extension[] node mismatch for {NodeString}: {typeof(T)} != {value?.GetType()},\n TypeId: {extensionObjects[0].TypeId} ?= {element.TypeId}");
+                }
+                else
+                {
+
+                }
+            }
+            throw new ArgumentException($"Type mismatch for {NodeString}: {typeof(T)} != {value?.GetType()}");
+
         }
         public NodeValueRecord CreateRecord<K>(K value, DateTime dateTime)
         {
