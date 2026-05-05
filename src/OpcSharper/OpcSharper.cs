@@ -226,7 +226,9 @@ namespace Autabee.OpcSharper
                         logger?.Error(ex, $"Error reading nodes. Skipping chunk for reading.");
                     }
                 }
-                catch(Exception e) { 
+                catch(Exception e)
+                {
+                    logger?.Error(e, $"Error reading nodes. Skipping chunk for reading.");
                 }
                 
             }
