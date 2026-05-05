@@ -25,7 +25,7 @@ namespace Autabee.OpcToClass
             }
             else
             {
-                var dir = Path.Combine(settings.baseLocation,string.Join($"\\", namespaceName));
+                var dir = Path.Combine(settings.baseLocation, Path.Join(namespaceName));
                 Directory.CreateDirectory(dir);
                 filePath = Path.Combine(dir, fileName);
             }
