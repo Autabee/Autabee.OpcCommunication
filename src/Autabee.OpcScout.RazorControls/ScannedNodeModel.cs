@@ -42,9 +42,9 @@ namespace Autabee.OpcScout.RazorControl
             Client = client;
             this.node = node;
             this.Reference = Reference;
-            if (node is MethodNode mnode)
+            if (node.NodeClass == NodeClass.Method)
             {
-                arguments = client.GetMethodArguments(mnode.NodeId);
+                arguments = client.GetMethodArguments(node.NodeId);
             }
             this.parent = parent;
             NodeImage = NodeImageId.Unknown;

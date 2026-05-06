@@ -1,17 +1,13 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.Utilities;
-using Autabee.Utility.Logger;
-using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
 using Opc.Ua;
-using Quickstarts.DataTypes.Instances;
-using Quickstarts.DataTypes.Types;
+using TypeServerNodes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
@@ -20,25 +16,25 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
     {
         private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
-        private readonly IAutabeeLogger logger;
 
         public OpcTypeSampleTests(OpcUaTypeSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
-            logger = new AutabeeXunitLogger(outputHelper);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ConnectWithTestServer()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
             //communicator.Session.Factory.AddEncodeableTypes(typeof(ParkingLotType).Assembly);
 
             var data = communicator.ReadValue(vehicleInLot);
+
+
 
             if (data is object[] nData)
             {
@@ -52,10 +48,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
 
-        [SkippableFact]
-        public void ConnectWithTestServerDefindedTypes()
+        [Fact]
+        public void ConnectWithTestServerDefinedTypes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
@@ -63,18 +59,30 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var data = communicator.ReadValue(vehicleInLot) as object[];
 
-            Assert.IsType<TruckType>(data[0]);
-            Assert.IsType<CarType>(data[1]);
-            Assert.IsType<CarType>(data[2]);
-            Assert.IsType<BicycleType>(data[3]);
-            Assert.IsType<ScooterType>(data[4]);
-            
+
+            if (data.Length == 4)
+            {
+                // write value test had run.
+                Assert.IsType<TruckType>(data[0]);
+                Assert.IsType<CarType>(data[1]);
+                Assert.IsType<BicycleType>(data[2]);
+                Assert.IsType<ScooterType>(data[3]);
+            }
+            else
+            {
+                // truck car car bic Sc
+                Assert.IsType<TruckType>(data[0]);
+                Assert.IsType<CarType>(data[1]);
+                Assert.IsType<CarType>(data[2]);
+                Assert.IsType<BicycleType>(data[3]);
+                Assert.IsType<ScooterType>(data[4]);
+            }
         }
 
-        [SkippableFact]
+        [Fact]
         public void WriteValue()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var LotType = NodeId.Parse("ns=4;i=380");
 
@@ -91,15 +99,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                     Engine = EngineType.Diesel,
                     Make = "DAFF",
                     Model = "DAFF Transit",
-                    CargoCapacity = 5000
-
-                },
-                 new TruckType
-                {
-                    Engine = EngineType.Diesel,
-                    Make = "DAFF",
-                    Model = "DAFF Transit",
-                    CargoCapacity = 5000
+                    CargoCapacity = 4000
 
                 },
                   new CarType
@@ -109,7 +109,24 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                     Model = "Kalos",
                     NoOfPassengers = 2
 
-                }
+                },
+                  new BicycleType
+                  {
+                      NoOfGears = 5,
+                      ManufacturerName = "Monark",
+                      Engine = EngineType.Manual,
+                      Make = "Monark",
+                      Model = "Bicycle"
+                  },
+                  new ScooterType
+                    {
+                         
+                         ManufacturerName = "Monark",
+                         Engine = EngineType.Petrol,
+                         Make = "Monark s1",
+                         NoOfSeats = 2,
+                         Model = "Scooter"
+                    }
             });
         }
     }

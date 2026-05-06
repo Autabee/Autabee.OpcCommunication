@@ -46,9 +46,9 @@ namespace Autabee.Communication.ManagedOpcClient.Utilities
                 return eoValue.Body;
 
             IServiceMessageContext context = autabeeManagedOpcClient.Session.MessageContext;
-            if (autabeeManagedOpcClient.Session.Factory.EncodeableTypes.TryGetValue(eoValue.TypeId, out Type value))
+            if (autabeeManagedOpcClient.Session.Factory.TryGetEncodeableType(eoValue.TypeId, out var value))
             {
-                var encodingObject = ((IEncodeable)value.GetConstructor([]).Invoke([]));
+                var encodingObject = value.CreateInstance();
                 switch (eoValue.Encoding)
                 {
                     case ExtensionObjectEncoding.Binary:

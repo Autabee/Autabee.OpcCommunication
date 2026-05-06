@@ -2,8 +2,6 @@
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.ManagedNodeCollection;
 using Autabee.Communication.OpcCommunicator;
-using Autabee.Utility.Logger;
-using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
 using Opc.Ua;
 using System;
@@ -11,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml.XPath;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 {
@@ -19,19 +16,17 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
     {
         private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
-        private readonly IAutabeeLogger logger;
 
-        public OpcDaSampleTest(OpcUaDataAccessSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
+        public OpcDaSampleTest(OpcUaDataAccessSampleFixture testPlcTestsFixture, Xunit.ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
-            logger = new AutabeeXunitLogger(outputHelper);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ReadNodeWithValueEntry()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             if (!(communicator.ReadValue(new ValueNodeEntry<double>("ns=2;s=1:Pipe1001?Online/ValuePrecision")) is NodeValueRecord<double> _))
             {
@@ -49,10 +44,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                 Assert.Fail("Return type incorrect at ns=2;s=1:FC1001?Setpoint");
             }
         }
-        [SkippableFact]
+        [Fact]
         public void ReadNodeWithValueCollections()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
             collection.AddRange(new ValueNodeEntry[]
@@ -64,10 +59,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             communicator.ReadValues(collection);
         }
-        [SkippableFact]
+        [Fact]
         public void ReadNodeWithValueEntryException()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             Assert.Throws<ArgumentException>(
                 () => communicator.ReadValue(new ValueNodeEntry<string>("ns=2;s=1:Pipe1001?Online/ValuePrecision")));
@@ -77,10 +72,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                 () => communicator.ReadValue(new ValueNodeEntry<uint>("ns=2;s=1:FC1001?SetPoint")));
         }
 
-        [SkippableFact]
+        [Fact]
         public void ReadNodeWithValueCollectionsException()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             ValueNodeEntryCollection collection = new ValueNodeEntryCollection();
             collection.AddRange(new ValueNodeEntry[]
@@ -93,10 +88,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.Throws<AggregateException>(() => communicator.ReadValues(collection));
         }
 
-        [SkippableFact]
+        [Fact]
         public void ReadNodeValueRange()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var temp = communicator.ReadValues(new ValueNodeEntryCollection(){
                 new ValueNodeEntry<object>("ns=2;s=1:Pipe1001?Measurement/EURange"),
@@ -108,39 +103,39 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
         }
 
 
-        [SkippableFact]
+        [Fact]
         public void ReadNode()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var types = communicator.ReadValue("ns=2;s=1:FC1001?SetPoint/ValuePrecision");
             Assert.True(types.GetType() == typeof(double));
         }
 
 
-        [SkippableFact]
+        [Fact]
         public void ReadNode2()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var types = communicator.ReadValue<double>("ns=2;s=1:FC1001?SetPoint/ValuePrecision");
             Assert.True(types.GetType() == typeof(double));
         }
 
 
-        [SkippableFact]
+        [Fact]
         public void BrowseMultipleNodes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var root  = communicator.BrowseRoot();
             communicator.BrowseNodes(root);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ScanNodes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var collection = new NodeIdCollection()
             {
@@ -153,10 +148,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.True(types[0]);
             Assert.False(types[1]);
         }
-        [SkippableFact]
+        [Fact]
         public void ScanNodes2()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var collection = new string[]
             {
@@ -170,10 +165,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.False(types[1]);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ScanValueNodes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var collection = new string[]
             {
@@ -187,10 +182,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.False(types[1]);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ScanMethodNodes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var collection = new string[]
             {
@@ -204,18 +199,18 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.False(types[1]);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ScanNode()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
             Assert.True(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePrecision"));
             Assert.False(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePr"));
         }
 
-        [SkippableFact]
+        [Fact]
         public void ScanNode2()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
             Assert.True(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePrecision"));
             Assert.False(communicator.ScanNodeExistance("ns=2;s=1:FC1001?SetPoint/ValuePr"));
         }
