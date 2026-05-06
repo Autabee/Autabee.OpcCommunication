@@ -1002,8 +1002,6 @@ namespace Autabee.Communication.ManagedOpcClient
             {
                 var encodingObject = value.CreateInstance();
                 return FormatObject(eoValue, encodingObject);
-
-
             }
 
             NodeTypeData type = GetTypeEncoding(GetCorrectedTypeName(eoValue, nodeId));
@@ -1058,22 +1056,36 @@ namespace Autabee.Communication.ManagedOpcClient
             if (eoValue.TypeId.IdType != IdType.String)
             {
 
-                if (PreparedNodeTypes.TryGetValue(nodeId.ToString(), out string parseString))
+                if (PreparedNodeTypes.TryGetValue(eoValue.TypeId.ToString(), out string parseString))
                 {
                     return parseString;
                 }
 
-                var node = ReadNode(ExpandedNodeId.ToNodeId(nodeId, session.NamespaceUris));
-                if (node is VariableNode vNode)
+                var node = ReadNode(ExpandedNodeId.ToNodeId(eoValue.TypeId, session.NamespaceUris));
+                if (node is ObjectNode oNode)
+                {
+
+                    var value = session.FetchReferences((ExpandedNodeId.ToNodeId(eoValue.TypeId, session.NamespaceUris)));
+                    if (value.Count() > 0)
+                    {
+                        parseString = value[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+                        PreparedNodeTypes[eoValue.TypeId.ToString()] = parseString;
+                    }
+
+                }
+                else if (node is VariableNode vNode)
                 {
                     node = ReadNode(vNode.DataType);
+                    parseString = node.DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+
+                    PreparedNodeTypes[nodeId.ToString()] = parseString;
                 }
+                else
+                {
+                    parseString = node.DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
 
-
-                parseString = node.DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
-
-                PreparedNodeTypes[nodeId.ToString()] = parseString;
-
+                    PreparedNodeTypes[nodeId.ToString()] = parseString;
+                }
 
                 return parseString;
             }
@@ -1466,7 +1478,8 @@ namespace Autabee.Communication.ManagedOpcClient
             object value;
             if (type == null)
             {
-                value = (session.ReadValue(nodeId)).Value;
+                var tmp = (session.ReadValue(nodeId));
+                value = tmp.Value;
             }
             else if (typeof(EncodeableObject) == type.BaseType)
             {

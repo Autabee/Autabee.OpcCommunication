@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace Autabee.OpcSharper
 {
@@ -150,10 +151,19 @@ namespace Autabee.OpcSharper
             logger?.Information("Type Schema updated");
             ReferenceDescriptionCollection refdesc = new ReferenceDescriptionCollection();
             ReferenceDescriptionCollection found = new ReferenceDescriptionCollection();
+            Dictionary<ExpandedNodeId,(ExpandedNodeId parent, QualifiedName name)> referenceTree = new Dictionary<ExpandedNodeId, (ExpandedNodeId parent, QualifiedName name)>();
             NodeCollection foundTypes = new NodeCollection();
             foreach (var item in settings.nodes)
             {
+                var node_ = service.ReadNode(item);
                 var node = service.BrowseNode(item);
+                
+                for (int i = 0; i < node.References.Count; i++)
+                {
+                    var reference = node.References[i];
+                    referenceTree.Add(reference.NodeId, (new ExpandedNodeId(item), node_.BrowseName));
+                    
+                }
                 refdesc.AddRange(node.References);
             };
             found.AddRange(refdesc);
@@ -165,7 +175,18 @@ namespace Autabee.OpcSharper
 
                 foreach (var item in refdesc)
                 {
-                    refdisc.AddRange(service.BrowseNode(item).References);
+                    var node = service.BrowseNode(item);
+                    for (int i = 0; i < node.References.Count; i++)
+                    {
+                        var reference = node.References[i];
+                        if (referenceTree.ContainsKey(reference.NodeId))
+                            continue;
+                        referenceTree.Add(reference.NodeId, (item.NodeId, item.BrowseName));
+                        
+                    }
+
+
+                    refdisc.AddRange(node.References);
                 }
 
                 refdesc.Clear();
@@ -255,8 +276,8 @@ namespace Autabee.OpcSharper
             }
 
 
-            OpcToCSharpGenerator.GenerateAddressSpace(found, settings);
-            OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, dataSet, settings);
+            OpcToCSharpGenerator.GenerateAddressSpace(found, settings, referenceTree);
+            OpcToCSharpGenerator.GenerateNodeEntryAddressSpace(service, found, foundTypes, xmls, dataSet, settings, referenceTree);
 
             try
             {

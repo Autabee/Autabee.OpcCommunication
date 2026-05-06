@@ -144,7 +144,7 @@ namespace Autabee.Communication.ManagedOpcClient.ManagedNode
             {
                 if (child.Primitive)
                 {
-                    if (factory.TryGetValue(child.TypeName, out var decodeFunc))
+                    if (factory.TryGetValue(child.TypeName.Split(':').Last(), out var decodeFunc))
                     {
                         return decodeFunc(decoder, child.Name);
                     }

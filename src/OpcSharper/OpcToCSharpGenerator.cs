@@ -19,6 +19,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Autabee.OpcToClass
 {
@@ -255,7 +256,7 @@ namespace Autabee.OpcToClass
             // generate cs libary project file in generate folder with the basetype name
 
             // get running framework and set it as target framework in the project file
-            var framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+            // var framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
 
             var managedClientVersion = typeof(AutabeeManagedOpcClient).Assembly.GetName().Version;
 
@@ -507,7 +508,10 @@ namespace Autabee.OpcToClass
             }
         }
 
-        static public void GenerateAddressSpace(ReferenceDescriptionCollection referenceNodes, GeneratorSettings settings)
+        static public void GenerateAddressSpace(
+            ReferenceDescriptionCollection referenceNodes, 
+            GeneratorSettings settings, 
+            Dictionary<ExpandedNodeId, (ExpandedNodeId parent, QualifiedName name)> refrenceTree)
         {
             //FileStream stream;
             var fileContents = "using Opc.Ua;\n\n"
@@ -520,12 +524,34 @@ namespace Autabee.OpcToClass
             .ToList();
 
 
-
+            List<string> treeName = new List<string>();
             foreach (var referenceNode in filteredList)
             {
-                if (referenceNode.NodeId.IdType != IdType.String) continue;
-                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), true);
-                fileContents += $"\n\t\tpublic static readonly NodeId {funcName} = NodeId.Parse(\"{referenceNode.NodeId.ToString().Replace("\"", "\\\"")}\");";
+                if (referenceNode.NodeId.IdType == IdType.String)
+                {
+                    string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), true);
+                    fileContents += $"\n\t\tpublic static readonly NodeId {funcName} = NodeId.Parse(\"{referenceNode.NodeId.ToString().Replace("\"", "\\\"")}\");";
+                }
+                else if (referenceNode.NodeId.IdType == IdType.Numeric)
+                {
+                    // scale up the refrence tree so that no duplicate names are formed
+                    treeName.Clear();
+                    treeName.Add(GetFunctionName(referenceNode.DisplayName.ToString(), true));
+                    var targetId = referenceNode.NodeId;
+                    while (refrenceTree.TryGetValue(targetId, out var value))
+                    {
+                        if (targetId == value.parent)
+                        {
+                            break;
+
+                        }
+                        treeName.Add(GetFunctionName(value.name.ToString(), true));
+                        targetId = value.parent;
+                    }
+                    treeName.Reverse();
+                    var funcName = string.Join("_", treeName);
+                    fileContents += $"\n\t\tpublic static readonly NodeId {funcName} = new NodeId({referenceNode.NodeId.Identifier});";
+                }
             }
 
             fileContents += "\n\t}";
@@ -534,7 +560,8 @@ namespace Autabee.OpcToClass
             CreateFile(Path.Combine(settings.baseLocation, "AddressSpace.cs"), fileContents);
         }
 
-        static public void GenerateNodeEntryAddressSpace(AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorDataSet dataSet, GeneratorSettings settings)
+        static public void GenerateNodeEntryAddressSpace(AutabeeManagedOpcClient client, ReferenceDescriptionCollection referenceNodes, NodeCollection nodes, XmlDocument[] xmls, GeneratorDataSet dataSet, GeneratorSettings settings,
+            Dictionary<ExpandedNodeId, (ExpandedNodeId parent, QualifiedName name)> refrenceTree)
         {
             var fileContents = "using Opc.Ua;\n"
                 + "using Autabee.Communication.ManagedOpcClient.ManagedNode;\n\n"
@@ -542,11 +569,12 @@ namespace Autabee.OpcToClass
                 + "\n\tpublic static class NodeEntryAddressSpace"
                 + "\n\t{";
             Dictionary<string, FunctionDefinitions> functionDefinitions = new Dictionary<string, FunctionDefinitions>();
+            List<string> treeName = new List<string>();
             for (int i = 0; i < referenceNodes.Count; i++)
             {
                 var referenceNode = referenceNodes[i];
                 var nodeData = nodes[i];
-                if (referenceNode.NodeId.IdType != IdType.String) continue;
+                if (referenceNode.NodeId.IdType != IdType.String && referenceNode.NodeId.IdType != IdType.Numeric) continue;
                 if (referenceNode.NodeClass != NodeClass.Variable)
                     continue;
 
@@ -577,7 +605,43 @@ namespace Autabee.OpcToClass
                         }
                         else
                         {
-                            nodetype = value.GetType().FullName;
+                            // try retrieve type name
+                            var tempValue = client.ReadNode(referenceNode.NodeId);
+                            if (tempValue is VariableNode vNode)
+                            {
+                                var fvalue = client.Session.FetchReferences((ExpandedNodeId.ToNodeId(vNode.DataType, client.Session.NamespaceUris)));
+                                if (fvalue.Count() > 0)
+                                {
+                                    if (fvalue[0].BrowseName.Name.Contains("Default Binary") || fvalue[0].BrowseName.Name.Contains("Default XML") || fvalue[0].BrowseName.Name.Contains("Default JSON") || fvalue[0].BrowseName.Name.Contains("EnumValues"))
+                                    {
+                                        var fvalue2 = client.Session.FetchReferences((ExpandedNodeId.ToNodeId(fvalue[0].NodeId, client.Session.NamespaceUris)));
+                                        
+                                        if (fvalue2.Count() > 0)
+                                        {
+                                            if (fvalue2.Count() > 1 && fvalue[0].BrowseName.Name.Contains("EnumValues"))
+                                            {
+                                                nodetype = fvalue2[1].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+                                            }
+                                            else
+                                            {
+                                                nodetype = fvalue2[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+                                    }
+                                }
+                                for (int j = 0; j<vNode.ArrayDimensions.Count; j++)
+                                {
+                                    nodetype += "[]";
+                                }
+                            }
+                            else
+                            {
+                                nodetype = value.GetType().FullName;
+                            }
                         }
                     }
                 }
@@ -612,7 +676,36 @@ namespace Autabee.OpcToClass
 
                 string[] indexItems = GetIndexItems(nodeId);
 
-                string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), false);
+                string funcName = string.Empty;
+                if (referenceNode.NodeId.IdType == IdType.String)
+                {
+                    funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), false);
+                }
+                else if (referenceNode.NodeId.IdType == IdType.Numeric)
+                {
+                    // scale up the refrence tree so that no duplicate names are formed
+                    treeName.Clear();
+                    treeName.Add(GetFunctionName(referenceNode.DisplayName.ToString(), false));
+                    var targetId = referenceNode.NodeId;
+                    while (refrenceTree.TryGetValue(targetId, out var value))
+                    {
+                        if (targetId == value.parent)
+                        {
+                            break;
+
+                        }
+                        treeName.Add(GetFunctionName(value.name.ToString(), false));
+                        targetId = value.parent;
+                    }
+                    treeName.Reverse();
+                    funcName = string.Join("_", treeName);
+                }
+                else
+                {
+                    continue;
+                }
+
+                //string funcName = GetFunctionName(referenceNode.NodeId.Identifier.ToString(), false);
                 string nodeName = NodeIdString(nodeId, indexItems);
 
                 var data = new FunctionDefinitions($"ValueNodeEntry<{nodetype}>", funcName, indexItems, nodeName);
