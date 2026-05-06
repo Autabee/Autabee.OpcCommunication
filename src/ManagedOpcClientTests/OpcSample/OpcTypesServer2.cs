@@ -1,8 +1,6 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.Utilities;
-using Autabee.Utility.Logger;
-using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
 using Opc.Ua;
 using TypeServerNodes;
@@ -10,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
@@ -19,19 +16,17 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
     {
         private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
-        private readonly IAutabeeLogger logger;
 
-        public OpcTypeSampleTests2(OpcUaTypeSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
+        public OpcTypeSampleTests2(OpcUaTypeSampleFixture testPlcTestsFixture, Xunit.Abstractions.ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
-            logger = new AutabeeXunitLogger(outputHelper);
         }
 
-        [SkippableFact]
+        [Fact]
         public void ConnectWithTestServer()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
@@ -53,10 +48,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
 
-        [SkippableFact]
+        [Fact]
         public void ConnectWithTestServerDefinedTypes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
@@ -72,10 +67,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             
         }
 
-        [SkippableFact]
+        [Fact]
         public void WriteValue()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var LotType = NodeId.Parse("ns=4;i=380");
 

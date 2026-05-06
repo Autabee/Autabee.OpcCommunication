@@ -1,14 +1,14 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.Utilities;
-using Autabee.Utility.Logger;
-using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
+using Microsoft.Extensions.Options;
 using Opc.Ua;
+using Serilog;
+using Serilog.Sinks.XUnit3;
 using System;
 using System.Collections.Generic;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
@@ -17,19 +17,24 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
     {
         private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
-        private readonly IAutabeeLogger logger;
+        private readonly ILogger logger;
 
         public OpcMethodSampleTests(OpcUaMethodSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
-            logger = new AutabeeXunitLogger(outputHelper);
+            logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} - {Message:lj}{NewLine}{Exception}")
+                .WriteTo.XUnit3TestOutput()
+                .CreateLogger()
+                .ForContext<OpcMethodSampleTests>();
         }
 
-        [SkippableFact]
+        [Fact]
         public void ConnectWithTestServer()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             logger.Information("Connected with Sample Method Server");
             var root = communicator.BrowseRoot();
@@ -64,10 +69,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public void GetMethodArgumentStructure()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var arguments = communicator.GetMethodArguments("ns=2;i=3");
             for (int i = 0; i < arguments.InputArguments.Count; i++)
@@ -80,10 +85,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public void GetNode()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var node1 = communicator.ReadNode("ns=2;i=1");
 
@@ -91,10 +96,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.Equal("ns=2;i=3", node2?.ToString());
         }
 
-        [SkippableFact]
+        [Fact]
         public void CallOpcFunction()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
             var arguments = communicator.CallMethod("ns=2;i=1", "ns=2;i=3", new object[2]
                     {
                         (UInt32) 50,
@@ -104,10 +109,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             Assert.Equal((uint)100, arguments[1]);
         }
 
-        [SkippableFact]
+        [Fact]
         public void CallOpcFunctions()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
             var nodes = communicator.TranslateBrowsePathsToNodeIds(ObjectIds.ObjectsFolder, new string[] { "2:My Process", "2:My Process/2:Start" }
                 );
 

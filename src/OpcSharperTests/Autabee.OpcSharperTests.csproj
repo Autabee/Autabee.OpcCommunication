@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
-
+		<OutputType>Exe</OutputType>
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
@@ -15,12 +15,11 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Serilog" Version="4.3.1" />
-		<PackageReference Include="Serilog.Sinks.XUnit" Version="3.0.19" />
+		<PackageReference Include="Serilog.Sinks.XUnit3" Version="1.2.0" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="Xunit.SkippableFact" Version="1.5.61" />
 		<PackageReference Include="xunit.v3" Version="3.2.2" />
 	</ItemGroup>
 

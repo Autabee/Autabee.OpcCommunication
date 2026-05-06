@@ -1,17 +1,16 @@
 ﻿using Autabee.Communication.ManagedOpcClient;
 using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.Utilities;
-using Autabee.Utility.Logger;
-using Autabee.Utility.Logger.xUnit;
 using AutabeeTestFixtures;
 using Opc.Ua;
 using Quickstarts.DataTypes.Instances;
 using Quickstarts.DataTypes.Types;
+using Serilog;
+using Serilog.Sinks.XUnit3;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
@@ -20,19 +19,24 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
     {
         private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
-        private readonly IAutabeeLogger logger;
+        private readonly ILogger logger;
 
-        public OpcTypeSampleTests(OpcUaTypeSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
+        public OpcTypeSampleTests(OpcUaTypeSampleFixture testPlcTestsFixture, Xunit.v3.Ac.ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
-            logger = new AutabeeXunitLogger(outputHelper);
+            logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} - {Message:lj}{NewLine}{Exception}")
+                .WriteTo.XUnit3TestOutput()
+                .CreateLogger()
+                .ForContext<OpcMethodSampleTests>();
         }
 
-        [SkippableFact]
+        [Fact]
         public void ConnectWithTestServer()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
@@ -52,10 +56,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
 
-        [SkippableFact]
+        [Fact]
         public void ConnectWithTestServerDefindedTypes()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");
 
@@ -71,10 +75,10 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             
         }
 
-        [SkippableFact]
+        [Fact]
         public void WriteValue()
         {
-            Skip.If(skipServerNotFound, "Server not Found");
+            Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var LotType = NodeId.Parse("ns=4;i=380");
 
