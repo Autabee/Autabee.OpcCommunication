@@ -110,7 +110,7 @@
         {
             try
             {
-                var result = ScannedNodeModel.Client.CallMethod(ScannedNodeModel.parent.Node.NodeId, ScannedNodeModel.Node.NodeId);
+                var result = ScannedNodeModel.Client.CallMethod(ScannedNodeModel.parent.Node.NodeId,ScannedNodeModel.Node.NodeId, Array.Empty<object>() );
 
                 Browser.ReadNodeValue(new Message(level: MessageLevel.Info, text: "Method Call succeded, output return: {0}", parameters:
                 new string[1] { JsonSerializer.Serialize(result) }));
@@ -159,17 +159,17 @@
     {
         Browser.UpdateSelectedNode(ScannedNodeModel);
         ScannedNodeModel.NodeClassType = "Node-Selected Node";
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
 
     private async void DeSelect(object sender, EventArgs data)
     {
         ScannedNodeModel.NodeClassType = "Node";
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
 
     private async void UpdateState(object sender, EventArgs data)
     {
-        InvokeAsync(StateHasChanged);
+        await InvokeAsync(StateHasChanged).ConfigureAwait(false);
     }
 }
