@@ -204,12 +204,10 @@ namespace Autabee.OpcToClass
             }
             else
             {
-                var temp = value
-                    .Replace("&quot;", "\"").Split(':').Last();
                 //var tns = array[0];
                 //var typename = array[1];
                 // typename
-                return value;
+                return value.Replace("&quot;", "\"").Split(':').Last();
 
             }
             Console.WriteLine("Did not find typename: " + value);
@@ -255,15 +253,23 @@ namespace Autabee.OpcToClass
             Directory.CreateDirectory(settings.baseLocation);
 
             // generate cs libary project file in generate folder with the basetype name
+
+            // get running framework and set it as target framework in the project file
+            var framework = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription;
+
+            var managedClientVersion = typeof(AutabeeManagedOpcClient).Assembly.GetName().Version;
+
+
+
             var fileContent =
-      @"<Project Sdk=""Microsoft.NET.Sdk"">
+      $@"<Project Sdk=""Microsoft.NET.Sdk"">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;net48;net6.0</TargetFrameworks>
+		<TargetFrameworks>netstandard2.1;net48;net8.0;net10.0</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include=""Autabee.Communication.ManagedOpcClient"" Version=""0.*"" />
+	  <PackageReference Include=""Autabee.Communication.ManagedOpcClient"" Version=""{managedClientVersion}"" />
 	</ItemGroup>
 
 </Project>";
