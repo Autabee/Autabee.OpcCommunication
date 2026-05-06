@@ -3,10 +3,7 @@ using Autabee.Communication.ManagedOpcClient.ManagedNode;
 using Autabee.Communication.ManagedOpcClient.Utilities;
 using AutabeeTestFixtures;
 using Opc.Ua;
-using Quickstarts.DataTypes.Instances;
-using Quickstarts.DataTypes.Types;
-using Serilog;
-using Serilog.Sinks.XUnit3;
+using TypeServerNodes;
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
@@ -19,18 +16,11 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
     {
         private readonly AutabeeManagedOpcClient communicator;
         private readonly bool skipServerNotFound;
-        private readonly ILogger logger;
 
-        public OpcTypeSampleTests(OpcUaTypeSampleFixture testPlcTestsFixture, Xunit.v3.Ac.ITestOutputHelper outputHelper)
+        public OpcTypeSampleTests(OpcUaTypeSampleFixture testPlcTestsFixture, ITestOutputHelper outputHelper)
         {
             communicator = testPlcTestsFixture.Communicator;
             skipServerNotFound = testPlcTestsFixture.SkipServerNotFound;
-            logger = new LoggerConfiguration()
-                .MinimumLevel.Verbose()
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {SourceContext} - {Message:lj}{NewLine}{Exception}")
-                .WriteTo.XUnit3TestOutput()
-                .CreateLogger()
-                .ForContext<OpcMethodSampleTests>();
         }
 
         [Fact]
@@ -43,6 +33,8 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
             //communicator.Session.Factory.AddEncodeableTypes(typeof(ParkingLotType).Assembly);
 
             var data = communicator.ReadValue(vehicleInLot);
+
+
 
             if (data is object[] nData)
             {
@@ -57,7 +49,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
         [Fact]
-        public void ConnectWithTestServerDefindedTypes()
+        public void ConnectWithTestServerDefinedTypes()
         {
             Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
@@ -67,12 +59,24 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
             var data = communicator.ReadValue(vehicleInLot) as object[];
 
-            Assert.IsType<TruckType>(data[0]);
-            Assert.IsType<TruckType>(data[1]);
-            Assert.IsType<CarType>(data[2]);
-            //Assert.IsType<BicycleType>(data[3]);
-            //Assert.IsType<ScooterType>(data[4]);
-            
+
+            if (data.Length == 4)
+            {
+                // write value test had run.
+                Assert.IsType<TruckType>(data[0]);
+                Assert.IsType<CarType>(data[1]);
+                Assert.IsType<BicycleType>(data[2]);
+                Assert.IsType<ScooterType>(data[3]);
+            }
+            else
+            {
+                // truck car car bic Sc
+                Assert.IsType<TruckType>(data[0]);
+                Assert.IsType<CarType>(data[1]);
+                Assert.IsType<CarType>(data[2]);
+                Assert.IsType<BicycleType>(data[3]);
+                Assert.IsType<ScooterType>(data[4]);
+            }
         }
 
         [Fact]
@@ -98,14 +102,6 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                     CargoCapacity = 4000
 
                 },
-                 new TruckType
-                {
-                    Engine = EngineType.Diesel,
-                    Make = "DAFF",
-                    Model = "DAFF Transit",
-                    CargoCapacity = 5000
-
-                },
                   new CarType
                 {
                     Engine = EngineType.Petrol,
@@ -113,7 +109,24 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
                     Model = "Kalos",
                     NoOfPassengers = 2
 
-                }
+                },
+                  new BicycleType
+                  {
+                      NoOfGears = 5,
+                      ManufacturerName = "Monark",
+                      Engine = EngineType.Manual,
+                      Make = "Monark",
+                      Model = "Bicycle"
+                  },
+                  new ScooterType
+                    {
+                         
+                         ManufacturerName = "Monark",
+                         Engine = EngineType.Petrol,
+                         Make = "Monark s1",
+                         NoOfSeats = 2,
+                         Model = "Scooter"
+                    }
             });
         }
     }
