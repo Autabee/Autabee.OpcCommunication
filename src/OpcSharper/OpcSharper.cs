@@ -327,7 +327,7 @@ namespace Autabee.OpcSharper
 
                     if (dataSet.structs.TryGetValue(types[i].BrowseName.ToString().Split(':').Last(), out var structure))
                     {
-                        structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
+                        structure.BinaryEncoding = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
                         endoingsToFind.Add(structure.TypeId);
                         structs.Add(structure);
                     }
@@ -339,7 +339,7 @@ namespace Autabee.OpcSharper
                 {
                     if (results[i] != null)
                     {
-                        structs[i].BinaryEncoding = new ExpandedNodeId((NodeId)results[i], service.Session.NamespaceUris.GetString(results[i].NamespaceIndex));
+                        structs[i].TypeId = new ExpandedNodeId((NodeId)results[i], service.Session.NamespaceUris.GetString(results[i].NamespaceIndex));
                     }
                 }
             }
@@ -367,15 +367,12 @@ namespace Autabee.OpcSharper
                 {
                     if (dataSet.structs.TryGetValue(types[i].BrowseName.ToString().Split(':').Last(), out var structure))
                     {
-                        if (structure.TypeId != null)
+                        structure.XmlEncoding = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
+                        if (structure.TypeId == null)
                         {
-                            endoingsToFind.Add(types[i].NodeId);
+                            endoingsToFind.Add(structure.TypeId);
                             structs.Add(structure);
-                            continue;
                         }
-                        structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
-                        endoingsToFind.Add(structure.TypeId);
-                        structs.Add(structure);
                     }
                 }
                 if (endoingsToFind.Count == 0) continue;
@@ -385,7 +382,7 @@ namespace Autabee.OpcSharper
                 {
                     if (results[i] != null)
                     {
-                        structs[i].XmlEncoding = new ExpandedNodeId((NodeId)results[i], service.Session.NamespaceUris.GetString(results[i].NamespaceIndex));
+                        structs[i].TypeId = new ExpandedNodeId((NodeId)results[i], service.Session.NamespaceUris.GetString(results[i].NamespaceIndex));
                     }
                 }
             }
