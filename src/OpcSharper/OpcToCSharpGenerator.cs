@@ -630,7 +630,14 @@ namespace Autabee.OpcToClass
                                     }
                                     else
                                     {
-                                        nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+                                        if (value.GetType().FullName.Contains("System"))
+                                        {
+                                            nodetype = value.GetType().FullName;
+                                        }
+                                        else
+                                        {
+                                            nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
+                                        }
                                     }
                                 }
                                 for (int j = 0; j<vNode.ArrayDimensions.Count; j++)
