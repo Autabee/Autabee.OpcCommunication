@@ -266,7 +266,7 @@ namespace Autabee.OpcToClass
       $@"<Project Sdk=""Microsoft.NET.Sdk"">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net48;net8.0;net10.0</TargetFrameworks>
+		<TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -576,6 +576,7 @@ namespace Autabee.OpcToClass
                 var nodeData = nodes[i];
                 if (referenceNode.NodeId.IdType != IdType.String && referenceNode.NodeId.IdType != IdType.Numeric) continue;
                 if (referenceNode.NodeClass != NodeClass.Variable)
+                if (referenceNode.NodeClass != NodeClass.Variable)
                     continue;
 
                 string identifier = referenceNode.TypeDefinition.Identifier.ToString();
@@ -602,6 +603,10 @@ namespace Autabee.OpcToClass
                                 if (referenceNodes.FirstOrDefault(o => o.NodeId.ToString().StartsWith(compare)) != null)
                                     nodetype += "[]";
                             }
+                        }
+                        else if (value.GetType().FullName.Contains("System"))
+                        {
+                            nodetype = value.GetType().FullName;
                         }
                         else
                         {
@@ -630,14 +635,7 @@ namespace Autabee.OpcToClass
                                     }
                                     else
                                     {
-                                        if (value.GetType().FullName.Contains("System"))
-                                        {
-                                            nodetype = value.GetType().FullName;
-                                        }
-                                        else
-                                        {
-                                            nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
-                                        }
+                                        nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
                                     }
                                 }
                                 for (int j = 0; j<vNode.ArrayDimensions.Count; j++)
