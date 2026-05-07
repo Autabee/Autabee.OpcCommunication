@@ -7,7 +7,7 @@ namespace Autabee.OpcToClass
     {
         public string Name { get; set; } = string.Empty;
         public string ClassName { get { return Name.Split('.').Last().Replace("\"", ""); } }
-        public string nsPrefix { get;set; } = "ns_";
+        public string nsPrefix { get; set; } = "ns_";
         public string NameSpace
         {
             get

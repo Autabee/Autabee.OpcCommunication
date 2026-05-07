@@ -50,6 +50,9 @@ namespace Autabee.OpcToClass
     {
         public Dictionary<string, OpcEnumTemplate> enums = new Dictionary<string, OpcEnumTemplate>();
         public Dictionary<string, OpcStructTemplate> structs = new Dictionary<string, OpcStructTemplate>();
+
+        public bool FlipTypeAndEncoding { get; set; }
+
         public GeneratorDataSet(string baseLocation, string baseNamespace) : base(baseLocation, baseNamespace)
         {
         }

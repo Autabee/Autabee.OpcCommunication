@@ -24,6 +24,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
         }
 
         [Fact]
+        // This test shows how to read values without defining types defaults do dictionary mapping.
         public void ConnectWithTestServer()
         {
             Assert.SkipWhen(skipServerNotFound, "Server not Found");
@@ -49,6 +50,7 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
 
 
         [Fact]
+        // This test shows how to read values with defining types, it will do type mapping and return correct types.
         public void ConnectWithTestServerDefinedTypes()
         {
             Assert.SkipWhen(skipServerNotFound, "Server not Found");
@@ -80,15 +82,17 @@ namespace Autabee.Communication.OpcCommunicatorTests.OpcSample
         }
 
         [Fact]
+        // This test shows how to write values with defining types, it will do type mapping and write correct types to server.
+        // also test if shaper types are correctly generated to write to server, if not it will throw exception.
         public void WriteValue()
         {
             Assert.SkipWhen(skipServerNotFound, "Server not Found");
 
             var LotType = NodeId.Parse("ns=4;i=380");
 
-            communicator.AddTypeAssembly(typeof(ParkingLotType).Assembly);
+            //communicator.AddTypeAssembly(typeof(ParkingLotType).Assembly);
 
-            communicator.WriteValue(LotType, (int)2 );
+            communicator.WriteValue(LotType, ParkingLotType.Covered);
 
 
             var vehicleInLot = NodeId.Parse("ns=4;i=283");

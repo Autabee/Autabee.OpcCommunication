@@ -205,11 +205,36 @@ namespace Autabee.OpcToClass
             }
             else
             {
+                value = value.Replace("&quot;", "\"").Split(':').Last();
+                switch (value)
+                {
+                    case "Boolean": return "bool";
+                    case "Byte": return "byte";
+                    case "Int32": return "int";
+                    case "UInt32": return "uint";
+                    case "Float": return "float";
+                    case "Double": return "double";
+                    case "String": return "string";
+                    case "Int16": return "short";
+                    case "UInt16": return "ushort";
+                    case "Int64": return "long";
+                    case "UInt64": return "ulong";
+                    case "ByteString": return "byte[]";
+                    case "DateTime": return "DateTime";
+                    case "Guid": return "Guid";
+                    case "LocalizedText": return "LocalizedText";
+                    case "QualifiedName": return "QualifiedName";
+                    case "NodeId": return "NodeId";
+                    case "ExpandedNodeId": return "ExpandedNodeId";
+                    case "StatusCode": return "StatusCode";
+                    case "XmlElement": return "XmlElement";
+                    case "ExtensionObject": return "ExtensionObject";
+                    case "DataValue": return "DataValue";
+                    default: return value;
+                }
                 //var tns = array[0];
                 //var typename = array[1];
                 // typename
-                return value.Replace("&quot;", "\"").Split(':').Last();
-
             }
             Console.WriteLine("Did not find typename: " + value);
 
@@ -602,10 +627,6 @@ namespace Autabee.OpcToClass
                                     nodetype += "[]";
                             }
                         }
-                        else if (value.GetType().FullName.Contains("System"))
-                        {
-                            nodetype = value.GetType().FullName;
-                        }
                         else
                         {
                             // try retrieve type name
@@ -629,6 +650,18 @@ namespace Autabee.OpcToClass
                                             {
                                                 nodetype = fvalue2[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
                                             }
+                                        }
+                                    }
+                                    else if (value.GetType().FullName.StartsWith("System"))
+                                    {
+                                        if (value.GetType().IsPrimitive)
+                                        {
+                                            // if its a primitive use the c# simplefied name instead of the full name
+                                            nodetype = GetCorrectedTypeName(value.GetType().FullName);
+                                        }
+                                        else
+                                        {
+                                            nodetype = value.GetType().FullName;
                                         }
                                     }
                                     else
