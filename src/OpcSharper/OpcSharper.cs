@@ -333,7 +333,7 @@ namespace Autabee.OpcSharper
                     }
                 }
                 if (endoingsToFind.Count == 0) continue;
-                var results = (await FindDefaultBinaryNodes(service.Session, endoingsToFind)).ToList();
+                var results = (await FindDefaultTypeIdForBinaryNodes(service.Session, endoingsToFind)).ToList();
 
                 for (int i = 0; i < results.Count; i++)
                 {
@@ -370,13 +370,13 @@ namespace Autabee.OpcSharper
                         structure.XmlEncoding = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
                         if (structure.TypeId == null)
                         {
-                            endoingsToFind.Add(structure.TypeId);
+                            endoingsToFind.Add(types[i].NodeId);
                             structs.Add(structure);
                         }
                     }
                 }
                 if (endoingsToFind.Count == 0) continue;
-                var results = (await FindDefaultXMLNodes(service.Session, endoingsToFind)).ToList();
+                var results = (await FindDefaultTypeIdForXMLNodes(service.Session, endoingsToFind)).ToList();
 
                 for (int i = 0; i < results.Count; i++)
                 {
@@ -416,9 +416,9 @@ namespace Autabee.OpcSharper
             return types;
         }
 
-        private static async Task<ExpandedNodeIdCollection> FindDefaultBinaryNodes(Session session, List<ExpandedNodeId> nodes)
+        private static async Task<ExpandedNodeIdCollection> FindDefaultTypeIdForBinaryNodes(Session session, List<ExpandedNodeId> nodes)
            => await FindDefaultObjectNodes(session, nodes, new string[] { "Default Binary", "DefaultBinary" });
-        private static async Task<ExpandedNodeIdCollection> FindDefaultXMLNodes(Session session, List<ExpandedNodeId> nodes)
+        private static async Task<ExpandedNodeIdCollection> FindDefaultTypeIdForXMLNodes(Session session, List<ExpandedNodeId> nodes)
           => await FindDefaultObjectNodes(session, nodes, new string[] { "Default XML", "DefaultXML" });
         private static async Task<ExpandedNodeIdCollection> FindDefaultObjectNodes(Session session, List<ExpandedNodeId> nodes, string[] names)
         {
