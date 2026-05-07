@@ -575,9 +575,7 @@ namespace Autabee.OpcToClass
                 var referenceNode = referenceNodes[i];
                 var nodeData = nodes[i];
                 if (referenceNode.NodeId.IdType != IdType.String && referenceNode.NodeId.IdType != IdType.Numeric) continue;
-                if (referenceNode.NodeClass != NodeClass.Variable)
-                if (referenceNode.NodeClass != NodeClass.Variable)
-                    continue;
+                if (referenceNode.NodeClass != NodeClass.Variable) continue;
 
                 string identifier = referenceNode.TypeDefinition.Identifier.ToString();
                 //var node = referenceNode.NodeId.Identifier.ToString()
