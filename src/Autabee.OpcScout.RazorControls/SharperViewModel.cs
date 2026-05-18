@@ -25,6 +25,7 @@ namespace Autabee.OpcScout.RazorControl
         public bool ClearOnZip { get; set; } = false;
         public bool Generating { get; set; } = false;
         public bool ProjectLocationSelectable { get; set; } = true;
+        public bool FlipTypeAndEncoding { get; set; } = false;
         public List<string> Nodes { get; set; } = new List<string>();
         public Dictionary<string, string> TypeOverrides { get; set; } = new Dictionary<string, string>();
         public ClientCache SelectedClient { get; set; } = null;
@@ -58,7 +59,8 @@ namespace Autabee.OpcScout.RazorControl
                 typeOverrides = TypeOverrides,
                 nameSpacePrefix = NameSpacePrefix,
                 zipStoreLocation = ZipSafeLocation,
-                clearOnZip = ClearOnZip
+                clearOnZip = ClearOnZip,
+                FlipTypeAndEncoding = FlipTypeAndEncoding
             };
 
             try

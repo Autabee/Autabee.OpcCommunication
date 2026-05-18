@@ -116,6 +116,24 @@ namespace Autabee.OpcToClass
         {
             return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
         }
+
+        public static string GetCorrectedTypeName(VariableNode value)
+        {
+            var str = GetCorrectedTypeName(value.DataType.Identifier);
+            if (value.ArrayDimensions.Count > 0) {
+                var arrystr = string.Concat(Enumerable.Repeat("[]", value.ArrayDimensions.Count));
+                if (str.Contains("Unknown<"))
+                {
+                    str = str.Take(arrystr.Length - 1).ToString() + arrystr + ">";
+                }
+                else
+                {
+                    str += arrystr;
+                }
+            }
+            return str;
+        }
+
         public static string GetCorrectedTypeName(object value)
         {
             switch (value)
@@ -613,7 +631,7 @@ namespace Autabee.OpcToClass
 
                 if (referenceNode.TypeDefinition.IdType == IdType.Numeric && nodeData is VariableNode varNode)
                 {
-                    nodetype = GetCorrectedTypeName(varNode.DataType.Identifier);
+                    nodetype = GetCorrectedTypeName(varNode);
 
                     if (nodetype.Contains("Unknown"))
                     {

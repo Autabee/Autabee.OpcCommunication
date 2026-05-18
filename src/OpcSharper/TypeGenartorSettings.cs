@@ -7,12 +7,13 @@ namespace Autabee.OpcToClass
 {
     public class GeneratorSettings
     {
-        public string baseNamespace;
-        public string baseLocation;
-        public NodeIdCollection nodes = new NodeIdCollection();
-        public string zipStoreLocation;
-        public bool clearOnZip;
-        public Dictionary<string, string> typeOverrides = new Dictionary<string, string>();
+        public string baseNamespace { get; set; }
+        public string baseLocation { get; set; }
+        public NodeIdCollection nodes { get; set; } = new NodeIdCollection();
+        public string zipStoreLocation { get; set; }
+        public bool clearOnZip { get; set; }
+        public bool FlipTypeAndEncoding { get; set; }
+        public Dictionary<string, string> typeOverrides { get; set; } = new Dictionary<string, string>();
         /// <summary>
         /// Namespace Prefix
         /// </summary>
@@ -41,6 +42,7 @@ namespace Autabee.OpcToClass
             clearOnZip = generatorSettings.clearOnZip;
             typeOverrides = generatorSettings.typeOverrides;
             nameSpacePrefix = generatorSettings.nameSpacePrefix;
+            FlipTypeAndEncoding = generatorSettings.FlipTypeAndEncoding;
         }
 
         public GeneratorSettings() { }
@@ -50,8 +52,6 @@ namespace Autabee.OpcToClass
     {
         public Dictionary<string, OpcEnumTemplate> enums = new Dictionary<string, OpcEnumTemplate>();
         public Dictionary<string, OpcStructTemplate> structs = new Dictionary<string, OpcStructTemplate>();
-
-        public bool FlipTypeAndEncoding { get; set; }
 
         public GeneratorDataSet(string baseLocation, string baseNamespace) : base(baseLocation, baseNamespace)
         {
