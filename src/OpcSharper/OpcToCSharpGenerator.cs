@@ -35,7 +35,7 @@ namespace Autabee.OpcToClass
 
         public static string GetDecoder(Field node, string nsPrefix, string[] KnownEnums, string decoderName = "decoder")
         {
-            return GetDecoder(KnownEnums, decoderName, node.TypeName, node.Name, node.Type, nsPrefix);
+            return GetDecoder(KnownEnums, decoderName, node.TypeName, node.Name, node.Type, nsPrefix, node.ArrayDimensions);
         }
 
         public static string GetNamespacedType(string type, string nsPrefix)
@@ -51,7 +51,7 @@ namespace Autabee.OpcToClass
 
 
 
-        private static string GetDecoder(string[] KnownEnums, string decoderName, string type, string name, string typename, string nsPrefix)
+        private static string GetDecoder(string[] KnownEnums, string decoderName, string type, string name, string typename, string nsPrefix, int arrayDimensions = 0)
         {
             if (type.Contains("tns:"))
             {
@@ -60,11 +60,15 @@ namespace Autabee.OpcToClass
                     return $"({typename}){decoderName}.ReadEnumerated(\"{name}\" ,typeof({typename}))";
                 }
                 typename = GetNamespacedType(typename, nsPrefix);
-                return $"{decoderName}.ReadEncodeable(\"{name}\", typeof({typename})) as {typename}";
+                if (arrayDimensions == 0)
+                    return $"{decoderName}.ReadEncodeable(\"{name}\", typeof({typename})) as {typename}";
+                else
+                    return $"{decoderName}.ReadEncodeableArray(\"{name}\", typeof({typename})) as {typename}[]";
+
             }
             else if (type.Contains("opc:"))
             {
-                return $"{decoderName}.Read{type.Split(':')[1]}(\"{name}\")";
+                return $"{decoderName}.Read{type.Split(':')[1]}{(arrayDimensions == 0 ? "" : "Array")}(\"{name}\")";
             }
             return $"{decoderName}.Unknown({type})";
         }
@@ -77,7 +81,7 @@ namespace Autabee.OpcToClass
             return GetEncoder(KnownEnums, encoderName, type, name, typename, nsPrefix);
         }
 
-        private static string GetEncoder(string[] KnownEnums, string encoderName, string type, string name, string typename, string nsPrefix)
+        private static string GetEncoder(string[] KnownEnums, string encoderName, string type, string name, string typename, string nsPrefix, int arrayDimensions = 0)
         {
             if (type.Contains("tns:"))
             {
@@ -86,18 +90,21 @@ namespace Autabee.OpcToClass
                     return $"{encoderName}.WriteEnumerated(\"{typename}\", this.{name})";
                 }
                 typename = GetNamespacedType(typename, nsPrefix);
-                return $"{encoderName}.WriteEncodeable(\"{name}\", this.{name}, typeof({typename}))";
+                if (arrayDimensions == 0)
+                    return $"{encoderName}.WriteEncodeable(\"{name}\", this.{name}, typeof({typename}))";
+                else 
+                    return $"{encoderName}.WriteEncodeableArray(\"{name}\", this.{name}, typeof({typename}))";
             }
             else if (type.Contains("opc:"))
             {
-                return $"{encoderName}.Write{type.Split(':')[1]}(\"{name}\", this.{name})";
+                return $"{encoderName}.Write{type.Split(':')[1]}{(arrayDimensions == 0 ? "" : "Array")}(\"{name}\", this.{name})";
             }
             return $"{encoderName}.Unknown({type})";
         }
 
         public static string GetEncoder(Field node, string[] KnownEnums, string nsPrefix, string encoderName = "encoder")
         {
-            return GetEncoder(KnownEnums, encoderName, node.TypeName, node.ClassFieldName, node.Type, nsPrefix);
+            return GetEncoder(KnownEnums, encoderName, node.TypeName, node.ClassFieldName, node.Type, nsPrefix, node.ArrayDimensions);
         }
 
 
@@ -114,7 +121,18 @@ namespace Autabee.OpcToClass
 
         public static string GetCorrectedTypeName(XmlNode value)
         {
-            return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
+            var str =  GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
+            // check if it has Lenght 
+            for (int i = 0; i < value.Attributes.Count; i++)
+            {
+                var attribute = value.Attributes[i];
+                if (attribute.Name.Contains("LengthField"))
+                {
+                    str += "[]";
+                    break;
+                }
+            }
+            return str;
         }
 
         public static string GetCorrectedTypeName(VariableNode value)

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using System.Linq;
 using System.Xml;
@@ -111,6 +112,7 @@ namespace Autabee.OpcToClass
                     {
                         classfieldName += "Field";
                     }
+                    var arraydimensions = fieldType.Count(o=> o == '[');
 
                     Field newField = new Field()
                     {
@@ -118,7 +120,8 @@ namespace Autabee.OpcToClass
                         Type = fieldType,
                         TypeName = field.Attributes["TypeName"]?.Value,
                         Value = field.Attributes["Value"]?.Value,
-                        ClassFieldName = classfieldName
+                        ClassFieldName = classfieldName,
+                        ArrayDimensions = arraydimensions,
                     };
 
                     template.Fields = template.Fields.Append(newField).ToArray();

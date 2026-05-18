@@ -10,5 +10,6 @@ namespace Autabee.OpcToClass
         public string Type;
         public string Value;
         public string ClassFieldName;
+        public int ArrayDimensions;
     }
 }
