@@ -63,12 +63,15 @@ namespace Autabee.OpcToClass
                 if (arrayDimensions == 0)
                     return $"{decoderName}.ReadEncodeable(\"{name}\", typeof({typename})) as {typename}";
                 else
-                    return $"{decoderName}.ReadEncodeableArray(\"{name}\", typeof({typename})) as {typename}[]";
+                    return $"{decoderName}.ReadEncodeableArray(\"{name}\", typeof({typename})) as {typename}";
 
             }
             else if (type.Contains("opc:"))
             {
-                return $"{decoderName}.Read{type.Split(':')[1]}{(arrayDimensions == 0 ? "" : "Array")}(\"{name}\")";
+                if (arrayDimensions == 0)
+                    return $"{decoderName}.Read{type.Split(':')[1]}(\"{name}\")";
+                else
+                    return $"{decoderName}.Read{type.Split(':')[1]}Array(\"{name}\").ToArray()";
             }
             return $"{decoderName}.Unknown({type})";
         }
