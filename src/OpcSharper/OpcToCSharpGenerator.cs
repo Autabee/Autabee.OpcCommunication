@@ -145,7 +145,7 @@ namespace Autabee.OpcToClass
                 var arrystr = string.Concat(Enumerable.Repeat("[]", value.ArrayDimensions.Count));
                 if (str.Contains("Unknown<"))
                 {
-                    str = str.Take(arrystr.Length - 1).ToString() + arrystr + ">";
+                    str = new string(str.Take(str.Length - 1).ToArray()) + arrystr + ">";
                 }
                 else
                 {
@@ -707,10 +707,6 @@ namespace Autabee.OpcToClass
                                     {
                                         nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
                                     }
-                                }
-                                for (int j = 0; j<vNode.ArrayDimensions.Count; j++)
-                                {
-                                    nodetype += "[]";
                                 }
                             }
                             else
