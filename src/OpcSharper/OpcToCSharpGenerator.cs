@@ -244,8 +244,9 @@ namespace Autabee.OpcToClass
             }
             else
             {
-                value = value.Replace("&quot;", "\"").Split(':').Last().Split('.').Last();
-                switch (value)
+                value = value.Replace("&quot;", "\"").Split(':').Last();
+                var testNameValueSet = value.Split('.').Last();
+                switch (testNameValueSet)
                 {
                     case "Boolean": return "bool";
                     case "Byte": return "byte";
