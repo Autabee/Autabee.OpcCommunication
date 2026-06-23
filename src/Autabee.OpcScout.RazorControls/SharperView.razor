@@ -33,6 +33,7 @@
             <td><input type="text" placeholder="Base Namespace" @bind-value=Model.NameSpacePrefix /></td>
             <td></td>
         </tr>
+        
         @if (Model.Nodes.Count() == 0)
         {
             <tr>
@@ -54,6 +55,11 @@
                     </td>
                 </tr>
             }   }
+    <tr>
+        <td>Flip Type Encoding</td>
+        <td><input type="checkbox" @bind-value=Model.FlipTypeAndEncoding /></td>
+        <td>Some Models have the definition and encoding flipped (Siemens PLC Known)</td>
+    </tr>
     </table>
 
 

@@ -52,6 +52,7 @@
 
 	<ItemGroup>
 		<Folder Include="OpcSample\private\Krone\" />
+		<Folder Include="OpcSample\private\Curtiss\" />
 	</ItemGroup>
 
 </Project>

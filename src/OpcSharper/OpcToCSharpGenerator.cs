@@ -35,7 +35,7 @@ namespace Autabee.OpcToClass
 
         public static string GetDecoder(Field node, string nsPrefix, string[] KnownEnums, string decoderName = "decoder")
         {
-            return GetDecoder(KnownEnums, decoderName, node.TypeName, node.Name, node.Type, nsPrefix);
+            return GetDecoder(KnownEnums, decoderName, node.TypeName, node.Name, node.Type, nsPrefix, node.ArrayDimensions);
         }
 
         public static string GetNamespacedType(string type, string nsPrefix)
@@ -51,7 +51,7 @@ namespace Autabee.OpcToClass
 
 
 
-        private static string GetDecoder(string[] KnownEnums, string decoderName, string type, string name, string typename, string nsPrefix)
+        private static string GetDecoder(string[] KnownEnums, string decoderName, string type, string name, string typename, string nsPrefix, int arrayDimensions = 0)
         {
             if (type.Contains("tns:"))
             {
@@ -60,11 +60,18 @@ namespace Autabee.OpcToClass
                     return $"({typename}){decoderName}.ReadEnumerated(\"{name}\" ,typeof({typename}))";
                 }
                 typename = GetNamespacedType(typename, nsPrefix);
-                return $"{decoderName}.ReadEncodeable(\"{name}\", typeof({typename})) as {typename}";
+                if (arrayDimensions == 0)
+                    return $"{decoderName}.ReadEncodeable(\"{name}\", typeof({typename})) as {typename}";
+                else
+                    return $"{decoderName}.ReadEncodeableArray(\"{name}\", typeof({typename})) as {typename}";
+
             }
             else if (type.Contains("opc:"))
             {
-                return $"{decoderName}.Read{type.Split(':')[1]}(\"{name}\")";
+                if (arrayDimensions == 0)
+                    return $"{decoderName}.Read{type.Split(':')[1]}(\"{name}\")";
+                else
+                    return $"{decoderName}.Read{type.Split(':')[1]}Array(\"{name}\")";
             }
             return $"{decoderName}.Unknown({type})";
         }
@@ -77,7 +84,7 @@ namespace Autabee.OpcToClass
             return GetEncoder(KnownEnums, encoderName, type, name, typename, nsPrefix);
         }
 
-        private static string GetEncoder(string[] KnownEnums, string encoderName, string type, string name, string typename, string nsPrefix)
+        private static string GetEncoder(string[] KnownEnums, string encoderName, string type, string name, string typename, string nsPrefix, int arrayDimensions = 0)
         {
             if (type.Contains("tns:"))
             {
@@ -86,18 +93,21 @@ namespace Autabee.OpcToClass
                     return $"{encoderName}.WriteEnumerated(\"{typename}\", this.{name})";
                 }
                 typename = GetNamespacedType(typename, nsPrefix);
-                return $"{encoderName}.WriteEncodeable(\"{name}\", this.{name}, typeof({typename}))";
+                if (arrayDimensions == 0)
+                    return $"{encoderName}.WriteEncodeable(\"{name}\", this.{name}, typeof({typename}))";
+                else 
+                    return $"{encoderName}.WriteEncodeableArray(\"{name}\", this.{name}, typeof({typename}))";
             }
             else if (type.Contains("opc:"))
             {
-                return $"{encoderName}.Write{type.Split(':')[1]}(\"{name}\", this.{name})";
+                return $"{encoderName}.Write{type.Split(':')[1]}{(arrayDimensions == 0 ? "" : "Array")}(\"{name}\", this.{name})";
             }
             return $"{encoderName}.Unknown({type})";
         }
 
         public static string GetEncoder(Field node, string[] KnownEnums, string nsPrefix, string encoderName = "encoder")
         {
-            return GetEncoder(KnownEnums, encoderName, node.TypeName, node.ClassFieldName, node.Type, nsPrefix);
+            return GetEncoder(KnownEnums, encoderName, node.TypeName, node.ClassFieldName, node.Type, nsPrefix, node.ArrayDimensions);
         }
 
 
@@ -114,8 +124,37 @@ namespace Autabee.OpcToClass
 
         public static string GetCorrectedTypeName(XmlNode value)
         {
-            return GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
+            var str =  GetCorrectedTypeName((string)value.Attributes["TypeName"].Value);
+            // check if it has Lenght 
+            for (int i = 0; i < value.Attributes.Count; i++)
+            {
+                var attribute = value.Attributes[i];
+                if (attribute.Name.Contains("LengthField"))
+                {
+                    str += "[]";
+                    break;
+                }
+            }
+            return str;
         }
+
+        public static string GetCorrectedTypeName(VariableNode value)
+        {
+            var str = GetCorrectedTypeName(value.DataType.Identifier);
+            if (value.ArrayDimensions.Count > 0) {
+                var arrystr = string.Concat(Enumerable.Repeat("[]", value.ArrayDimensions.Count));
+                if (str.Contains("Unknown<"))
+                {
+                    str = new string(str.Take(str.Length - 1).ToArray()) + arrystr + ">";
+                }
+                else
+                {
+                    str += arrystr;
+                }
+            }
+            return str;
+        }
+
         public static string GetCorrectedTypeName(object value)
         {
             switch (value)
@@ -205,11 +244,37 @@ namespace Autabee.OpcToClass
             }
             else
             {
+                value = value.Replace("&quot;", "\"").Split(':').Last();
+                var testNameValueSet = value.Split('.').Last();
+                switch (testNameValueSet)
+                {
+                    case "Boolean": return "bool";
+                    case "Byte": return "byte";
+                    case "Int32": return "int";
+                    case "UInt32": return "uint";
+                    case "Float": return "float";
+                    case "Double": return "double";
+                    case "String": return "string";
+                    case "Int16": return "short";
+                    case "UInt16": return "ushort";
+                    case "Int64": return "long";
+                    case "UInt64": return "ulong";
+                    case "ByteString": return "byte[]";
+                    case "DateTime": return "DateTime";
+                    case "Guid": return "Guid";
+                    case "LocalizedText": return "LocalizedText";
+                    case "QualifiedName": return "QualifiedName";
+                    case "NodeId": return "NodeId";
+                    case "ExpandedNodeId": return "ExpandedNodeId";
+                    case "StatusCode": return "StatusCode";
+                    case "XmlElement": return "XmlElement";
+                    case "ExtensionObject": return "ExtensionObject";
+                    case "DataValue": return "DataValue";
+                    default: return value;
+                }
                 //var tns = array[0];
                 //var typename = array[1];
                 // typename
-                return value.Replace("&quot;", "\"").Split(':').Last();
-
             }
             Console.WriteLine("Did not find typename: " + value);
 
@@ -266,7 +331,7 @@ namespace Autabee.OpcToClass
       $@"<Project Sdk=""Microsoft.NET.Sdk"">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.1;net48;net8.0;net10.0</TargetFrameworks>
+		<TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -575,8 +640,7 @@ namespace Autabee.OpcToClass
                 var referenceNode = referenceNodes[i];
                 var nodeData = nodes[i];
                 if (referenceNode.NodeId.IdType != IdType.String && referenceNode.NodeId.IdType != IdType.Numeric) continue;
-                if (referenceNode.NodeClass != NodeClass.Variable)
-                    continue;
+                if (referenceNode.NodeClass != NodeClass.Variable) continue;
 
                 string identifier = referenceNode.TypeDefinition.Identifier.ToString();
                 //var node = referenceNode.NodeId.Identifier.ToString()
@@ -589,7 +653,7 @@ namespace Autabee.OpcToClass
 
                 if (referenceNode.TypeDefinition.IdType == IdType.Numeric && nodeData is VariableNode varNode)
                 {
-                    nodetype = GetCorrectedTypeName(varNode.DataType.Identifier);
+                    nodetype = GetCorrectedTypeName(varNode);
 
                     if (nodetype.Contains("Unknown"))
                     {
@@ -628,14 +692,22 @@ namespace Autabee.OpcToClass
                                             }
                                         }
                                     }
+                                    else if (value.GetType().FullName.StartsWith("System"))
+                                    {
+                                        if (value.GetType().IsPrimitive)
+                                        {
+                                            // if its a primitive use the c# simplefied name instead of the full name
+                                            nodetype = GetCorrectedTypeName(value.GetType().FullName);
+                                        }
+                                        else
+                                        {
+                                            nodetype = value.GetType().FullName;
+                                        }
+                                    }
                                     else
                                     {
                                         nodetype = fvalue[0].DisplayName.Text.Replace("\"", string.Empty).Replace("TE_", string.Empty);
                                     }
-                                }
-                                for (int j = 0; j<vNode.ArrayDimensions.Count; j++)
-                                {
-                                    nodetype += "[]";
                                 }
                             }
                             else

@@ -303,7 +303,7 @@ namespace Autabee.OpcSharper
         {
             logger?.Information("Browse for binary type encodings");
 
-            // browse opc binary schema
+            // browse opc binary schema and returns all schemas
             service.Session.Browse(
                 null,
                 null,
@@ -318,6 +318,7 @@ namespace Autabee.OpcSharper
 
             foreach (var item in refDescColBin)
             {
+                // return all types.
                 ReferenceDescriptionCollection types = BrowsFullDirectory(service, item);
 
                 var endoingsToFind = new List<ExpandedNodeId>();
@@ -325,21 +326,39 @@ namespace Autabee.OpcSharper
                 for (int i = 0; i < types.Count; i++)
                 {
 
-                    if (dataSet.structs.TryGetValue(types[i].BrowseName.ToString().Split(':').Last(), out var structure))
+                    if (dataSet.structs.TryGetValue(types[i].DisplayName.ToString(), out var structure))
                     {
-                        structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
-                        endoingsToFind.Add(structure.TypeId);
-                        structs.Add(structure);
+                        if (dataSet.FlipTypeAndEncoding)
+                        {
+
+                            structure.BinaryEncoding = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
+                            endoingsToFind.Add(types[i].NodeId);
+                            structs.Add(structure);
+                        }
+                        else
+                        {
+                            structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
+                            endoingsToFind.Add(types[i].NodeId);
+                            structs.Add(structure);
+                        }
                     }
                 }
                 if (endoingsToFind.Count == 0) continue;
-                var results = await FindDefaultBinaryNodes(service.Session, endoingsToFind.Select(n => ExpandedNodeId.ToNodeId(n, service.Session.NamespaceUris)).ToList());
+                var results = (await FindDefaultTypeIdForBinaryNodes(service.Session, endoingsToFind)).ToList();
 
                 for (int i = 0; i < results.Count; i++)
                 {
                     if (results[i] != null)
                     {
-                        structs[i].BinaryEncoding = new ExpandedNodeId((NodeId)results[i], service.Session.NamespaceUris.GetString(results[i].NamespaceIndex));
+                        // var node = service.ReadNode(results[i]);
+                        if (dataSet.FlipTypeAndEncoding)
+                        {
+                            structs[i].TypeId = new ExpandedNodeId((NodeId)results[i].NodeId, service.Session.NamespaceUris.GetString(results[i].NodeId.NamespaceIndex));
+                        }
+                        else
+                        {
+                            structs[i].BinaryEncoding = new ExpandedNodeId((NodeId)results[i].NodeId, service.Session.NamespaceUris.GetString(results[i].NodeId.NamespaceIndex));
+                        }
                     }
                 }
             }
@@ -365,27 +384,43 @@ namespace Autabee.OpcSharper
                 var structs = new List<OpcStructTemplate>();
                 for (int i = 0; i < types.Count; i++)
                 {
-                    if (dataSet.structs.TryGetValue(types[i].BrowseName.ToString().Split(':').Last(), out var structure))
+                    if (dataSet.structs.TryGetValue(types[i].DisplayName.ToString(), out var structure))
                     {
-                        if (structure.TypeId != null)
+                        if (dataSet.FlipTypeAndEncoding)
                         {
+                            structure.XmlEncoding = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
+                            if (structure.TypeId == null)
+                            {
+                                endoingsToFind.Add(types[i].NodeId);
+                                structs.Add(structure);
+                            }
+                        }
+                        else
+                        {
+                            if (structure.TypeId == null)
+                            {
+                                structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
+                            }
                             endoingsToFind.Add(types[i].NodeId);
                             structs.Add(structure);
-                            continue;
                         }
-                        structure.TypeId = new ExpandedNodeId((NodeId)types[i].NodeId, service.Session.NamespaceUris.GetString(types[i].NodeId.NamespaceIndex));
-                        endoingsToFind.Add(structure.TypeId);
-                        structs.Add(structure);
                     }
                 }
                 if (endoingsToFind.Count == 0) continue;
-                var results = await FindDefaultXMLNodes(service.Session, endoingsToFind.Select(n => (NodeId)n).ToList());
+                var results = (await FindDefaultTypeIdForXMLNodes(service.Session, endoingsToFind)).ToList();
 
                 for (int i = 0; i < results.Count; i++)
                 {
                     if (results[i] != null)
                     {
-                        structs[i].XmlEncoding = new ExpandedNodeId((NodeId)results[i], service.Session.NamespaceUris.GetString(results[i].NamespaceIndex));
+                        if (dataSet.FlipTypeAndEncoding)
+                        {
+                            structs[i].TypeId = new ExpandedNodeId((NodeId)results[i].NodeId, service.Session.NamespaceUris.GetString(results[i].NodeId.NamespaceIndex));
+                        }
+                        else
+                        {
+                            structs[i].XmlEncoding = new ExpandedNodeId((NodeId)results[i].NodeId, service.Session.NamespaceUris.GetString(results[i].NodeId.NamespaceIndex));
+                        }
                     }
                 }
             }
@@ -419,11 +454,11 @@ namespace Autabee.OpcSharper
             return types;
         }
 
-        private static async Task<ExpandedNodeIdCollection> FindDefaultBinaryNodes(Session session, List<NodeId> nodes)
+        private static async Task<ReferenceDescriptionCollection> FindDefaultTypeIdForBinaryNodes(Session session, List<ExpandedNodeId> nodes)
            => await FindDefaultObjectNodes(session, nodes, new string[] { "Default Binary", "DefaultBinary" });
-        private static async Task<ExpandedNodeIdCollection> FindDefaultXMLNodes(Session session, List<NodeId> nodes)
+        private static async Task<ReferenceDescriptionCollection> FindDefaultTypeIdForXMLNodes(Session session, List<ExpandedNodeId> nodes)
           => await FindDefaultObjectNodes(session, nodes, new string[] { "Default XML", "DefaultXML" });
-        private static async Task<ExpandedNodeIdCollection> FindDefaultObjectNodes(Session session, List<NodeId> nodes, string[] names)
+        private static async Task<ReferenceDescriptionCollection> FindDefaultObjectNodes(Session session, List<ExpandedNodeId> nodes, string[] names)
         {
             if (names == null)
             {
@@ -436,7 +471,7 @@ namespace Autabee.OpcSharper
             {
                 collection.Add(new BrowseDescription
                 {
-                    NodeId = nodes[i],
+                    NodeId = ExpandedNodeId.ToNodeId(nodes[i], session.NamespaceUris),
                     BrowseDirection = BrowseDirection.Inverse,
                     IncludeSubtypes = true,
                     NodeClassMask = (uint)(NodeClass.Object),
@@ -446,7 +481,7 @@ namespace Autabee.OpcSharper
 
             var result = await session.BrowseAsync(null, null, 0, collection, CancellationToken.None);
 
-            var results = new ExpandedNodeIdCollection(nodes.Count);
+            ReferenceDescriptionCollection results = new ReferenceDescriptionCollection(nodes.Count);
 
             for (int i = 0; i < result.Results.Count; i++)
             {
@@ -456,7 +491,7 @@ namespace Autabee.OpcSharper
                     var reference = result.Results[i].References[j];
                     if (names.Any(n => reference.BrowseName.Name.Contains(n)))
                     {
-                        results[i] = reference.NodeId;
+                        results[i] = reference;
                     }
                 }
             }

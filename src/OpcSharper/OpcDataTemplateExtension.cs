@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
@@ -97,7 +99,7 @@ namespace Autabee.OpcToClass
             template.Name = OpcToCSharpGenerator.GetCorrectedName(node);
             template.TypeName = OpcToCSharpGenerator.GetCorrectedTypeName(node.Attributes["Name"].Value);
             template.NamespaceURI = node.NamespaceURI;
-
+            List<string> LenghtCashe = new List<string>();
             for (int i = 0; i < node.ChildNodes.Count; i++)
             {
                 XmlNode field = node.ChildNodes[i];
@@ -111,6 +113,7 @@ namespace Autabee.OpcToClass
                     {
                         classfieldName += "Field";
                     }
+                    var arraydimensions = fieldType.Count(o=> o == '[');
 
                     Field newField = new Field()
                     {
@@ -118,14 +121,41 @@ namespace Autabee.OpcToClass
                         Type = fieldType,
                         TypeName = field.Attributes["TypeName"]?.Value,
                         Value = field.Attributes["Value"]?.Value,
-                        ClassFieldName = classfieldName
+                        ClassFieldName = classfieldName,
+                        ArrayDimensions = arraydimensions,
                     };
 
                     template.Fields = template.Fields.Append(newField).ToArray();
+                    var lenghtfield = field.Attributes.GetNamedItem("LengthField");
+                    if (lenghtfield != null)
+                    {
+                        if (template.Fields.Any(o=>o.Name == lenghtfield.Value))
+                        {
+                            var lfield = template.Fields.First(o=> o.Name == lenghtfield.Value);
+                            lfield.IsArraySizeField = true;
+                            lfield.linkFields = new Field[] { newField };
+                        }
+                        else
+                        {
+                            LenghtCashe.Add(lenghtfield.Value);
+                        }
+                    }
+                    if (LenghtCashe.Count > 0)
+                    {
+                        var lengthfield = LenghtCashe.FirstOrDefault(o => o == fieldName);
+                        if (lengthfield != null)
+                        {
+                            newField.IsArraySizeField = true;
+                            LenghtCashe.Remove(lengthfield);
+                        }
+                    }
                 }
             }
 
-
+            if (LenghtCashe.Count > 0)
+            {
+                Console.WriteLine($"Warning: The following length fields were not found in the struct fields: {string.Join(", ", LenghtCashe)}. This might be due to missing fields or incorrect LengthField attributes.");
+            }
 
             return template;
         }
@@ -163,7 +193,26 @@ namespace Autabee.OpcToClass
             foreach (var field in fields)
             { 
                 var fieldtypename = OpcToCSharpGenerator.GetNamespacedType(field.Type, nsPrefix);
-                classData += $"\n\t\tpublic {fieldtypename} {field.ClassFieldName} {{ get; set; }}";
+
+                if (field.IsArraySizeField)
+                {
+                    if (field.linkFields == null || field.linkFields.Length != 1)
+                    {
+                        Console.WriteLine($"Warning: The field {field.Name} is marked as an array size field but does not have any linked fields. This might be due to missing LengthField attributes or incorrect field definitions.");
+                        continue;
+                    }
+                    classData += $"\n\t\tprivate int {field.ClassFieldName}_; // This field is used to store the size of the array field(s) that it is linked to. It is not an actual data field and is handled by the encoder/decoder of the array field(s) that it is linked to.";
+
+                    classData += $"\n\t\tpublic int {field.ClassFieldName} {{ " +
+                        $"\n\t\t\tget {{ " +
+                        $"\n\t\t\tif (this.{field.linkFields[0].ClassFieldName} == null || this.{field.linkFields[0].ClassFieldName}.Length == 0) return {field.ClassFieldName}_; " +
+                        $"\n\t\t\treturn this.{field.linkFields[0].ClassFieldName}.Length; }} " +
+                        $"\n\t\t\tset {{ {field.ClassFieldName}_ = value; }} }}";
+                }// skip array size fields as they are not actual data fields and are handled by the encoder/decoder of the array field.
+                else
+                {
+                    classData += $"\n\t\tpublic {fieldtypename} {field.ClassFieldName} {{ get; set; }}";
+                }
             }
 
             // To Do This does not work always as systems somtimes use struct name with or without qoutations.
@@ -219,6 +268,7 @@ namespace Autabee.OpcToClass
 
             foreach (var field in fields)
             {
+                if (field.IsArraySizeField) continue; // skip array size fields as they are not actual data fields.
                 classData += $"\n\t\tthis.{field.ClassFieldName} = {OpcToCSharpGenerator.GetDecoder(field, nsPrefix, enums, decoder)};";
             }
 
@@ -241,6 +291,7 @@ namespace Autabee.OpcToClass
 
             foreach (var field in fields)
             {
+                if (field.IsArraySizeField) continue; // skip array size fields as they are not actual data fields and are handled by the encoder/decoder of the array field.
                 classData += $"\n\t\t{OpcToCSharpGenerator.GetEncoder(field, enums, nsPrefix, encoder )};";
             }
             classData += "\n\t}";
