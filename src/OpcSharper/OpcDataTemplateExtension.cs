@@ -205,8 +205,8 @@ namespace Autabee.OpcToClass
 
                     classData += $"\n\t\tpublic int {field.ClassFieldName} {{ " +
                         $"\n\t\t\tget {{ " +
-                        $"\n\t\t\tif ({field.linkFields[0].Name} == null ||{field.linkFields[0].Name}.Length == 0) return {field.ClassFieldName}_; " +
-                        $"\n\t\t\treturn {field.linkFields[0].Name}.Length; }} " +
+                        $"\n\t\t\tif (this.{field.linkFields[0].ClassFieldName} == null || this.{field.linkFields[0].ClassFieldName}.Length == 0) return {field.ClassFieldName}_; " +
+                        $"\n\t\t\treturn this.{field.linkFields[0].ClassFieldName}.Length; }} " +
                         $"\n\t\t\tset {{ {field.ClassFieldName}_ = value; }} }}";
                 }// skip array size fields as they are not actual data fields and are handled by the encoder/decoder of the array field.
                 else
