@@ -71,7 +71,7 @@ namespace Autabee.OpcToClass
                 if (arrayDimensions == 0)
                     return $"{decoderName}.Read{type.Split(':')[1]}(\"{name}\")";
                 else
-                    return $"{decoderName}.Read{type.Split(':')[1]}Array(\"{name}\").ToArray()";
+                    return $"{decoderName}.Read{type.Split(':')[1]}Array(\"{name}\")";
             }
             return $"{decoderName}.Unknown({type})";
         }
