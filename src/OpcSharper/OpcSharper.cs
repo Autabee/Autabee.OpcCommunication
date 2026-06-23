@@ -350,7 +350,7 @@ namespace Autabee.OpcSharper
                 {
                     if (results[i] != null)
                     {
-                        var node = service.ReadNode(results[i]);
+                        // var node = service.ReadNode(results[i]);
                         if (dataSet.FlipTypeAndEncoding)
                         {
                             structs[i].TypeId = new ExpandedNodeId((NodeId)results[i].NodeId, service.Session.NamespaceUris.GetString(results[i].NodeId.NamespaceIndex));
